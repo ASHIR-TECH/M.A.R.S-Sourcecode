@@ -8,11 +8,6 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#08080F",
     "scheme": "adtp",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#08080F"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "world.ashir.adtp",
@@ -28,7 +23,6 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "USE_BIOMETRIC",
         "POST_NOTIFICATIONS"
