@@ -17,7 +17,7 @@ import {
 import { setUnauthorizedHandler } from '@/api/client';
 import type { HealthStatus } from '@/api/types';
 
-const BIOMETRIC_KEY = 'adtp_biometric_enabled';
+const BIOMETRIC_KEY = 'mars_biometric_enabled';
 
 interface AuthContextValue {
   apiUrl: string | null;
