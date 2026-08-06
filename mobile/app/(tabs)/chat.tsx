@@ -140,8 +140,8 @@ export default function ChatScreen() {
       >
         {messages.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.wordmark}>ADTP</Text>
-            <Text style={styles.emptyTitle}>Ask your agent anything</Text>
+            <Text style={styles.wordmark}>MARS</Text>
+            <Text style={styles.emptyTitle}>Ask your ADTP agent anything</Text>
             <View style={styles.suggestions}>
               {SUGGESTIONS.map((s) => (
                 <Pressable
