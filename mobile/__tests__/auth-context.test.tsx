@@ -2,7 +2,6 @@ import React from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import * as SecureStore from 'expo-secure-store';
-import { __resetStore } from 'expo-secure-store';
 
 jest.mock('@/api/health', () => ({
   getHealth: jest.fn(),
@@ -12,6 +11,9 @@ jest.mock('@/api/health', () => ({
 
 import { checkReady, getHealth, getReady } from '@/api/health';
 import { invalidateCredentialsCache } from '@/api/storage';
+
+// The manual mock (__mocks__/expo-secure-store.ts) exposes a store reset hook.
+const resetStore = (SecureStore as unknown as { __resetStore: () => void }).__resetStore;
 
 const mockGetHealth = getHealth as jest.MockedFunction<typeof getHealth>;
 const mockGetReady = getReady as jest.MockedFunction<typeof getReady>;
@@ -23,7 +25,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    __resetStore();
+    resetStore();
     invalidateCredentialsCache();
     jest.clearAllMocks();
     mockGetHealth.mockResolvedValue({ status: 'ok' });
