@@ -46,7 +46,7 @@ export function useBiometric(): UseBiometricResult {
     setChecking(true);
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock ADTP',
+        promptMessage: 'Unlock MARS',
         cancelLabel: 'Cancel',
         disableDeviceFallback: false,
       });

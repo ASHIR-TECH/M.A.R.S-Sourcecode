@@ -1,22 +1,27 @@
 {
   "expo": {
-    "name": "ADTP",
-    "slug": "adtp-mobile",
+    "name": "MARS",
+    "slug": "mars-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#08080F",
-    "scheme": "adtp",
+    "scheme": "mars",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#08080F"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "world.ashir.adtp",
+      "bundleIdentifier": "world.ashir.mars",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "ADTP uses Face ID or Touch ID to unlock the app and protect your API token."
+        "NSFaceIDUsageDescription": "Mars uses Face ID or Touch ID to unlock the app and protect your API token."
       }
     },
     "android": {
-      "package": "world.ashir.adtp",
+      "package": "world.ashir.mars",
       "adaptiveIcon": {
         "backgroundColor": "#0F0E47",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -38,7 +43,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "ADTP uses Face ID or Touch ID to unlock the app and protect your API token."
+          "faceIDPermission": "Mars uses Face ID or Touch ID to unlock the app and protect your API token."
         }
       ],
       "expo-notifications",

@@ -73,7 +73,7 @@ function BiometricGate({ children }: { children: React.ReactNode }) {
       <Ionicons name="lock-closed" size={48} color={colours.gold} />
       <Text style={styles.lockTitle}>Locked</Text>
       <Text style={styles.lockHint}>
-        Use Face ID, Touch ID or your device passcode to open ADTP.
+        Use Face ID, Touch ID or your passcode to open MARS.
       </Text>
       <Pressable
         onPress={async () => {

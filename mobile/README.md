@@ -1,16 +1,16 @@
-# ADTP Mobile — Phase 14 Stage 2 (React Native + Expo)
+# MARS Mobile — Phase 14 Stage 2 (React Native + Expo)
 
-The production mobile app for ADTP. This is a **remote control** for the embedded
+The production mobile app for MARS. This is a **remote control** for the embedded
 agent running on the user's desktop peer: the phone has no QUIC endpoint, does not
 register with the rendezvous server, and talks HTTPS to the desktop peer's
-Phase 4 REST API (`adtp-api`, port `40003`) with Bearer-token auth.
+Phase 4 REST API (port `40003`) with Bearer-token auth.
 
 > Only Stage 2 is implemented here (React Native + Expo). The Stage 1 PWA lives
 > separately and shares the same API contract and screen structure.
 
 ## Stack
 
-- **Expo SDK 57** / React Native 0.86 / React 19 / TypeScript (strict)
+- **Expo SDK 54** / React Native 0.81 / React 19.1 / TypeScript (strict)
 - **expo-router** — file-based navigation
 - **expo-secure-store** — API token + URL in iOS Keychain / Android Keystore
 - **expo-local-authentication** — Face ID / Touch ID / fingerprint unlock
@@ -48,10 +48,10 @@ npm test                  # jest (jest-expo)
 
 ## Connecting to your desktop
 
-1. Make sure `adtp-api` is running on your desktop peer and reachable.
+1. Make sure the MARS REST API is running on your desktop peer and reachable.
 2. In the app, enter the desktop's REST API URL
    (`http://your-desktop-ip:40003`) — the onboarding validates reachability.
-3. Enter the same `ADTP_API_TOKEN` used by the CLI / desktop app. It is stored
+3. Enter the same API token used by the CLI / desktop app. It is stored
    only in the device's Keychain/Keystore, never in plaintext.
 4. Optionally enable biometric unlock and push notifications.
 
@@ -71,11 +71,12 @@ token, maps network failures to typed `AppError`s, and signs the user out on a
 
 ## Notes / deviations from the Phase 14 spec
 
-- Uses **Expo SDK 57** (the spec pinned SDK 51, which is no longer installable
+- Uses **Expo SDK 54** (the spec pinned SDK 51, which is no longer installable
   with current toolchains); the app structure, screens and flow match the spec.
 - Icons use `@expo/vector-icons` (bundled) instead of `lucide-react-native` to
   avoid an extra dependency; the empty-state FileX is `file-tray-outline`.
 - Integration tests mock the Phase 4 REST API at the `api/*` module layer
   (rather than `msw`) for reliability under `jest-expo`.
 - `POST /api/v1/agent/device-token` is the single new backend endpoint Phase 14
-  requires; it must be added to `adtp-api` (see `docs/ADTP_Phase14_Build_Spec.docx`).
+  requires; it must be added to the MARS REST API
+  (see `docs/ADTP_Phase14_Build_Spec.docx`).

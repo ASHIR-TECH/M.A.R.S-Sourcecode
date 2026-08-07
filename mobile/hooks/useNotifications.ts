@@ -9,7 +9,7 @@ const DEVICE_NAME_KEY = 'adtp_device_name';
 
 function makeDeviceName(): string {
   const base =
-    Constants.deviceName ?? Constants.expoConfig?.name ?? 'ADTP mobile device';
+    Constants.deviceName ?? Constants.expoConfig?.name ?? 'MARS mobile device';
   return `${base}-${Date.now().toString(36)}`;
 }
 

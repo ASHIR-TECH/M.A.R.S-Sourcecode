@@ -1,5 +1,5 @@
 /**
- * TypeScript mirrors of the Phase 4 REST API (adtp-api) response shapes.
+ * TypeScript mirrors of the Phase 4 REST API (MARS) response shapes.
  * Field names follow the FastAPI/Pydantic models returned by the desktop peer.
  */
 

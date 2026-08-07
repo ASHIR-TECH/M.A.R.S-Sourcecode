@@ -47,7 +47,7 @@ export default function SettingsScreen() {
       setTestState('error');
       setTestMessage(
         e instanceof AppError && e.code === 'NETWORK'
-          ? 'Unreachable. Make sure adtp-api is running on the desktop.'
+          ? 'Unreachable. Make sure ADTP is running on the desktop.'
           : e instanceof Error
             ? e.message
             : 'Connection failed.'
