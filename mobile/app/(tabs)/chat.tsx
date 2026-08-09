@@ -56,6 +56,29 @@ async function waitForCompletion(id: string): Promise<AgentMessage> {
   }
 }
 
+/** Non-dismissible amber banner that slides in when the desktop is unreachable. */
+function OfflineBanner() {
+  const translateY = useSharedValue(-40);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    translateY.value = withTiming(0, { duration: 240, easing: Easing.out(Easing.ease) });
+    opacity.value = withTiming(1, { duration: 240, easing: Easing.out(Easing.ease) });
+  }, [translateY, opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={[styles.banner, animatedStyle]} testID="offline-banner">
+      <Ionicons name="cloud-offline-outline" size={16} color={colours.stateWarning} />
+      <Text style={styles.bannerText}>Desktop offline — messages will send when reconnected.</Text>
+    </Animated.View>
+  );
+}
+
 export default function ChatScreen() {
   const router = useRouter();
   const { sendMessage, sending } = useAgent();
