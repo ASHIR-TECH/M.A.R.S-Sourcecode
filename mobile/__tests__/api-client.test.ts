@@ -7,8 +7,11 @@ jest.mock('@/api/storage', () => ({
   saveCredentials: jest.fn(),
   clearCredentials: jest.fn(),
   invalidateCredentialsCache: jest.fn(),
+  loadProfile: jest.fn(),
+  saveProfile: jest.fn(),
   API_URL_KEY: 'adtp_api_url',
   TOKEN_KEY: 'adtp_api_token',
+  PROFILE_KEY: 'mars_profile',
 }));
 
 const mockFetch = jest.fn();
