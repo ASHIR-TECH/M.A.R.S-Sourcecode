@@ -41,6 +41,19 @@
       "expo-router",
       "expo-secure-store",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#08080F",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#08080F"
+          }
+        }
+      ],
+      [
         "expo-local-authentication",
         {
           "faceIDPermission": "Mars uses Face ID or Touch ID to unlock the app and protect your API token."
