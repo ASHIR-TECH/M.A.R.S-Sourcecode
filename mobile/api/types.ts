@@ -150,3 +150,26 @@ export interface DeviceTokenRequest {
   expo_push_token: string;
   device_name: string;
 }
+
+/** OAuth identity providers supported by POST /api/v1/auth/oauth. */
+export type OAuthProvider = 'google' | 'apple';
+
+/** POST /api/v1/auth/oauth request body */
+export interface OAuthTokenExchangeRequest {
+  provider: OAuthProvider;
+  id_token: string;
+}
+
+/** POST /api/v1/auth/oauth success response */
+export interface OAuthTokenExchange {
+  adtp_token: string;
+  display_name: string;
+  email: string;
+}
+
+/** Persisted user profile shown on the Account screen. */
+export interface UserProfile {
+  display_name: string;
+  email: string;
+  provider: OAuthProvider;
+}
