@@ -117,7 +117,7 @@ export default function LoginScreen() {
                 {busy ? <ActivityIndicator color={colours.black} size="small" /> : null}
               </Pressable>
 
-              {isAppleConfigured ? (
+              {Platform.OS === 'ios' && isAppleConfigured ? (
                 <Pressable
                   onPress={beginApple}
                   disabled={working}
