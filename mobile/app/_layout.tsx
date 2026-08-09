@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -45,18 +46,73 @@ export default function RootLayout() {
 
 function RootNavigator() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colours.bgDeep },
-      }}
-    >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="transfer/[id]" options={{ presentation: 'modal' }} />
-    </Stack>
+    <>
+      <NotificationTapHandler />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colours.bgDeep },
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="transfer/[id]" options={{ presentation: 'modal' }} />
+      </Stack>
+    </>
   );
+}
+
+interface NotificationLike {
+  notification: {
+    request: { content: { data?: unknown } };
+  };
+}
+
+/**
+ * Routes notification taps (foreground + the one that cold-started the app)
+ * to the matching screen: transfer details, Peers, or Chat. Unavailable in
+ * Expo Go — expo-notifications is only imported when the environment supports it.
+ */
+function NotificationTapHandler() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (Constants.executionEnvironment === 'storeClient') return;
+    let listener: { remove: () => void } | null = null;
+
+    const route = (response: NotificationLike) => {
+      const data = (response.notification?.request?.content?.data ?? {}) as Record<string, unknown>;
+      const type = data.type;
+      const transferId = typeof data.transfer_id === 'string' ? data.transfer_id : null;
+      if (type === 'transfer' && transferId) {
+        router.push(`/transfer/${transferId}`);
+      } else if (type === 'peer-online' || type === 'peers') {
+        router.push('/(tabs)/peers');
+      } else {
+        router.push('/(tabs)/chat');
+      }
+    };
+
+    void (async () => {
+      try {
+        const Notifications = await import('expo-notifications');
+        const last = await Notifications.getLastNotificationResponseAsync();
+        if (last) route(last as NotificationLike);
+        listener = Notifications.addNotificationResponseReceivedListener((r) =>
+          route(r as NotificationLike)
+        );
+      } catch {
+        // expo-notifications unavailable — nothing to route.
+      }
+    })();
+
+    return () => {
+      listener?.remove();
+    };
+  }, [router]);
+
+  return null;
 }
 
 /**
