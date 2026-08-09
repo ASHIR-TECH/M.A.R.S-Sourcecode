@@ -19,7 +19,7 @@ interface UnauthorizedHandler {
 
 let onUnauthorized: UnauthorizedHandler | null = null;
 
-/** The AuthContext registers this so a 401 can navigate back to setup. */
+/** The AuthContext registers this so a 401 can sign the user out to Login. */
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
   onUnauthorized = handler;
 }
@@ -51,17 +51,19 @@ function normalizeUrl(base: string, path: string): string {
 
 /**
  * fetch wrapper used by every API module. Injects the Bearer token, maps
- * network failures to AppError(NETWORK), and redirects to setup on 401.
+ * network failures to AppError(NETWORK), and redirects to login on 401.
  */
 export interface ApiFetchOptions extends RequestInit {
   /** Override the stored API URL for a single request (e.g. connection test). */
   baseUrl?: string;
   /** Override the Bearer token for a single request (e.g. token validation). */
   token?: string;
+  /** Skip the Bearer header entirely — used by the OAuth bootstrap endpoint. */
+  auth?: boolean;
 }
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const { baseUrl, token: tokenOverride, ...rest } = options;
+  const { baseUrl, token: tokenOverride, auth = true, ...rest } = options;
   const base = baseUrl ?? (await loadApiUrl());
   if (!base) {
     throw new AppError('AUTH', 'Not connected to a desktop peer.');
@@ -72,7 +74,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     Accept: 'application/json',
     ...((rest.headers as Record<string, string>) ?? {}),
   };
-  if (token) {
+  if (auth && token) {
     headers.Authorization = `Bearer ${token}`;
   }
   if (rest.body && typeof rest.body === 'string') {

@@ -1,104 +1,67 @@
-import React, { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { useCallback } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import * as Clipboard from 'expo-clipboard';
+import * as Device from 'expo-device';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { PeerRow } from '@/components/PeerRow';
-import { StatusBar } from '@/components/StatusBar';
+import { GradientText } from '@/components/GradientText';
+import { PeerCard } from '@/components/PeerCard';
 import { colours, fontSizes, radii, spacing } from '@/constants/colours';
-import { getHealth } from '@/api/health';
-import { listSessions } from '@/api/peers';
-import type { HealthStatus, Session } from '@/api/types';
+import { usePeers } from '@/contexts/PeerContext';
 
 export default function PeersScreen() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { sessions, loading, error, startPolling, stopPolling } = usePeers();
 
-  const load = useCallback(async () => {
-    try {
-      const [h, s] = await Promise.all([getHealth(), listSessions()]);
-      setHealth(h);
-      setSessions(s);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load peers.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Poll every 8s while the tab is focused; pause on blur.
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load])
+      startPolling();
+      return () => stopPolling();
+    }, [startPolling, stopPolling])
   );
 
-  const ownPeerId = health?.peer_id ?? '';
+  const connected = [...sessions].sort(
+    (a, b) => new Date(b.connected_at).getTime() - new Date(a.connected_at).getTime()
+  );
 
-  const copyPeerId = async () => {
-    if (!ownPeerId) return;
-    await Clipboard.setStringAsync(ownPeerId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const phoneModel = Device.modelName ?? 'This device';
 
   return (
-    <View style={styles.screen}>
-      <StatusBar />
+    <SafeAreaView style={styles.screen} edges={['top']}>
+      <View style={styles.header}>
+        <GradientText style={styles.title}>Peers</GradientText>
+      </View>
+
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.content}
         testID="peers-scroll"
       >
-        <View style={styles.card}>
-          <Text style={styles.cardWordmark}>ADTP</Text>
-          <Text style={styles.cardLabel}>Your Peer ID</Text>
-          <Pressable
-            onPress={copyPeerId}
-            disabled={!ownPeerId}
-            style={styles.peerIdRow}
-            accessibilityRole="button"
-            accessibilityLabel="Copy your peer ID"
-          >
-            <Text style={styles.peerId} selectable>
-              {ownPeerId || (loading ? '…' : '—')}
+        <View style={styles.ownCard} testID="own-device-card">
+          <Ionicons name="phone-portrait-outline" size={24} color={colours.gold} />
+          <View style={styles.ownInfo}>
+            <Text style={styles.ownName} numberOfLines={1}>
+              {phoneModel}
             </Text>
-            <Ionicons
-              name={copied ? 'checkmark' : 'copy-outline'}
-              size={18}
-              color={copied ? colours.success : colours.gold}
-            />
-          </Pressable>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaText}>
-              NAT: {health?.nat_type ?? 'unknown'}
-            </Text>
-            <Text style={styles.metaText}>
-              Rendezvous: {health?.status ? 'reachable' : '—'}
-            </Text>
+            <Text style={styles.ownLabel}>This device</Text>
+          </View>
+          <View style={styles.ownBadge}>
+            <Text style={styles.ownBadgeText}>MARS</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Connected Peers</Text>
-        {sessions.length === 0 ? (
+        <Text style={styles.sectionTitle}>Connected desktops</Text>
+
+        {connected.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No peers connected.</Text>
+            <Ionicons name="desktop-outline" size={40} color={colours.purpleMid} />
+            <Text style={styles.emptyText}>No desktops connected.</Text>
             <Text style={styles.emptyHint}>
-              Share your Peer ID with another ADTP user to connect.
+              Make sure adtp-peer is running on your PC.
             </Text>
           </View>
         ) : (
-          sessions.map((s) => <PeerRow key={s.peer_id} session={s} />)
+          connected.map((s) => <PeerCard key={s.peer_id} session={s} />)
         )}
 
         {loading ? (
@@ -106,7 +69,7 @@ export default function PeersScreen() {
         ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -118,57 +81,60 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  header: {
+    height: 56,
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
+    backgroundColor: colours.bgSurface,
+    borderBottomWidth: 1,
+    borderBottomColor: colours.purpleDim,
+  },
+  title: {
+    fontSize: 22,
+    fontFamily: 'Audiowide',
+  },
   content: {
     paddingBottom: spacing.xl,
+    paddingTop: spacing.sm,
   },
-  card: {
-    margin: spacing.lg,
+  ownCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.sm,
     backgroundColor: colours.bgSurface,
     borderWidth: 1,
-    borderColor: colours.purpleDim,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    alignItems: 'center',
-  },
-  cardWordmark: {
-    color: colours.gold,
-    fontSize: 24,
-    fontFamily: 'Audiowide',
-    letterSpacing: 3,
-  },
-  cardLabel: {
-    color: colours.textSecondary,
-    fontSize: fontSizes.sm,
-    fontFamily: 'Offside',
-    marginTop: spacing.sm,
-  },
-  peerIdRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    backgroundColor: colours.bgSurfaceAlt,
-    borderWidth: 1,
-    borderColor: colours.purpleDim,
+    borderColor: colours.goldDim,
     borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    minHeight: 44,
+    padding: spacing.lg,
   },
-  peerId: {
+  ownInfo: {
+    flex: 1,
+  },
+  ownName: {
     color: colours.textPrimary,
     fontSize: fontSizes.md,
-    fontFamily: 'monospace',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: spacing.xl,
-    marginTop: spacing.md,
-  },
-  metaText: {
-    color: colours.textSecondary,
-    fontSize: fontSizes.xs,
     fontFamily: 'Offside',
+  },
+  ownLabel: {
+    color: colours.textMuted,
+    fontSize: 12,
+    fontFamily: 'Offside',
+    marginTop: 2,
+  },
+  ownBadge: {
+    borderWidth: 1,
+    borderColor: colours.gold,
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  ownBadgeText: {
+    color: colours.gold,
+    fontSize: fontSizes.xs,
+    fontFamily: 'Audiowide',
+    letterSpacing: 1,
   },
   sectionTitle: {
     color: colours.textSecondary,
@@ -187,24 +153,24 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     padding: spacing.xl,
     alignItems: 'center',
+    gap: spacing.sm,
   },
   emptyText: {
-    color: colours.textPrimary,
+    color: colours.textSecondary,
     fontSize: fontSizes.md,
     fontFamily: 'Offside',
   },
   emptyHint: {
-    color: colours.textSecondary,
+    color: colours.textMuted,
     fontSize: fontSizes.sm,
     fontFamily: 'Offside',
     textAlign: 'center',
-    marginTop: spacing.sm,
   },
   loading: {
     marginTop: spacing.xl,
   },
   error: {
-    color: colours.danger,
+    color: colours.ember,
     fontSize: fontSizes.sm,
     fontFamily: 'Offside',
     textAlign: 'center',

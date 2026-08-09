@@ -25,10 +25,10 @@ export function ToolCallStep({ step }: ToolCallStepProps) {
         : 'alert-circle';
   const iconColor =
     step.status === 'completed'
-      ? colours.success
+      ? colours.stateSuccess
       : step.status === 'failed'
-        ? colours.danger
-        : colours.purpleMuted;
+        ? colours.ember
+        : colours.purpleBright;
 
   const paramsSummary = Object.entries(step.params ?? {})
     .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
@@ -43,7 +43,7 @@ export function ToolCallStep({ step }: ToolCallStepProps) {
     >
       <View style={styles.header}>
         {isRunning ? (
-          <ActivityIndicator size="small" color={colours.purpleMuted} />
+          <ActivityIndicator size="small" color={colours.purpleBright} />
         ) : (
           <Ionicons name={icon} size={14} color={iconColor} />
         )}
@@ -89,14 +89,14 @@ const styles = StyleSheet.create({
   },
   toolName: {
     flex: 1,
-    color: colours.purpleMuted,
+    color: colours.purpleBright,
     fontSize: 12,
     fontFamily: 'Offside',
   },
   body: {
     marginTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colours.border,
+    borderTopColor: colours.purpleDim,
     paddingTop: spacing.sm,
   },
   params: {

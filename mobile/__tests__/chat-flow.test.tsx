@@ -6,6 +6,11 @@ import { AgentProvider } from '@/contexts/AgentContext';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    const React = require('react');
+    React.useEffect(callback, [callback]);
+  },
+  Redirect: () => null,
 }));
 
 jest.mock('@/api/agent', () => ({
@@ -89,7 +94,7 @@ describe('Chat flow (integration)', () => {
     expect(getByText('find_file')).toBeTruthy();
   });
 
-  it('renders a failure bubble when the POST fails', async () => {
+  it('queues the message and shows a hint when the POST fails', async () => {
     mockSendAgentMessage.mockRejectedValue(new Error('offline'));
 
     const { getByPlaceholderText, getByLabelText, getByText } = render(
@@ -102,7 +107,7 @@ describe('Chat flow (integration)', () => {
 
     await waitFor(() =>
       expect(
-        getByText('Message not delivered. Check your connection to the desktop peer.')
+        getByText('Queued — will send when reconnected.')
       ).toBeTruthy()
     );
   });

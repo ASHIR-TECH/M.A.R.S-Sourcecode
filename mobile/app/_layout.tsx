@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { SplashScreen } from '@/components/SplashScreen';
 import { fontAssets } from '@/constants/fonts';
 import { colours, radii, spacing } from '@/constants/colours';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AgentProvider } from '@/contexts/AgentContext';
-import { TransferProvider } from '@/contexts/TransferContext';
+import { PeerProvider } from '@/contexts/PeerContext';
 import { useBiometric } from '@/hooks/useBiometric';
+
+const SPLASH_FADE_MS = 300;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
@@ -25,12 +29,14 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <AgentProvider>
-          <TransferProvider>
+          <PeerProvider>
             <StatusBar style="light" />
             <BiometricGate>
-              <RootNavigator />
+              <SplashGate>
+                <RootNavigator />
+              </SplashGate>
             </BiometricGate>
-          </TransferProvider>
+          </PeerProvider>
         </AgentProvider>
       </AuthProvider>
     </SafeAreaProvider>
@@ -45,10 +51,51 @@ function RootNavigator() {
         contentStyle: { backgroundColor: colours.bgDeep },
       }}
     >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="login" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="setup" />
       <Stack.Screen name="transfer/[id]" options={{ presentation: 'modal' }} />
     </Stack>
+  );
+}
+
+/**
+ * Shows the animated splash while startup work completes (font loading is
+ * handled before this mounts; auth restore + a minimum visible duration are
+ * awaited here), then fades the whole screen out into the app.
+ */
+function SplashGate({ children }: { children: React.ReactNode }) {
+  const { initialized } = useAuth();
+  const [animationDone, setAnimationDone] = useState(false);
+  const [gone, setGone] = useState(false);
+  const opacity = useSharedValue(1);
+
+  const animateOut = useCallback(() => {
+    opacity.value = withTiming(
+      0,
+      { duration: SPLASH_FADE_MS, easing: Easing.in(Easing.ease) },
+      (finished) => {
+        if (finished) setGone(true);
+      }
+    );
+  }, [opacity]);
+
+  useEffect(() => {
+    if (animationDone && initialized) {
+      animateOut();
+    }
+  }, [animationDone, initialized, animateOut]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  if (gone) {
+    return <>{children}</>;
+  }
+
+  return (
+    <Animated.View style={[styles.flex, animatedStyle]}>
+      <SplashScreen onReady={() => setAnimationDone(true)} />
+    </Animated.View>
   );
 }
 
@@ -61,8 +108,7 @@ function BiometricGate({ children }: { children: React.ReactNode }) {
   const { isAvailable, authenticate, checking } = useBiometric();
   const [unlocked, setUnlocked] = useState(false);
 
-  const locked =
-    isAuthenticated && biometricEnabled && isAvailable && !unlocked;
+  const locked = isAuthenticated && biometricEnabled && isAvailable && !unlocked;
 
   if (!locked) {
     return <>{children}</>;
@@ -94,6 +140,9 @@ function BiometricGate({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   lock: {
     flex: 1,
     backgroundColor: colours.bgDeep,
