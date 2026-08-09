@@ -83,6 +83,8 @@ export default function ChatScreen() {
 
   const { message, status: pollStatus, error: pollError } = usePollAgent(pollId);
 
+  const agentBusy = sending || pollId !== null;
+
   const runningTool =
     pollId && message
       ? message.tool_calls?.find((t) => t.status === 'running')?.tool_name ?? null
@@ -157,10 +159,6 @@ export default function ChatScreen() {
     if (!text || sending || pollId) return;
     setInput('');
     appendUserMessage(text, false);
-    setMessages((prev) => [
-      ...prev,
-      { id: makeId(), role: 'agent', content: '', loading: true },
-    ]);
     try {
       const res = await sendMessage(text);
       setPollId(res.id);
@@ -226,12 +224,7 @@ export default function ChatScreen() {
         </View>
       </View>
 
-      {bannerVisible ? (
-        <View style={styles.banner} testID="offline-banner">
-          <Ionicons name="cloud-offline-outline" size={16} color={colours.stateWarning} />
-          <Text style={styles.bannerText}>Desktop offline — messages will send when reconnected.</Text>
-        </View>
-      ) : null}
+      {bannerVisible ? <OfflineBanner /> : null}
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -283,7 +276,7 @@ export default function ChatScreen() {
         )}
 
         <View style={styles.inputZone}>
-          {sending && runningTool ? (
+          {agentBusy ? (
             <View style={styles.typingZone}>
               <LoadingBubble toolName={runningTool} />
             </View>
