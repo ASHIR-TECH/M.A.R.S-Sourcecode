@@ -1,12 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
-import * as AuthSession from 'expo-auth-session';
+import { useCallback, useState } from 'react';
+import { Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  authConfig,
-  isAppleConfigured,
-  isGoogleConfigured,
-} from '@/constants/auth';
+import { authConfig, isGoogleConfigured } from '@/constants/auth';
 import type { OAuthProvider } from '@/api/types';
 
 interface UseOAuthResult {
@@ -14,22 +10,17 @@ interface UseOAuthResult {
   error: string | null;
   /** Starts the Google OAuth flow and exchanges the id_token with the desktop. */
   beginGoogle: () => Promise<boolean>;
-  /** Starts the Apple Sign-In flow and exchanges the id_token with the desktop. */
+  /** Starts native Sign in with Apple and exchanges the id_token with the desktop. */
   beginApple: () => Promise<boolean>;
   clearError: () => void;
 }
 
-const APPLE_DISCOVERY_URL = 'https://appleid.apple.com';
-
-function makeNonce(length = 24): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
-
 /**
- * OAuth 2.0 sign-in (Google + Apple) driven by Expo Auth Session.
+ * OAuth 2.0 sign-in (Google + Apple).
  *
- * The identity token returned by the provider is sent to the desktop REST API
+ * Google runs the expo-auth-session web flow and returns an id_token. Apple uses
+ * the native `expo-apple-authentication` module, which hands the identity token
+ * straight back (iOS only). Either way the token is sent to the desktop REST API
  * (POST /api/v1/auth/oauth), which replies with the ADTP API token. Only that
  * token is persisted — provider tokens are never stored on the device.
  */
@@ -45,21 +36,6 @@ export function useOAuth(): UseOAuthResult {
     androidClientId: authConfig.google.androidClientId || undefined,
   });
 
-  // Apple — Apple dropped the built-in provider from expo-auth-session v7, so
-  // the web authorization request is built against Apple's discovery document.
-  const appleDiscovery = AuthSession.useAutoDiscovery(APPLE_DISCOVERY_URL);
-  const appleNonce = useMemo(() => makeNonce(), []);
-  const [appleRequest, appleResponse, applePrompt] = AuthSession.useAuthRequest(
-    {
-      clientId: authConfig.apple.clientId,
-      redirectUri: authConfig.apple.redirectUri,
-      scopes: ['name', 'email'],
-      responseType: 'id_token',
-      extraParams: { nonce: appleNonce },
-    },
-    appleDiscovery
-  );
-
   const complete = useCallback(
     async (provider: OAuthProvider, idToken: string) => {
       try {
@@ -73,59 +49,75 @@ export function useOAuth(): UseOAuthResult {
     [exchangeOAuth]
   );
 
-  const run = useCallback(
-    async (provider: OAuthProvider, configured: boolean, prompt: () => Promise<unknown>) => {
-      if (!configured) {
-        setError(
-          `${provider === 'google' ? 'Google' : 'Apple'} Sign-In is not configured on this build yet.`
-        );
+  const beginGoogle = useCallback(async () => {
+    if (!isGoogleConfigured) {
+      setError('Google Sign-In is not configured on this build yet.');
+      return false;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const result = (await googlePrompt()) as { type?: string; params?: Record<string, string> } | null;
+      if (!result || result.type !== 'success') {
+        if (result?.type === 'cancel') {
+          setError('Sign-in was cancelled.');
+        } else {
+          setError('Sign-in failed. Could not reach your desktop — check the API URL.');
+        }
         return false;
       }
-      setBusy(true);
-      setError(null);
-      try {
-        const result = (await prompt()) as { type?: string; params?: Record<string, string> } | null;
-        if (!result || result.type !== 'success') {
-          if (result?.type === 'cancel') {
-            setError('Sign-in was cancelled.');
-          } else {
-            setError('Sign-in failed. Could not reach your desktop — check the API URL.');
-          }
-          return false;
-        }
-        const idToken = result.params?.id_token;
-        if (!idToken) {
-          setError('The sign-in did not return an identity token.');
-          return false;
-        }
-        return await complete(provider, idToken);
-      } catch (e) {
+      const idToken = result.params?.id_token;
+      if (!idToken) {
+        setError('The sign-in did not return an identity token.');
+        return false;
+      }
+      return await complete('google', idToken);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Sign-in failed.');
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [complete, googlePrompt]);
+
+  const beginApple = useCallback(async () => {
+    if (Platform.OS !== 'ios') {
+      setError('Sign in with Apple is only available on iPhone.');
+      return false;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const AppleAuthentication = await import('expo-apple-authentication');
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      const idToken = credential.identityToken;
+      if (!idToken) {
+        setError('Apple did not return an identity token.');
+        return false;
+      }
+      return await complete('apple', idToken);
+    } catch (e) {
+      if ((e as { code?: unknown }).code === 'ERR_REQUEST_CANCELED') {
+        setError('Sign-in was cancelled.');
+      } else {
         setError(e instanceof Error ? e.message : 'Sign-in failed.');
-        return false;
-      } finally {
-        setBusy(false);
       }
-    },
-    [complete]
-  );
-
-  const beginGoogle = useCallback(
-    () => run('google', isGoogleConfigured, () => googlePrompt()),
-    [run, googlePrompt]
-  );
-
-  const beginApple = useCallback(
-    () => run('apple', isAppleConfigured, () => applePrompt()),
-    [run, applePrompt]
-  );
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [complete]);
 
   const clearError = useCallback(() => setError(null), []);
 
-  // Keep the hooks "used" so lint/TS stays happy and requests are configured.
+  // Keep the hook "used" so lint/TS stays happy and the request is configured.
   void googleRequest;
   void googleResponse;
-  void appleRequest;
-  void appleResponse;
 
   return { busy, error, beginGoogle, beginApple, clearError };
 }
