@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SplashScreen } from '@/components/SplashScreen';
 import { fontAssets } from '@/constants/fonts';
 import { colours, radii, spacing } from '@/constants/colours';
@@ -131,7 +131,7 @@ function SplashGate({ children }: { children: React.ReactNode }) {
       0,
       { duration: SPLASH_FADE_MS, easing: Easing.in(Easing.ease) },
       (finished) => {
-        if (finished) setGone(true);
+        if (finished) runOnJS(setGone)(true);
       }
     );
   }, [opacity]);

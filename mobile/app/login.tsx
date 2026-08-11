@@ -13,10 +13,10 @@ import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GradientText } from '@/components/GradientText';
+import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from 'expo-apple-authentication';
 import { colours, fontSizes, radii, spacing, touchTarget } from '@/constants/colours';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOAuth } from '@/hooks/useOAuth';
-import { isAppleConfigured } from '@/constants/auth';
 
 const VERSION = '1.0.0';
 
@@ -117,24 +117,14 @@ export default function LoginScreen() {
                 {busy ? <ActivityIndicator color={colours.black} size="small" /> : null}
               </Pressable>
 
-              {Platform.OS === 'ios' && isAppleConfigured ? (
-                <Pressable
-                  onPress={beginApple}
-                  disabled={working}
-                  style={({ pressed }) => [
-                    styles.oauthButton,
-                    styles.appleButton,
-                    working && styles.disabled,
-                    pressed && styles.pressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Sign in with Apple"
-                >
-                  <Ionicons name="logo-apple" size={20} color={colours.white} />
-                  <Text style={styles.appleText}>
-                    {busy ? 'Signing in…' : 'Sign in with Apple'}
-                  </Text>
-                </Pressable>
+              {Platform.OS === 'ios' ? (
+                <AppleAuthenticationButton
+                  buttonType={AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={8}
+                  style={styles.appleButton}
+                  onPress={() => void beginApple()}
+                />
               ) : null}
             </>
           )}
@@ -216,7 +206,8 @@ const styles = StyleSheet.create({
     backgroundColor: colours.white,
   },
   appleButton: {
-    backgroundColor: colours.black,
+    height: 52,
+    alignSelf: 'stretch',
   },
   googleLogo: {
     width: 20,
@@ -224,12 +215,6 @@ const styles = StyleSheet.create({
   },
   googleText: {
     color: colours.black,
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'Offside',
-  },
-  appleText: {
-    color: colours.white,
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'Offside',
