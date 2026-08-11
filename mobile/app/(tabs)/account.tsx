@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,7 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBiometric } from '@/hooks/useBiometric';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOAuth } from '@/hooks/useOAuth';
-import { isAppleConfigured, isGoogleConfigured } from '@/constants/auth';
+import { isGoogleConfigured } from '@/constants/auth';
 
 const ASHIR_URL = 'https://ashir.world';
 const VERSION = '1.0.0';
@@ -74,14 +75,16 @@ export default function AccountScreen() {
     router.replace('/login');
   }, [signOut, router]);
 
-  const providerConfigured = isGoogleConfigured || isAppleConfigured;
+  const providerConfigured = isGoogleConfigured || Platform.OS === 'ios';
   const updateToken = useCallback(async () => {
-    if (isGoogleConfigured) {
+    if (profile?.provider === 'apple' && Platform.OS === 'ios') {
+      await beginApple();
+    } else if (isGoogleConfigured) {
       await beginGoogle();
-    } else if (isAppleConfigured) {
+    } else if (Platform.OS === 'ios') {
       await beginApple();
     }
-  }, [isGoogleConfigured, isAppleConfigured, beginGoogle, beginApple]);
+  }, [profile?.provider, isGoogleConfigured, beginGoogle, beginApple]);
 
   const initial = (profile?.display_name ?? '?').trim().charAt(0).toUpperCase() || '?';
   const providerLabel = profile?.provider === 'apple' ? 'Apple' : 'Google';
