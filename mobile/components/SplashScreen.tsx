@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -44,7 +45,7 @@ export function SplashScreen({ onReady }: { onReady: () => void }) {
     lineProgress.value = withDelay(
       LINE_DELAY_MS,
       withTiming(1, { duration: LINE_FILL_MS, easing: Easing.out(Easing.ease) }, () => {
-        onReady();
+        runOnJS(onReady)();
       })
     );
     return () => {
