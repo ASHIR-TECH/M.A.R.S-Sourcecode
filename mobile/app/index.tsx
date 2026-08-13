@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SignIn } from '@/components/SignIn';
 import { brandColours } from '@/constants/brand';
 
@@ -23,21 +24,24 @@ export default function IndexScreen() {
   }
 
   return (
-    <View style={styles.screen} testID="splash-screen">
+    <LinearGradient
+      colors={brandColours.cream}
+      style={styles.screen}
+      testID="splash-screen"
+    >
       <StatusBar style="dark" />
       <Image
         source={require('@/assets/splash.png')}
         style={styles.image}
         resizeMode="contain"
       />
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: brandColours.cream,
     alignItems: 'center',
     justifyContent: 'center',
   },
