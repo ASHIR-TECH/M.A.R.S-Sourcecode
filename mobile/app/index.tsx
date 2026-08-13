@@ -1,23 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { SignIn } from '@/components/SignIn';
 import { brandColours } from '@/constants/brand';
 
 const SPLASH_DURATION_MS = 2200;
 
 /**
- * Splash screen: the MARS splash PNG, then advances to the login page.
+ * App entry: shows the splash PNG, then swaps to the login page in place —
+ * so a reload always starts at the splash.
  */
 export default function IndexScreen() {
-  const router = useRouter();
+  const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace('/sign-in');
-    }, SPLASH_DURATION_MS);
+    const timer = setTimeout(() => setSplashDone(true), SPLASH_DURATION_MS);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, []);
+
+  if (splashDone) {
+    return <SignIn />;
+  }
 
   return (
     <View style={styles.screen} testID="splash-screen">
