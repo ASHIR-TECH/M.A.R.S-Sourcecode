@@ -6,34 +6,25 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#08080F",
+    "backgroundColor": "#EFEDE5",
     "scheme": "mars",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#08080F"
+      "backgroundColor": "#EFEDE5"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "world.ashir.mars",
-      "infoPlist": {
-        "NSFaceIDUsageDescription": "Mars uses Face ID or Touch ID to unlock the app and protect your API token."
-      }
+      "bundleIdentifier": "world.ashir.mars"
     },
     "android": {
       "package": "world.ashir.mars",
       "adaptiveIcon": {
-        "backgroundColor": "#0F0E47",
+        "backgroundColor": "#EFEDE5",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": [
-        "USE_BIOMETRIC",
-        "POST_NOTIFICATIONS",
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
-      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -41,28 +32,19 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/splash.png",
+          "imageWidth": 240,
           "resizeMode": "contain",
-          "backgroundColor": "#08080F",
+          "backgroundColor": "#EFEDE5",
           "dark": {
-            "image": "./assets/splash-icon.png",
-            "backgroundColor": "#08080F"
+            "image": "./assets/splash.png",
+            "backgroundColor": "#EFEDE5"
           }
         }
       ],
-      [
-        "expo-local-authentication",
-        {
-          "faceIDPermission": "Mars uses Face ID or Touch ID to unlock the app and protect your API token."
-        }
-      ],
-      "expo-notifications",
       "expo-font"
     ],
     "experiments": {
