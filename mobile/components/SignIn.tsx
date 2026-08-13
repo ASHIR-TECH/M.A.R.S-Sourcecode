@@ -62,7 +62,6 @@ function AnimatedButton({ delay, children }: { delay: number; children: React.Re
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: brandColours.cream,
     paddingHorizontal: 32,
   },
   buttons: {
