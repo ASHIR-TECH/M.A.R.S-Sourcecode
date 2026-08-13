@@ -1,14 +1,15 @@
 import React from 'react';
 import { act, render } from '@testing-library/react-native';
 import IndexScreen from '@/app/index';
-import { brandColours } from '@/constants/brand';
 
 describe('IndexScreen (splash -> login)', () => {
-  it('renders the splash on the cream background first', () => {
+  it('renders the splash on the cream gradient first', () => {
     const { getByTestId, queryByTestId } = render(<IndexScreen />);
-    expect(getByTestId('splash-screen').props.style).toEqual(
-      expect.objectContaining({ backgroundColor: brandColours.cream })
-    );
+    expect(getByTestId('splash-screen').props.colors).toEqual([
+      0xfff5f3f1,
+      0xfff1f0ea,
+      0xffeceae1,
+    ]);
     expect(queryByTestId('sign-in-screen')).toBeNull();
   });
 
