@@ -1,14 +1,15 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { SignIn } from '@/components/SignIn';
-import { brandColours } from '@/constants/brand';
 
 describe('SignIn', () => {
-  it('renders on the splash cream background', () => {
+  it('renders on the matching cream gradient', () => {
     const { getByTestId } = render(<SignIn />);
-    expect(getByTestId('sign-in-screen').props.style).toEqual(
-      expect.objectContaining({ backgroundColor: brandColours.cream })
-    );
+    expect(getByTestId('sign-in-screen').props.colors).toEqual([
+      0xfff5f3f1,
+      0xfff1f0ea,
+      0xffeceae1,
+    ]);
   });
 
   it('shows Google and Apple buttons only', () => {
