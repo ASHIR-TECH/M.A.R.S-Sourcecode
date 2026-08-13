@@ -10,6 +10,8 @@ export const brandColours = {
   bg: '#08080F',
   /** Logo ink colour (from the SVG fill) */
   ink: '#4A4636',
-  /** Splash / light background used by the provided splash PNG */
-  cream: '#EFEDE5',
+  /** Cream gradient (top → bottom) matching the splash PNG background */
+  cream: ['#F5F3F1', '#F1F0EA', '#ECEAE1'] as const,
+  /** Solid cream for native splash / edges (mid gradient stop) */
+  creamSolid: '#F1F0EA',
 };
