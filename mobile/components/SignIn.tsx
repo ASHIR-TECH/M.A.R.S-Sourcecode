@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { GoogleIcon, AppleIcon } from '@/components/AuthIcons';
 import { brandColours } from '@/constants/brand';
@@ -14,7 +15,11 @@ const STAGGER_MS = 140;
  */
 export function SignIn() {
   return (
-    <View style={styles.screen} testID="sign-in-screen">
+    <LinearGradient
+      colors={brandColours.cream}
+      style={styles.screen}
+      testID="sign-in-screen"
+    >
       <StatusBar style="dark" />
       <View style={styles.buttons}>
         <AnimatedButton delay={0}>
@@ -26,7 +31,7 @@ export function SignIn() {
           <Text style={styles.buttonText}>Sign in with Apple</Text>
         </AnimatedButton>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
