@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { act, render } from '@testing-library/react-native';
 import IndexScreen from '@/app/index';
 import { brandColours } from '@/constants/brand';
 
@@ -17,7 +17,9 @@ describe('IndexScreen (splash -> login)', () => {
     const { queryByTestId, getByTestId } = render(<IndexScreen />);
     expect(queryByTestId('sign-in-screen')).toBeNull();
 
-    jest.advanceTimersByTime(2300);
+    act(() => {
+      jest.advanceTimersByTime(2300);
+    });
     expect(getByTestId('sign-in-screen')).toBeTruthy();
     expect(queryByTestId('splash-screen')).toBeNull();
 
