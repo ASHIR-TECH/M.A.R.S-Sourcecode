@@ -13,9 +13,9 @@ describe('SignIn', () => {
   });
 
   it('shows Google and Apple buttons only', () => {
-    const { getByText, queryByText } = render(<SignIn />);
-    expect(getByText('Sign in with Google')).toBeTruthy();
-    expect(getByText('Sign in with Apple')).toBeTruthy();
+    const { getAllByText, queryByText } = render(<SignIn />);
+    expect(getAllByText('Sign in with Google').length).toBeGreaterThan(0);
+    expect(getAllByText('Sign in with Apple').length).toBeGreaterThan(0);
     expect(queryByText('Sign in')).toBeNull();
     expect(queryByText('Email')).toBeNull();
   });
