@@ -3,13 +3,10 @@ import { act, render } from '@testing-library/react-native';
 import IndexScreen from '@/app/index';
 
 describe('IndexScreen (splash -> login)', () => {
-  it('renders the splash on the cream gradient first', () => {
+  it('renders the splash over the orb background first', () => {
     const { getByTestId, queryByTestId } = render(<IndexScreen />);
-    expect(getByTestId('splash-screen').props.colors).toEqual([
-      0xfff5f3f1,
-      0xfff1f0ea,
-      0xffeceae1,
-    ]);
+    const splash = getByTestId('splash-screen');
+    expect(splash.props.colors).toBeUndefined();
     expect(queryByTestId('sign-in-screen')).toBeNull();
   });
 

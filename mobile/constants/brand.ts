@@ -8,6 +8,8 @@ export const logo = '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height
 export const brandColours = {
   /** Dark app background */
   bg: '#08080F',
+  /** Orb scene base colour (background behind the animated orb) */
+  orbBg: '#0d0400',
   /** Logo ink colour (from the SVG fill) */
   ink: '#4A4636',
   /** Cream gradient (top → bottom) matching the splash PNG background */

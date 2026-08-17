@@ -3,19 +3,17 @@ import { render } from '@testing-library/react-native';
 import { SignIn } from '@/components/SignIn';
 
 describe('SignIn', () => {
-  it('renders on the matching cream gradient', () => {
+  it('renders over the orb background (no cream gradient)', () => {
     const { getByTestId } = render(<SignIn />);
-    expect(getByTestId('sign-in-screen').props.colors).toEqual([
-      0xfff5f3f1,
-      0xfff1f0ea,
-      0xffeceae1,
-    ]);
+    const screen = getByTestId('sign-in-screen');
+    expect(screen.props.colors).toBeUndefined();
+    expect(screen.props.style).toEqual({ flex: 1, paddingHorizontal: 32 });
   });
 
   it('shows Google and Apple buttons only', () => {
-    const { getByText, queryByText } = render(<SignIn />);
-    expect(getByText('Sign in with Google')).toBeTruthy();
-    expect(getByText('Sign in with Apple')).toBeTruthy();
+    const { getAllByText, queryByText } = render(<SignIn />);
+    expect(getAllByText('Sign in with Google').length).toBeGreaterThan(0);
+    expect(getAllByText('Sign in with Apple').length).toBeGreaterThan(0);
     expect(queryByText('Sign in')).toBeNull();
     expect(queryByText('Email')).toBeNull();
   });
