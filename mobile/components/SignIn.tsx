@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { GoogleIcon, AppleIcon } from '@/components/AuthIcons';
 import { brandColours } from '@/constants/brand';
@@ -28,12 +27,8 @@ export function SignIn() {
   };
 
   return (
-    <LinearGradient
-      colors={brandColours.cream}
-      style={styles.screen}
-      testID="sign-in-screen"
-    >
-      <StatusBar style="dark" />
+    <View style={styles.screen} testID="sign-in-screen">
+      <StatusBar style="light" />
       <View style={styles.buttons}>
         <AnimatedButton delay={0}>
           <ExpandableButton
@@ -68,7 +63,7 @@ export function SignIn() {
           Sign in with Apple
         </Text>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
