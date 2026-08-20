@@ -6,12 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#F1F0EA",
+    "backgroundColor": "#1b0d00",
     "scheme": "mars",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F1F0EA"
+      "backgroundColor": "#1b0d00"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
     "android": {
       "package": "world.ashir.mars",
       "adaptiveIcon": {
-        "backgroundColor": "#F1F0EA",
+        "backgroundColor": "#1b0d00",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -38,10 +38,10 @@
           "image": "./assets/splash.png",
           "imageWidth": 240,
           "resizeMode": "contain",
-          "backgroundColor": "#F1F0EA",
+          "backgroundColor": "#1b0d00",
           "dark": {
             "image": "./assets/splash.png",
-            "backgroundColor": "#F1F0EA"
+            "backgroundColor": "#1b0d00"
           }
         }
       ],
