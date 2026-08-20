@@ -1,13 +1,37 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { BrandLogo } from '@/components/BrandLogo';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSessions, getAgentStatus, type Session, type AgentStatus } from '@/api/client';
 import { colors, FONTS } from '@/constants/brand';
 
 export default function HomeScreen() {
+  const { displayName } = useAuth();
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
+
+  const load = useCallback(async () => {
+    const [sessRes, agentRes] = await Promise.all([getSessions(), getAgentStatus()]);
+    if (sessRes.data) setSessions(sessRes.data);
+    if (agentRes.data) setAgentStatus(agentRes.data);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const initials = (displayName || 'OP')
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
+
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <BrandLogo width={56} color={colors.text} mirror />
@@ -16,7 +40,7 @@ export default function HomeScreen() {
             <Text style={styles.headerSub}>SECURE CONNECTION ACTIVE</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>OP</Text>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
         </View>
 
@@ -26,22 +50,51 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.sectionHeader}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>### CONNECTED DEVICES</Text>
-        </View>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No devices connected</Text>
+          {sessions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No devices connected</Text>
+            </View>
+          ) : (
+            sessions.map((s) => (
+              <View key={s.peer_id} style={styles.deviceCard}>
+                <View style={styles.deviceDot} />
+                <View style={styles.deviceInfo}>
+                  <Text style={styles.deviceName}>{s.peer_name || s.peer_id.slice(0, 12)}</Text>
+                  <Text style={styles.deviceMeta}>
+                    {s.nat_type} · {s.connection_path}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
-        <View style={{ height: 24 }} />
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>### RECENT CHATS</Text>
-        </View>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No recent activity</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>### AI AGENT</Text>
+          <View style={styles.agentCard}>
+            <View style={styles.agentDot} />
+            <View style={styles.agentInfo}>
+              <Text style={styles.agentLabel}>
+                {agentStatus?.status?.toUpperCase() || 'OFFLINE'}
+              </Text>
+              <Text style={styles.agentMeta}>
+                {agentStatus ? `${agentStatus.provider} · ${agentStatus.model}` : 'Not connected'}
+              </Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
+
+      <View style={styles.bottomAnchor}>
+        <TouchableOpacity style={styles.navBtn} onPress={() => {}}>
+          <Text style={styles.navBtnIcon}>+</Text>
+        </TouchableOpacity>
+        <View style={styles.homeIndicator}>
+          <View style={styles.indicatorBar} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -115,10 +168,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     opacity: 0.5,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  section: {
     paddingHorizontal: 24,
     marginBottom: 12,
   },
@@ -128,9 +178,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     opacity: 0.5,
+    marginBottom: 12,
   },
   emptyState: {
-    paddingHorizontal: 24,
     paddingVertical: 32,
     alignItems: 'center',
   },
@@ -139,5 +189,105 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text,
     opacity: 0.35,
+  },
+  deviceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    gap: 12,
+    marginBottom: 8,
+  },
+  deviceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4ade80',
+  },
+  deviceInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  deviceName: {
+    fontFamily: FONTS.jetbrains,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  deviceMeta: {
+    fontFamily: FONTS.geist,
+    fontSize: 11,
+    color: colors.text,
+    opacity: 0.5,
+  },
+  agentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    gap: 12,
+  },
+  agentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent,
+  },
+  agentInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  agentLabel: {
+    fontFamily: FONTS.jetbrains,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  agentMeta: {
+    fontFamily: FONTS.geist,
+    fontSize: 11,
+    color: colors.text,
+    opacity: 0.5,
+  },
+  bottomAnchor: {
+    alignItems: 'center',
+  },
+  navBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: colors.navBtn,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.navBtn,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  navBtnIcon: {
+    fontFamily: FONTS.jetbrains,
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.bg,
+  },
+  homeIndicator: {
+    height: 25,
+    paddingTop: 12,
+    paddingBottom: 8,
+    alignItems: 'center',
+  },
+  indicatorBar: {
+    width: 139,
+    height: 5,
+    borderRadius: 100,
+    backgroundColor: colors.text,
+    opacity: 0.2,
   },
 });
