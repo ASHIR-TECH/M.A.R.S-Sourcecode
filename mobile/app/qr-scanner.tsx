@@ -10,30 +10,47 @@ export default function QRScannerScreen() {
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
-      <View style={styles.overlay}>
-        <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()}>
-          <Text style={styles.closeText}>X</Text>
-        </TouchableOpacity>
 
-        <View style={styles.center}>
-          <View style={styles.scanFrame}>
-            <View style={[styles.corner, styles.cornerTL]} />
-            <View style={[styles.corner, styles.cornerTR]} />
-            <View style={[styles.corner, styles.cornerBL]} />
-            <View style={[styles.corner, styles.cornerBR]} />
-          </View>
-          <Text style={styles.instruction}>Scan QR code to pair device</Text>
+      {/* Top dimmed area — status bar + nav */}
+      <View style={styles.topDimmed}>
+        <View style={styles.statusBar}>
+          <Text style={styles.statusTime}>9:41</Text>
         </View>
+        <View style={styles.topNav}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.backText}>{'< Back'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.navTitle}>QR SCANNER</Text>
+          <View style={{ width: 50 }} />
+        </View>
+      </View>
 
-        <View style={styles.bottom}>
-          <Text style={styles.hint}>Align the QR code within the frame</Text>
+      {/* Scanner body */}
+      <View style={styles.scannerBody}>
+        <View style={styles.scanFrame}>
+          <View style={[styles.corner, styles.cornerTL]} />
+          <View style={[styles.corner, styles.cornerTR]} />
+          <View style={[styles.corner, styles.cornerBL]} />
+          <View style={[styles.corner, styles.cornerBR]} />
+        </View>
+        <Text style={styles.instruction}>Scan QR code to pair device</Text>
+        <Text style={styles.hint}>Align the code within the frame</Text>
+      </View>
+
+      {/* Bottom anchor — liquid glass vertical button */}
+      <View style={styles.bottomAnchor}>
+        <TouchableOpacity style={styles.glassBtnVertical} onPress={() => {}}>
+          <Text style={styles.glassBtnVerticalText}>FLASH</Text>
+        </TouchableOpacity>
+        <View style={styles.homeIndicator}>
+          <View style={styles.indicatorBar} />
         </View>
       </View>
     </View>
   );
 }
 
-const CORNER_SIZE = 24;
+const CORNER_SIZE = 28;
 const CORNER_WIDTH = 3;
 
 const styles = StyleSheet.create({
@@ -41,35 +58,56 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  overlay: {
-    flex: 1,
+  topDimmed: {
+    height: 112,
+    opacity: 0.3,
+  },
+  statusBar: {
+    height: 44,
+    paddingHorizontal: 24,
+    paddingTop: 14,
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 56,
-    paddingBottom: 48,
-  },
-  closeBtn: {
-    alignSelf: 'flex-end',
-    marginRight: 24,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(240, 237, 228, 0.1)',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  closeText: {
+  statusTime: {
     fontFamily: FONTS.jetbrains,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  topNav: {
+    height: 68,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  backText: {
+    fontFamily: FONTS.geist,
+    fontSize: 14,
+    color: colors.accent,
+  },
+  navTitle: {
+    fontFamily: FONTS.quanticoBold,
     fontSize: 14,
     fontWeight: '700',
     color: colors.text,
+    letterSpacing: 1,
   },
-  center: {
+  scannerBody: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 40,
+    paddingBottom: 40,
     gap: 24,
   },
   scanFrame: {
-    width: 240,
-    height: 240,
+    width: 260,
+    height: 260,
     position: 'relative',
   },
   corner: {
@@ -112,13 +150,44 @@ const styles = StyleSheet.create({
     color: colors.text,
     opacity: 0.7,
   },
-  bottom: {
-    alignItems: 'center',
-  },
   hint: {
     fontFamily: FONTS.geist,
     fontSize: 12,
     color: colors.text,
     opacity: 0.4,
+  },
+  bottomAnchor: {
+    alignItems: 'center',
+  },
+  glassBtnVertical: {
+    width: 64,
+    height: 160,
+    borderRadius: 32,
+    backgroundColor: colors.panelBg,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  glassBtnVerticalText: {
+    fontFamily: FONTS.jetbrains,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.accent,
+    letterSpacing: 1,
+  },
+  homeIndicator: {
+    height: 25,
+    paddingTop: 12,
+    paddingBottom: 8,
+    alignItems: 'center',
+  },
+  indicatorBar: {
+    width: 139,
+    height: 5,
+    borderRadius: 100,
+    backgroundColor: colors.text,
+    opacity: 0.2,
   },
 });
