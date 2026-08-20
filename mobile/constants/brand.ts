@@ -19,4 +19,6 @@ export const colors = {
   muted: '#6b5a3e',
   avatarBg: '#61513c',
   white: '#f0ede4',
+  panelBg: '#331e12',
+  navBtn: '#e87a2f',
 } as const;
