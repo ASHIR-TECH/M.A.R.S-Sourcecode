@@ -10,21 +10,27 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BrandLogo } from '@/components/BrandLogo';
+import { useAuth } from '@/contexts/AuthContext';
 import { colors, FONTS } from '@/constants/brand';
 
 const SPLASH_DURATION_MS = 2400;
 
 export default function IndexScreen() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
   const [done, setDone] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
       setDone(true);
-      router.replace({ pathname: '/(tabs)' } as any);
+      if (isAuthenticated) {
+        router.replace({ pathname: '/(tabs)' } as any);
+      } else {
+        router.replace({ pathname: '/setup' } as any);
+      }
     }, SPLASH_DURATION_MS);
     return () => clearTimeout(t);
-  }, [router]);
+  }, [router, isAuthenticated, isLoading]);
 
   if (done) return null;
 
