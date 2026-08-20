@@ -1,17 +1,66 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, FONTS } from '@/constants/brand';
 
 export default function QRScannerScreen() {
   const router = useRouter();
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
+
+  useEffect(() => {
+    if (permission && !permission.granted) {
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
+
+  const handleBarcodeScanned = ({ data }: { data: string }) => {
+    if (scanned) return;
+    setScanned(true);
+
+    // data could be a pairing URL or a peer ID
+    // For now, go back and let the caller handle it
+    router.back();
+  };
+
+  if (!permission) {
+    return (
+      <View style={styles.screen}>
+        <StatusBar style="light" />
+        <View style={styles.loadingState}>
+          <Text style={styles.loadingText}>Requesting camera access...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.screen}>
+        <StatusBar style="light" />
+        <View style={styles.permissionState}>
+          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          <Text style={styles.permissionHint}>
+            MARS needs camera access to scan QR codes for device pairing.
+          </Text>
+          <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
+            <Text style={styles.permissionBtnText}>GRANT ACCESS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
 
-      {/* Top dimmed area — status bar + nav */}
+      {/* Top dimmed area */}
       <View style={styles.topDimmed}>
         <View style={styles.statusBar}>
           <Text style={styles.statusTime}>9:41</Text>
@@ -25,22 +74,36 @@ export default function QRScannerScreen() {
         </View>
       </View>
 
-      {/* Scanner body */}
+      {/* Camera view with scan frame */}
       <View style={styles.scannerBody}>
-        <View style={styles.scanFrame}>
-          <View style={[styles.corner, styles.cornerTL]} />
-          <View style={[styles.corner, styles.cornerTR]} />
-          <View style={[styles.corner, styles.cornerBL]} />
-          <View style={[styles.corner, styles.cornerBR]} />
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr'],
+          }}
+        />
+        <View style={styles.scanOverlay}>
+          <View style={styles.scanFrame}>
+            <View style={[styles.corner, styles.cornerTL]} />
+            <View style={[styles.corner, styles.cornerTR]} />
+            <View style={[styles.corner, styles.cornerBL]} />
+            <View style={[styles.corner, styles.cornerBR]} />
+          </View>
+          <Text style={styles.instruction}>
+            {scanned ? 'Code scanned!' : 'Align QR code within the frame'}
+          </Text>
         </View>
-        <Text style={styles.instruction}>Scan QR code to pair device</Text>
-        <Text style={styles.hint}>Align the code within the frame</Text>
       </View>
 
-      {/* Bottom anchor — liquid glass vertical button */}
+      {/* Bottom anchor */}
       <View style={styles.bottomAnchor}>
-        <TouchableOpacity style={styles.glassBtnVertical} onPress={() => {}}>
-          <Text style={styles.glassBtnVerticalText}>FLASH</Text>
+        <TouchableOpacity
+          style={styles.glassBtnVertical}
+          onPress={() => setScanned(false)}
+          disabled={!scanned}
+        >
+          <Text style={styles.glassBtnVerticalText}>RETRY</Text>
         </TouchableOpacity>
         <View style={styles.homeIndicator}>
           <View style={styles.indicatorBar} />
@@ -58,9 +121,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontFamily: FONTS.geist,
+    fontSize: 14,
+    color: colors.text,
+    opacity: 0.5,
+  },
+  permissionState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    gap: 16,
+  },
+  permissionTitle: {
+    fontFamily: FONTS.quanticoBold,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  permissionHint: {
+    fontFamily: FONTS.geist,
+    fontSize: 14,
+    color: colors.text,
+    opacity: 0.5,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  permissionBtn: {
+    height: 48,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  permissionBtnText: {
+    fontFamily: FONTS.quanticoBold,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.bg,
+    letterSpacing: 1,
+  },
+  backBtn: {
+    marginTop: 8,
+  },
+  backText: {
+    fontFamily: FONTS.geist,
+    fontSize: 14,
+    color: colors.accent,
+  },
   topDimmed: {
     height: 112,
     opacity: 0.3,
+    zIndex: 10,
   },
   statusBar: {
     height: 44,
@@ -85,11 +205,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  backText: {
-    fontFamily: FONTS.geist,
-    fontSize: 14,
-    color: colors.accent,
-  },
   navTitle: {
     fontFamily: FONTS.quanticoBold,
     fontSize: 14,
@@ -99,10 +214,13 @@ const styles = StyleSheet.create({
   },
   scannerBody: {
     flex: 1,
+    position: 'relative',
+  },
+  scanOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 40,
-    paddingBottom: 40,
+    backgroundColor: 'rgba(27, 13, 0, 0.4)',
     gap: 24,
   },
   scanFrame: {
@@ -148,16 +266,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.text,
-    opacity: 0.7,
-  },
-  hint: {
-    fontFamily: FONTS.geist,
-    fontSize: 12,
-    color: colors.text,
-    opacity: 0.4,
+    opacity: 0.9,
   },
   bottomAnchor: {
     alignItems: 'center',
+    zIndex: 10,
   },
   glassBtnVertical: {
     width: 64,
