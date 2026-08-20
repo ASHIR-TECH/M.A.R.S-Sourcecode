@@ -1,68 +1,71 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { GoogleIcon, AppleIcon } from '@/components/AuthIcons';
-import { brandColours } from '@/constants/brand';
+import { BrandLogo } from '@/components/BrandLogo';
+import { colors, FONTS } from '@/constants/brand';
 
-const BUTTON_HEIGHT = 54;
-const ENTRANCE_MS = 450;
-const STAGGER_MS = 140;
-const REVEAL_MS = 1200;
-const ICON_SIZE = 22;
-const PADDING = 16;
-const GAP = 12;
-const LABEL_BUFFER = 4;
+const BUTTON_HEIGHT = 56;
+const ENTRANCE_MS = 500;
+const STAGGER_MS = 120;
 
-/**
- * Sign in / Sign up — Google + Apple only. Design mock: buttons are not wired.
- * Each button starts as a bare icon pill; pressing it expands the pill and
- * reveals the full "Sign in with …" label.
- */
 export function SignIn() {
-  const [maxLabelWidth, setMaxLabelWidth] = useState(0);
+  const router = useRouter();
 
-  const measure = (label: string) => (e: { nativeEvent: { layout: { width: number } } }) => {
-    setMaxLabelWidth((current) => Math.max(current, e.nativeEvent.layout.width));
-  };
+  const handleGoogle = () => router.replace({ pathname: '/(tabs)' } as any);
+  const handleApple = () => router.replace({ pathname: '/(tabs)' } as any);
 
   return (
     <View style={styles.screen} testID="sign-in-screen">
       <StatusBar style="light" />
+
+      <View style={styles.header}>
+        <BrandLogo width={100} color={colors.text} />
+        <View style={styles.titleGroup}>
+          <Text style={styles.title}>
+            SIGN <Text style={styles.titleAccent}>IN</Text>
+          </Text>
+          <Text style={styles.subtitle}>
+            Choose your preferred method to access the station
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.buttons}>
         <AnimatedButton delay={0}>
-          <ExpandableButton
-            label="Sign in with Google"
-            icon={<GoogleIcon size={ICON_SIZE} />}
-            labelWidth={maxLabelWidth}
-          />
+          <Pressable
+            onPress={handleGoogle}
+            style={({ pressed }) => [styles.authButton, pressed && styles.buttonPressed]}
+          >
+            <GoogleIcon size={22} />
+            <Text style={styles.authLabel}>Continue with Google</Text>
+          </Pressable>
         </AnimatedButton>
+
         <AnimatedButton delay={STAGGER_MS}>
-          <ExpandableButton
-            label="Sign in with Apple"
-            icon={<AppleIcon size={ICON_SIZE} />}
-            labelWidth={maxLabelWidth}
-          />
+          <Pressable
+            onPress={handleApple}
+            style={({ pressed }) => [styles.authButton, pressed && styles.buttonPressed]}
+          >
+            <AppleIcon size={20} />
+            <Text style={styles.authLabel}>Continue with Apple</Text>
+          </Pressable>
         </AnimatedButton>
       </View>
-      <View
-        style={styles.measurer}
-        pointerEvents="none"
-        onLayout={measure('Sign in with Google')}
-      >
-        <Text style={styles.buttonText} numberOfLines={1}>
-          Sign in with Google
-        </Text>
-      </View>
-      <View
-        style={styles.measurer}
-        pointerEvents="none"
-        onLayout={measure('Sign in with Apple')}
-      >
-        <Text style={styles.buttonText} numberOfLines={1}>
-          Sign in with Apple
-        </Text>
-      </View>
+
+      <Text style={styles.terms}>
+        By continuing, you agree to our{' '}
+        <Text style={styles.termsLink}>Terms</Text> &{' '}
+        <Text style={styles.termsLink}>Privacy Policy</Text>
+      </Text>
     </View>
   );
 }
@@ -77,121 +80,83 @@ function AnimatedButton({ delay, children }: { delay: number; children: React.Re
     );
   }, [delay, progress]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const style = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * 28 }],
+    transform: [{ translateY: (1 - progress.value) * 24 }],
   }));
 
-  return <Animated.View style={animatedStyle}>{children}</Animated.View>;
-}
-
-function ExpandableButton({
-  icon,
-  label,
-  labelWidth,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  labelWidth: number;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const labelWidthSV = useSharedValue(0);
-  const reveal = useSharedValue(0);
-
-  useEffect(() => {
-    if (labelWidth > 0) {
-      labelWidthSV.value = labelWidth;
-    }
-  }, [labelWidth, labelWidthSV]);
-
-  const widthStyle = useAnimatedStyle(() => {
-    const expandedWidth = PADDING * 2 + ICON_SIZE + GAP + labelWidthSV.value + LABEL_BUFFER;
-    return { width: BUTTON_HEIGHT + (expandedWidth - BUTTON_HEIGHT) * reveal.value };
-  });
-
-  const gapStyle = useAnimatedStyle(() => ({ width: GAP * reveal.value }));
-
-  const labelClipStyle = useAnimatedStyle(() => ({
-    width: (labelWidthSV.value + LABEL_BUFFER) * reveal.value,
-  }));
-
-  const labelFadeStyle = useAnimatedStyle(() => ({ opacity: reveal.value }));
-
-  const toggle = () => {
-    const next = !expanded;
-    setExpanded(next);
-    reveal.value = withTiming(next ? 1 : 0, {
-      duration: REVEAL_MS,
-      easing: Easing.out(Easing.cubic),
-    });
-  };
-
-  return (
-    <Animated.View style={[styles.button, widthStyle]}>
-      <Pressable
-        onPress={toggle}
-        accessibilityLabel={label}
-        style={({ pressed }) => [styles.pressable, pressed && styles.buttonPressed]}
-      >
-        {icon}
-        <Animated.View style={gapStyle} />
-        <Animated.View style={[styles.labelClip, labelClipStyle]}>
-          <Animated.Text style={[styles.buttonText, labelFadeStyle]} numberOfLines={1}>
-            {label}
-          </Animated.Text>
-        </Animated.View>
-      </Pressable>
-    </Animated.View>
-  );
+  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingHorizontal: 32,
+    justifyContent: 'space-between',
+    paddingTop: 92,
+    paddingBottom: 37,
+  },
+  header: {
+    alignItems: 'center',
+    gap: 24,
+  },
+  titleGroup: {
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 24,
+  },
+  title: {
+    fontFamily: FONTS.audiowide,
+    fontSize: 28,
+    color: colors.text,
+  },
+  titleAccent: {
+    color: colors.accent,
+  },
+  subtitle: {
+    fontFamily: FONTS.geist,
+    fontSize: 14,
+    color: colors.text,
+    opacity: 0.55,
+    textAlign: 'center',
+    lineHeight: 18.2,
   },
   buttons: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
+    paddingHorizontal: 24,
+    gap: 14,
   },
-  button: {
+  authButton: {
     height: BUTTON_HEIGHT,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 50,
+    backgroundColor: 'rgba(240, 237, 228, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  pressable: {
-    flex: 1,
+    borderColor: 'rgba(240, 237, 228, 0.18)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: PADDING,
-  },
-  labelClip: {
-    overflow: 'hidden',
-  },
-  measurer: {
-    position: 'absolute',
-    left: -10000,
-    top: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    opacity: 0,
+    gap: 12,
   },
   buttonPressed: {
-    opacity: 0.8,
+    opacity: 0.7,
   },
-  buttonText: {
-    color: brandColours.ink,
-    fontSize: 17,
+  authLabel: {
+    fontFamily: FONTS.quanticoBold,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  terms: {
+    fontFamily: FONTS.geist,
+    fontSize: 12,
+    color: colors.text,
+    opacity: 0.45,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    lineHeight: 15.6,
+  },
+  termsLink: {
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
+
+export default SignIn;
