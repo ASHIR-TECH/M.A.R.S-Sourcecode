@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { OrbBackground } from '@/components/OrbBackground';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { colors } from '@/constants/brand';
 
 SplashScreen.preventAutoHideAsync();
@@ -28,14 +29,17 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <View style={styles.root}>
-      <OrbBackground />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" options={{ animation: 'none' }} />
-        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="qr-scanner" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-      </Stack>
-    </View>
+    <AuthProvider>
+      <View style={styles.root}>
+        <OrbBackground />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" options={{ animation: 'none' }} />
+          <Stack.Screen name="setup" options={{ animation: 'fade' }} />
+          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="qr-scanner" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        </Stack>
+      </View>
+    </AuthProvider>
   );
 }
 
