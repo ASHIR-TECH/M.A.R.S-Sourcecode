@@ -1,42 +1,43 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
-import { Asset } from 'expo-asset';
+import { Image, ImageBackground, Platform, StyleSheet, View } from 'react-native';
 
-const orbHtml = require('../assets/orb-background.html');
-
-const WebViewComponent = Platform.OS === 'web' ? null : require('react-native-webview').WebView;
+const orbSource = require('../assets/orb-background.jpg');
 
 /**
- * Full-screen animated orb backdrop rendered from the bundled HTML scene.
- * Sits behind every screen in the app (mounted once in the root layout).
+ * Full-screen orb backdrop.
+ * On native: static image. On web: ImageBackground with fallback color.
  */
 export function OrbBackground() {
   if (Platform.OS === 'web') {
-    return <View style={styles.fill} testID="orb-background-web" />;
+    return (
+      <ImageBackground
+        source={orbSource}
+        style={StyleSheet.absoluteFill}
+        imageStyle={styles.image}
+        resizeMode="cover"
+      >
+        <View style={styles.fallback} />
+      </ImageBackground>
+    );
   }
 
-  const uri = Asset.fromModule(orbHtml).uri;
-
   return (
-    <WebViewComponent
-      source={{ uri }}
+    <Image
+      source={orbSource}
       style={StyleSheet.absoluteFill}
+      resizeMode="cover"
       testID="orb-background"
-      scrollEnabled={false}
-      overScrollMode="never"
-      bounces={false}
-      javaScriptEnabled
-      domStorageEnabled
-      setSupportMultipleWindows={false}
-      originWhitelist={['*']}
-      pointerEvents="none"
     />
   );
 }
 
 const styles = StyleSheet.create({
-  fill: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0d0400',
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  fallback: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
 });
