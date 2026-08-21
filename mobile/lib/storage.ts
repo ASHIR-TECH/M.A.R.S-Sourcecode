@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const KEYS = {
   TOKEN: 'adtp_token',
@@ -7,42 +7,78 @@ const KEYS = {
   EMAIL: 'adtp_email',
 } as const;
 
+const isWeb = Platform.OS === 'web';
+
+async function getItem(key: string): Promise<string | null> {
+  if (isWeb) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+  const SecureStore = require('expo-secure-store');
+  return SecureStore.getItemAsync(key);
+}
+
+async function setItem(key: string, value: string): Promise<void> {
+  if (isWeb) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+    return;
+  }
+  const SecureStore = require('expo-secure-store');
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function removeItem(key: string): Promise<void> {
+  if (isWeb) {
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+    return;
+  }
+  const SecureStore = require('expo-secure-store');
+  await SecureStore.deleteItemAsync(key);
+}
+
 export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(KEYS.TOKEN);
+  return getItem(KEYS.TOKEN);
 }
 
 export async function setToken(token: string): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.TOKEN, token);
+  await setItem(KEYS.TOKEN, token);
 }
 
 export async function getApiUrl(): Promise<string | null> {
-  return SecureStore.getItemAsync(KEYS.API_URL);
+  return getItem(KEYS.API_URL);
 }
 
 export async function setApiUrl(url: string): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.API_URL, url);
+  await setItem(KEYS.API_URL, url);
 }
 
 export async function getUserInfo(): Promise<{ displayName: string | null; email: string | null }> {
   const [displayName, email] = await Promise.all([
-    SecureStore.getItemAsync(KEYS.DISPLAY_NAME),
-    SecureStore.getItemAsync(KEYS.EMAIL),
+    getItem(KEYS.DISPLAY_NAME),
+    getItem(KEYS.EMAIL),
   ]);
   return { displayName, email };
 }
 
 export async function setUserInfo(displayName: string, email: string): Promise<void> {
   await Promise.all([
-    SecureStore.setItemAsync(KEYS.DISPLAY_NAME, displayName),
-    SecureStore.setItemAsync(KEYS.EMAIL, email),
+    setItem(KEYS.DISPLAY_NAME, displayName),
+    setItem(KEYS.EMAIL, email),
   ]);
 }
 
 export async function clearAll(): Promise<void> {
   await Promise.all([
-    SecureStore.deleteItemAsync(KEYS.TOKEN),
-    SecureStore.deleteItemAsync(KEYS.API_URL),
-    SecureStore.deleteItemAsync(KEYS.DISPLAY_NAME),
-    SecureStore.deleteItemAsync(KEYS.EMAIL),
+    removeItem(KEYS.TOKEN),
+    removeItem(KEYS.API_URL),
+    removeItem(KEYS.DISPLAY_NAME),
+    removeItem(KEYS.EMAIL),
   ]);
 }
