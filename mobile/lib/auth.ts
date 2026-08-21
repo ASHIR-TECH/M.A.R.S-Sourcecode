@@ -1,8 +1,11 @@
 import { Platform } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { appCredentials } from '@/config/credentials';
-import { setToken, setUserInfo, getApiUrl, setApiUrl } from '@/lib/storage';
+import { setToken, setUserInfo, setApiUrl } from '@/lib/storage';
+
+const AppleAuthentication = Platform.OS === 'web'
+  ? null
+  : require('expo-apple-authentication');
 
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -58,6 +61,9 @@ export async function signInWithApple(): Promise<{
   displayName: string;
   email: string;
 }> {
+  if (!AppleAuthentication) {
+    throw new Error('Apple Sign-In is not available on web');
+  }
   const credential = await AppleAuthentication.signInAsync({
     requestedScopes: [
       AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
