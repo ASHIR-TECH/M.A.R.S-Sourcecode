@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { OrbBackground } from '@/components/OrbBackground';
+import { OrbBackground } from '@/modules/orb';
 import { colors } from '@/constants/brand';
 
 SplashScreen.preventAutoHideAsync();
@@ -25,21 +25,14 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
-
   return (
-    <View style={styles.root}>
-      <OrbBackground />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" options={{ animation: 'none' }} />
-        <Stack.Screen name="connect" options={{ animation: 'fade' }} />
-      </Stack>
-    </View>
+    <OrbBackground>
+      {fontsLoaded && (
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" options={{ animation: 'none' }} />
+          <Stack.Screen name="connect" options={{ animation: 'fade' }} />
+        </Stack>
+      )}
+    </OrbBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-});
