@@ -1,35 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { SignIn } from '@/components/SignIn';
+import { useRouter } from 'expo-router';
+import { BrandLogo } from '@/components/BrandLogo';
+import { colors, FONTS } from '@/constants/brand';
 
-const SPLASH_DURATION_MS = 2200;
-
-/**
- * App entry: shows the splash PNG, then swaps to the login page in place —
- * so a reload always starts at the splash. The animated orb background is
- * mounted globally in the root layout.
- */
 export default function IndexScreen() {
-  const [splashDone, setSplashDone] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => setSplashDone(true), SPLASH_DURATION_MS);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (splashDone) {
-    return <SignIn />;
-  }
+    const t = setTimeout(() => {
+      router.replace({ pathname: '/connect' } as any);
+    }, 2400);
+    return () => clearTimeout(t);
+  }, [router]);
 
   return (
-    <View style={styles.screen} testID="splash-screen">
+    <View style={styles.screen}>
       <StatusBar style="light" />
-      <Image
-        source={require('@/assets/splash.png')}
-        style={styles.image}
-        resizeMode="contain"
-      />
+      <View style={styles.center}>
+        <BrandLogo width={140} color={colors.text} />
+        <Text style={styles.title}>MARS</Text>
+      </View>
+      <Text style={styles.by}>By ASHIR</Text>
     </View>
   );
 }
@@ -37,12 +30,26 @@ export default function IndexScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
+    paddingTop: 73,
+    paddingBottom: 44,
   },
-  image: {
-    width: '100%',
-    height: '100%',
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 24,
+  },
+  title: {
+    fontFamily: FONTS.audiowide,
+    fontSize: 40,
+    color: colors.text,
+    letterSpacing: 2,
+  },
+  by: {
+    fontFamily: FONTS.offside,
+    fontSize: 14,
+    color: colors.text,
   },
 });
