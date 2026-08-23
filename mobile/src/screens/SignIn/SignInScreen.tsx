@@ -12,12 +12,13 @@ const PRIVACY_URL = 'https://example.com/privacy';
 export function SignInScreen() {
   const { status, error, signInWithGoogle, signInWithApple } = useAuthStore();
   const isLoading = status === 'loading';
-/* This is where you change the mars SVG. kinda sucks that i dont know how to write a comment in a .tsx file. well python does thst to your head*/
+/* Line 21 is how you rotate the svg  */
+  /* This is where you change the mars SVG. kinda sucks that i dont know how to write a comment in a .tsx file. well python does thst to your head*/
   return (
     <AppBackground>
       <View style={styles.container}>
         <View style={styles.header}>
-          <MarsLogo size={130} />
+          <MarsLogo size={130} style={{ transform: [{ scaleX: -1 }] }} />
           <Text style={styles.title}>WELCOME</Text>
           <Text style={styles.subtitle}>
             First time experiencing a one Entry System?{'\n'}
