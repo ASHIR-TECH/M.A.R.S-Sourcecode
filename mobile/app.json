@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "world.ashir.mars"
+      "bundleIdentifier": "world.ashir.mars",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "world.ashir.mars",
@@ -44,7 +45,8 @@
             "backgroundColor": "#0B0704"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
