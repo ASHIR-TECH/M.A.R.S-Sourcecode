@@ -12,15 +12,17 @@ const PRIVACY_URL = 'https://example.com/privacy';
 export function SignInScreen() {
   const { status, error, signInWithGoogle, signInWithApple } = useAuthStore();
   const isLoading = status === 'loading';
-
+/* This is where you change the mars SVG. kinda sucks that i dont know how to write a comment in a .tsx file. well python does thst to your head*/
   return (
     <AppBackground>
       <View style={styles.container}>
         <View style={styles.header}>
-          <MarsLogo size={72} />
-          <Text style={styles.title}>SIGN IN</Text>
+          <MarsLogo size={130} />
+          <Text style={styles.title}>WELCOME</Text>
           <Text style={styles.subtitle}>
-            Choose your preferred method to access the station
+            First time experiencing a one Entry System?{'\n'}
+            We are not a Big Data company, we don't need to send you spam. we value your happiness.{'\n'}
+            - Mr Potato Head [CEO]
           </Text>
         </View>
 
