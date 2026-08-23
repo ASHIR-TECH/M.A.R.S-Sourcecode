@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: spacing.md,
-    marginTop: spacing.xxl,
+    marginTop: 120,
   },
   title: {
     ...typography.splashTitle,
