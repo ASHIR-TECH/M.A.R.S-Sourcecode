@@ -1,7 +1,7 @@
 {
   "name": "mars-mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "private": true,
   "scripts": {
     "start": "expo start",
@@ -31,7 +31,6 @@
     "expo-linking": "~8.0.12",
     "expo-local-authentication": "~17.0.8",
     "expo-notifications": "~0.32.17",
-    "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
