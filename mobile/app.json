@@ -6,12 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#1b0d00",
+    "backgroundColor": "#0B0704",
     "scheme": "mars",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1b0d00"
+      "image": "./assets/images/splash-bg.jpg",
+      "resizeMode": "cover",
+      "backgroundColor": "#0B0704"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
     "android": {
       "package": "world.ashir.mars",
       "adaptiveIcon": {
-        "backgroundColor": "#1b0d00",
+        "backgroundColor": "#0B0704",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -29,31 +29,24 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "backgroundColor": "#1b0d00",
+      "backgroundColor": "#0B0704",
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash.png",
-          "imageWidth": 240,
-          "resizeMode": "contain",
-          "backgroundColor": "#1b0d00",
+          "image": "./assets/images/splash-bg.jpg",
+          "resizeMode": "cover",
+          "backgroundColor": "#0B0704",
           "dark": {
-            "image": "./assets/splash.png",
-            "backgroundColor": "#1b0d00"
+            "image": "./assets/images/splash-bg.jpg",
+            "backgroundColor": "#0B0704"
           }
         }
-      ],
-      "expo-font"
+      ]
     ],
-    "experiments": {
-      "typedRoutes": true
-    },
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "de93ee69-8f27-4c55-a8d1-ab851751cfbb"
       }
