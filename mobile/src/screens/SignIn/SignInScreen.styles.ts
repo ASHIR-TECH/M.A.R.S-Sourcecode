@@ -3,6 +3,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 /** line 16 is how to push the svg upwards */
+/** Line 34 is where you change the buttons and move them upwards */
 /** Line 28 is to reduce the space bewteen welcome and the text from mr potato head */
 export const styles = StyleSheet.create({
   container: {
@@ -30,6 +31,7 @@ export const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.md,
+    marginBottom: 220,
   },
   errorText: {
     color: '#E05A47',
