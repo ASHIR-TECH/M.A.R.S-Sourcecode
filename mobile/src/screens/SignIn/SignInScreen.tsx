@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, Linking } from 'react-native';
 import { AppBackground } from '../../components/AppBackground';
-import { MarsLogo } from '../../components/icons/MarsLogo';
 import { GoogleIcon } from '../../components/icons/GoogleIcon';
 import { GitHubIcon } from '../../components/icons/GitHubIcon';
 import { OAuthButton } from '../../components/buttons/OAuthButton';
@@ -20,7 +19,6 @@ export function SignInScreen() {
     <AppBackground>
       <View style={styles.container}>
         <View style={styles.header}>
-          <MarsLogo size={130} style={{ transform: [{ scaleX: -1 }] }} />
           <Text style={styles.title}>WELCOME</Text>
           <Text style={styles.subtitle}>
             First time experiencing a one Entry System?{'\n'}
