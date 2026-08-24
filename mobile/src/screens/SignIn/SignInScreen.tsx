@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, Linking, Platform } from 'react-native';
+import { View, Text, Linking } from 'react-native';
 import { AppBackground } from '../../components/AppBackground';
 import { MarsLogo } from '../../components/icons/MarsLogo';
+import { GoogleIcon } from '../../components/icons/GoogleIcon';
+import { GitHubIcon } from '../../components/icons/GitHubIcon';
 import { OAuthButton } from '../../components/buttons/OAuthButton';
 import { useAuthStore } from '../../store/useAuthStore';
 import { styles } from './SignInScreen.styles';
@@ -10,7 +12,7 @@ const TERMS_URL = 'https://example.com/terms';
 const PRIVACY_URL = 'https://example.com/privacy';
 
 export function SignInScreen() {
-  const { status, error, signInWithGoogle, signInWithApple } = useAuthStore();
+  const { status, error, signInWithGoogle, signInWithGithub } = useAuthStore();
   const isLoading = status === 'loading';
 /* Line 21 is how you rotate the svg  */
   /* This is where you change the mars SVG. kinda sucks that i dont know how to write a comment in a .tsx file. well python does thst to your head*/
@@ -36,11 +38,10 @@ export function SignInScreen() {
           />
 
           <OAuthButton
-            label="Continue with Apple"
-            icon={<AppleIcon />}
-            onPress={signInWithApple}
+            label="Continue with GitHub"
+            icon={<GitHubIcon />}
+            onPress={signInWithGithub}
             loading={isLoading}
-            disabled={Platform.OS !== 'ios'}
           />
 
           {error && (
@@ -63,12 +64,4 @@ export function SignInScreen() {
       </View>
     </AppBackground>
   );
-}
-
-// Placeholder icon components — swap for the real brand SVGs/icon set.
-function GoogleIcon() {
-  return null;
-}
-function AppleIcon() {
-  return null;
 }
