@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { googleAuthProvider } from '../auth/googleAuthProvider';
-import { appleAuthProvider } from '../auth/appleAuthProvider';
+import { githubAuthProvider } from '../auth/githubAuthProvider';
 import { sessionStorage } from '../auth/sessionStorage';
 import { AuthCancelledError, AuthResult } from '../auth/types';
 
@@ -11,7 +11,7 @@ interface AuthState {
   session: AuthResult | null;
   error: string | null;
   signInWithGoogle: () => Promise<void>;
-  signInWithApple: () => Promise<void>;
+  signInWithGithub: () => Promise<void>;
   signOut: () => Promise<void>;
   restoreSession: () => Promise<void>;
 }
@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   signInWithGoogle: () => runSignIn(set, googleAuthProvider.signIn),
-  signInWithApple: () => runSignIn(set, appleAuthProvider.signIn),
+  signInWithGithub: () => runSignIn(set, githubAuthProvider.signIn),
 
   signOut: async () => {
     await sessionStorage.clear();
