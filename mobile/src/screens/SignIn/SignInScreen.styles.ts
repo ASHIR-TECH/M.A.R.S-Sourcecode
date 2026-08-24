@@ -3,6 +3,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 /** line 16 is how to push the svg upwards */
+/** Line 28 is to reduce the space bewteen welcome and the text from mr potato head */
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -24,7 +25,8 @@ export const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
-    marginTop: 72,
+    marginTop: -2,
+    lineHeight: 19,
   },
   actions: {
     gap: spacing.md,
