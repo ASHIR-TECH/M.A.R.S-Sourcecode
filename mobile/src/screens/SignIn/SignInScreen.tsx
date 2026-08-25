@@ -20,33 +20,36 @@ export function SignInScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>WELCOME</Text>
+        </View>
+
+        <View style={styles.centerBlock}>
           <Text style={styles.subtitle}>
             First time experiencing a one Entry System?{'\n'}
             We are not a Big Data company, we don't need to send you spam. we value your happiness.{'\n'}
             - Mr Potato Head [CEO]
           </Text>
-        </View>
 
-        <View style={styles.actions}>
-          <OAuthButton
-            label="Continue with Google"
-            icon={<GoogleIcon />}
-            onPress={signInWithGoogle}
-            loading={isLoading}
-          />
+          <View style={styles.actions}>
+            <OAuthButton
+              label="Continue with Google"
+              icon={<GoogleIcon />}
+              onPress={signInWithGoogle}
+              loading={isLoading}
+            />
 
-          <OAuthButton
-            label="Continue with GitHub"
-            icon={<GitHubIcon />}
-            onPress={signInWithGithub}
-            loading={isLoading}
-          />
+            <OAuthButton
+              label="Continue with GitHub"
+              icon={<GitHubIcon />}
+              onPress={signInWithGithub}
+              loading={isLoading}
+            />
 
-          {error && (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {error}
-            </Text>
-          )}
+            {error && (
+              <Text style={styles.errorText} accessibilityRole="alert">
+                {error}
+              </Text>
+            )}
+          </View>
         </View>
 
         <Text style={styles.footer}>
