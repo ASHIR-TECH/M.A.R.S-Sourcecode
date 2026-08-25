@@ -11,18 +11,16 @@ const TERMS_URL = 'https://example.com/terms';
 const PRIVACY_URL = 'https://example.com/privacy';
 
 export function SignInScreen() {
-  const { status, error, signInWithGoogle, signInWithGithub } = useAuthStore();
+  const { status, error, loadingProvider, signInWithGoogle, signInWithGithub } = useAuthStore();
   const isLoading = status === 'loading';
 /* Line 21 is how you rotate the svg  */
   /* This is where you change the mars SVG. kinda sucks that i dont know how to write a comment in a .tsx file. well python does thst to your head*/
   return (
     <AppBackground>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>WELCOME</Text>
-        </View>
-
         <View style={styles.centerBlock}>
+          <Text style={styles.title}>WELCOME</Text>
+
           <Text style={styles.subtitle}>
             First time experiencing a one Entry System?{'\n'}
             We are not a Big Data company, we don't need to send you spam. we value your happiness.{'\n'}
@@ -31,17 +29,17 @@ export function SignInScreen() {
 
           <View style={styles.actions}>
             <OAuthButton
-              label="Continue with Google"
-              icon={<GoogleIcon />}
-              onPress={signInWithGoogle}
-              loading={isLoading}
+            label="Continue with Google"
+            icon={<GoogleIcon />}
+            onPress={signInWithGoogle}
+            loading={loadingProvider === 'google'}
             />
 
             <OAuthButton
-              label="Continue with GitHub"
-              icon={<GitHubIcon />}
-              onPress={signInWithGithub}
-              loading={isLoading}
+            label="Continue with GitHub"
+            icon={<GitHubIcon />}
+            onPress={signInWithGithub}
+            loading={loadingProvider === 'github'}
             />
 
             {error && (
