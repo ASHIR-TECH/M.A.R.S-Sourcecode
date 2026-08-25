@@ -7,8 +7,8 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: glass.borderColor,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 14, /**this is for the height  */
+    paddingHorizontal: 85, /**this is to increase the signin button width */
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
