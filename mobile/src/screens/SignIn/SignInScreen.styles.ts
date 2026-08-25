@@ -8,29 +8,32 @@ import { typography } from '../../theme/typography';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xxl,
+    paddingTop: spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    gap: spacing.md,
-    marginTop: 15,
+    marginTop: 100, /**this is to shift the welcome sign */
   },
   title: {
     ...typography.splashTitle,
     fontSize: 28,
     color: colors.textPrimary,
   },
+  centerBlock: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   subtitle: {
     color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
-    marginTop: -2,
-    lineHeight: 19,
+    marginBottom: -100, /**this is for the space bewteen the text and logins */
+    lineHeight: 19, /**this is the text spacing  */
   },
   actions: {
-    gap: spacing.md,
+    gap: 12,
     marginTop: 215,
   },
   errorText: {
@@ -42,6 +45,7 @@ export const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 12,
     textAlign: 'center',
+    paddingBottom: spacing.lg,
   },
   link: {
     color: colors.accent,
