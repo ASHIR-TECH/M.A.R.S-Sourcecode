@@ -34,6 +34,7 @@ describe('useAuthStore.signInWithGoogle', () => {
 
     expect(result.current.status).toBe('authenticated');
     expect(result.current.session?.provider).toBe('google');
+    expect(result.current.loadingProvider).toBeNull();
   });
 
   it('resets to idle without an error when cancelled', async () => {
@@ -46,6 +47,7 @@ describe('useAuthStore.signInWithGoogle', () => {
 
     expect(result.current.status).toBe('idle');
     expect(result.current.error).toBeNull();
+    expect(result.current.loadingProvider).toBeNull();
   });
 
   it('sets an error message on genuine failure', async () => {
@@ -58,6 +60,7 @@ describe('useAuthStore.signInWithGoogle', () => {
 
     expect(result.current.status).toBe('error');
     expect(result.current.error).toBe('network down');
+    expect(result.current.loadingProvider).toBeNull();
   });
 });
 
@@ -80,6 +83,7 @@ describe('useAuthStore.signInWithGithub', () => {
 
     expect(result.current.status).toBe('authenticated');
     expect(result.current.session?.provider).toBe('github');
+    expect(result.current.loadingProvider).toBeNull();
   });
 
   it('resets to idle without an error when the user cancels', async () => {
@@ -92,6 +96,7 @@ describe('useAuthStore.signInWithGithub', () => {
 
     expect(result.current.status).toBe('idle');
     expect(result.current.error).toBeNull();
+    expect(result.current.loadingProvider).toBeNull();
   });
 
   it('surfaces a friendly message while the relay is not configured', async () => {
