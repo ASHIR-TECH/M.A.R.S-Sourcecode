@@ -1,12 +1,12 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-
+/** line 7 and 9 is where you can change the size and padding of the login buttons */
 export const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.textPrimary,
-    borderRadius: 12,
-    paddingVertical: spacing.md,
+    borderRadius: 10,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -25,6 +25,6 @@ export const styles = StyleSheet.create({
   label: {
     color: '#0B0704',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14.5,
   },
 });
