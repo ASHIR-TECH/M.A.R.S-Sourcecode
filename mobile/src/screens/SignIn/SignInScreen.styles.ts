@@ -11,14 +11,11 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxl,
   },
-  header: {
-    alignItems: 'center',
-    marginTop: 100, /**this is to shift the welcome sign */
-  },
   title: {
     ...typography.splashTitle,
     fontSize: 28,
     color: colors.textPrimary,
+    marginBottom: 24,
   },
   centerBlock: {
     flex: 1,
@@ -29,8 +26,8 @@ export const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
-    marginBottom: -100, /**this is for the space bewteen the text and logins */
-    lineHeight: 19, /**this is the text spacing  */
+    marginBottom: -150,
+    lineHeight: 19,
   },
   actions: {
     gap: 12,
