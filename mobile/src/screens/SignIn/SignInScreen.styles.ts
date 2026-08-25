@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.md,
-    marginBottom: 220,
+    marginTop: 215,
   },
   errorText: {
     color: '#E05A47',
