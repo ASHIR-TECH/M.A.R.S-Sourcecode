@@ -46,7 +46,7 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     <AppBackground>
       <View style={styles.container}>
         <View style={styles.centerContent}>
-          <MarsLogo size={120} />
+          <MarsLogo size={130} style={{ transform: [{ scaleX: -1 }] }} />
           <Text style={styles.title}>MARS</Text>
         </View>
         <Text style={styles.footer}>By ASHIR</Text>

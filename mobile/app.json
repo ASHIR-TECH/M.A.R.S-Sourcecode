@@ -15,8 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "world.ashir.mars",
-      "usesAppleSignIn": true
+      "bundleIdentifier": "world.ashir.mars"
     },
     "android": {
       "package": "world.ashir.mars",

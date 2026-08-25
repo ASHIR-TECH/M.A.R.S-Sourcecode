@@ -1,4 +1,4 @@
-export type AuthProviderName = 'google' | 'apple';
+export type AuthProviderName = 'google' | 'github';
 
 export interface AuthResult {
   idToken: string;
