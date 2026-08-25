@@ -1,15 +1,17 @@
 import { StyleSheet } from 'react-native';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-/** line 7 and 9 is where you can change the size and padding of the login buttons */
+import { glass } from '../../theme/glass';
+/** Line 25 is where to reduce the spacing bewteen the logo and the text after. im putiing comments in the wrong places again. */
 export const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.textPrimary,
-    borderRadius: 10,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 9999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: glass.borderColor,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   buttonPressed: {
     opacity: 0.85,
@@ -20,11 +22,11 @@ export const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 12,
   },
   label: {
-    color: '#0B0704',
+    color: '#F5EFE6',
     fontWeight: '600',
-    fontSize: 14.5,
+    fontSize: 14,
   },
 });
