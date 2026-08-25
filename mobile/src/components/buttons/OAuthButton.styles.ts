@@ -4,7 +4,7 @@ import { glass } from '../../theme/glass';
 export const styles = StyleSheet.create({
   button: {
     backgroundColor: 'rgba(255,255,255,0.16)',
-    borderRadius: 9999,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: glass.borderColor,
     paddingVertical: 12,
