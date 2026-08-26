@@ -6,6 +6,10 @@ WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
 
+if (__DEV__) {
+  console.log('[auth] Google redirect URI:', AuthSession.makeRedirectUri());
+}
+
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
   tokenEndpoint: 'https://oauth2.googleapis.com/token',
