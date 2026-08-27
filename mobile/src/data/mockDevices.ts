@@ -15,4 +15,18 @@ export const mockDevices: Device[] = [
     status: 'idle',
     lastSeen: '14m ago',
   },
+  {
+    id: 'DEV-034',
+    name: 'HOMELAB',
+    os: 'Ubuntu Server',
+    status: 'online',
+    lastSeen: '2m ago',
+  },
+  {
+    id: 'DEV-015',
+    name: 'ORBIT-ONE',
+    os: 'Android 14',
+    status: 'offline',
+    lastSeen: '1d ago',
+  },
 ];
