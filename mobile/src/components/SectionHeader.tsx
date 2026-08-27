@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 
 interface SectionHeaderProps {
@@ -29,7 +30,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
-    color: colors.textMuted,
+    color: colors.textPrimary,
+    fontFamily: fonts.quantico,
     fontSize: 12,
     letterSpacing: 1,
     textTransform: 'uppercase',
