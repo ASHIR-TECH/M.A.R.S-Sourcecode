@@ -1,8 +1,17 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { SignInScreen } from '../screens/SignIn/SignInScreen';
 import { TabNavigator } from './TabNavigator';
 import { useAuthStore } from '../store/useAuthStore';
+
+// Transparent scene background so AppBackground's orb shows through
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: 'transparent',
+  },
+};
 
 /**
  * Branches on auth status (Phase 2): unauthenticated users get the Sign In
@@ -14,7 +23,7 @@ export function RootNavigator() {
 
   if (status === 'authenticated') {
     return (
-      <NavigationContainer>
+      <NavigationContainer theme={navigationTheme}>
         <TabNavigator />
       </NavigationContainer>
     );
