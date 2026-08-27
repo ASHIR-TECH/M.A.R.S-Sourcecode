@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Device } from '../types/device';
 import { StatusPill } from './StatusPill';
 import { colors } from '../theme/colors';
+import { glass } from '../theme/glass';
 import { spacing } from '../theme/spacing';
 
 interface DeviceCardProps {
@@ -18,6 +20,7 @@ export function DeviceCard({ device, onPress }: DeviceCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`${device.name}, ${device.status}`}
     >
+      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
       <View style={styles.topRow}>
         <Text style={styles.id}>{device.id}</Text>
         <StatusPill status={device.status} />
@@ -34,11 +37,14 @@ export function DeviceCard({ device, onPress }: DeviceCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(37, 17, 1, 0.62)',
+    borderRadius: glass.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: glass.borderColor,
     padding: spacing.md,
     width: 160,
     gap: 4,
+    overflow: 'hidden',
   },
   topRow: {
     flexDirection: 'row',
