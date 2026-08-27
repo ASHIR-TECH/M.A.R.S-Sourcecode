@@ -1,5 +1,6 @@
 export const fonts = {
   display: 'Audiowide-Regular',
+  quantico: 'Quantico-Bold',
 } as const;
 
 export const typography = {
