@@ -1,5 +1,7 @@
 import React from 'react';
-import { ImageBackground, StyleProp, ViewStyle } from 'react-native';
+import { ImageBackground, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { glass } from '../theme/glass';
 
 interface AppBackgroundProps {
   children?: React.ReactNode;
@@ -14,6 +16,7 @@ export function AppBackground({ children, style }: AppBackgroundProps) {
       style={[{ flex: 1, width: '100%', height: '100%' }, style]}
       resizeMode="cover"
     >
+      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
       {children}
     </ImageBackground>
   );
