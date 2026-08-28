@@ -48,6 +48,33 @@ export const styles = StyleSheet.create({
   },
   avatarText: { color: colors.textPrimary, fontWeight: '700', fontSize: 12 },
   section: { gap: spacing.sm },
+  chatSection: {
+    gap: spacing.sm,
+  },
+  chatListWrap: {
+    flexDirection: 'row',
+    height: 220,
+    gap: 10,
+  },
+  chatList: {
+    flex: 1,
+  },
+  chatListContent: {
+    paddingBottom: 0,
+  },
+  scrollTrack: {
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+  },
+  scrollThumb: {
+    position: 'absolute',
+    left: 0,
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(232, 163, 77, 0.2)',
+  },
   deviceGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
