@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { DeviceStatus } from '../types/device';
-
+/** to  */
 const STATUS_CONFIG: Record<DeviceStatus, { label: string; color: string }> = {
-  online: { label: 'ONLINE', color: '#4CD964' },
-  idle: { label: 'IDLE', color: '#E8A34D' },
-  offline: { label: 'OFFLINE', color: '#8A7A68' },
+  online: { label: 'ONLINE', color: '#ffc400' },
+  idle: { label: 'IDLE', color: '#01ea89' },
+  offline: { label: 'OFFLINE', color: '#cc00eb' },
 };
 
 export function StatusPill({ status }: { status: DeviceStatus }) {
