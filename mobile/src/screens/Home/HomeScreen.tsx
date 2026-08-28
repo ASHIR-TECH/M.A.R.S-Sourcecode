@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { useChatStore } from '../../store/useChatStore';
 import { MarsLogo } from '../../components/icons/MarsLogo';
@@ -7,6 +8,7 @@ import { SearchBar } from '../../components/SearchBar';
 import { SectionHeader } from '../../components/SectionHeader';
 import { DeviceCard } from '../../components/DeviceCard';
 import { ChatPreviewRow } from '../../components/ChatPreviewRow';
+import { glass } from '../../theme/glass';
 import { Device } from '../../types/device';
 import { ChatPreview } from '../../types/chat';
 import { styles } from './HomeScreen.styles';
@@ -23,8 +25,9 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const visibleDevices = filteredDevices();
   const onlineCount = devices.filter((d) => d.status !== 'offline').length;
 /** Line 30 is where you change the SVG size */
-  return (
-<View style={styles.container}>
+return (
+    <View style={styles.container}>
+      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
       <View style={styles.header}>
 <View style={styles.headerLogo}>
           <MarsLogo size={48} />
