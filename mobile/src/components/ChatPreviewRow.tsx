@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { ChatPreview } from '../types/chat';
 import { colors } from '../theme/colors';
+import { glass } from '../theme/glass';
 import { spacing } from '../theme/spacing';
 
 interface ChatPreviewRowProps {
@@ -17,6 +19,7 @@ export function ChatPreviewRow({ chat, onPress }: ChatPreviewRowProps) {
       accessibilityRole="button"
       accessibilityLabel={`Chat with ${chat.name}`}
     >
+      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{chat.initials}</Text>
       </View>
@@ -42,10 +45,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(37, 17, 1, 0.62)',
+    borderRadius: glass.radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(247, 247, 246, 0.7)',
     padding: spacing.md,
+    height: 68,
     gap: spacing.sm,
+    overflow: 'hidden',
   },
   avatar: {
     width: 36,
