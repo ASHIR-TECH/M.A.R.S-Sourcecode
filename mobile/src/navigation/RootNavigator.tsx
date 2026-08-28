@@ -1,12 +1,17 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { AppBackground } from '../components/AppBackground';
-import { MarsLogo } from '../components/icons/MarsLogo';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { SignInScreen } from '../screens/SignIn/SignInScreen';
+import { TabNavigator } from './TabNavigator';
 import { useAuthStore } from '../store/useAuthStore';
-import { typography } from '../theme/typography';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
+
+// Transparent scene background so AppBackground's orb shows through
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: 'transparent',
+  },
+};
 
 /**
  * Branches on auth status (Phase 2): unauthenticated users get the Sign In
@@ -17,19 +22,12 @@ export function RootNavigator() {
   const status = useAuthStore((s) => s.status);
 
   if (status === 'authenticated') {
-    return <HomePlaceholder />;
+    return (
+      <NavigationContainer theme={navigationTheme}>
+        <TabNavigator />
+      </NavigationContainer>
+    );
   }
 
   return <SignInScreen />;
-}
-
-function HomePlaceholder() {
-  return (
-    <AppBackground>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md }}>
-        <MarsLogo size={120} />
-        <Text style={{ ...typography.splashTitle, color: colors.textPrimary }}>MARS</Text>
-      </View>
-    </AppBackground>
-  );
 }

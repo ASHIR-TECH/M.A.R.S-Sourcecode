@@ -51,7 +51,7 @@ export const githubAuthProvider: AuthProvider = {
     const response = await fetch(AUTH_RELAY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: result.params.code, redirectUri }),
+      body: JSON.stringify({ code: result.params.code, redirectUri, codeVerifier: request.codeVerifier }),
     });
 
     if (!response.ok) {
