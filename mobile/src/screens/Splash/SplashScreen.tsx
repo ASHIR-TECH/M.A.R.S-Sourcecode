@@ -23,6 +23,7 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
   const [fontsLoaded, fontError] = useFonts({
     'Audiowide-Regular': require('../../../assets/fonts/Audiowide-Regular.ttf'),
     'Quantico-Bold': require('../../../assets/fonts/Quantico-Bold.ttf'),
+    'Offside-Regular': require('../../../assets/fonts/Offside-Regular.ttf'),
   });
 
   useEffect(() => {
