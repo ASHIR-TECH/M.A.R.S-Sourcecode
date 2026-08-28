@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { DeviceStatus } from '../types/device';
-/** to  */
+/** Line 6 is where to change the button colors */
 const STATUS_CONFIG: Record<DeviceStatus, { label: string; color: string }> = {
   online: { label: 'ONLINE', color: '#ffc400' },
   idle: { label: 'IDLE', color: '#01ea89' },
