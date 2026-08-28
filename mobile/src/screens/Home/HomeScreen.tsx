@@ -1,5 +1,12 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { useChatStore } from '../../store/useChatStore';
@@ -9,6 +16,7 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { DeviceCard } from '../../components/DeviceCard';
 import { ChatPreviewRow } from '../../components/ChatPreviewRow';
 import { glass } from '../../theme/glass';
+import { colors } from '../../theme/colors';
 import { Device } from '../../types/device';
 import { ChatPreview } from '../../types/chat';
 import { styles } from './HomeScreen.styles';
@@ -21,6 +29,27 @@ interface HomeScreenProps {
 export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const { searchQuery, setSearchQuery, filteredDevices, devices } = useDeviceStore();
   const { chats } = useChatStore();
+
+  const [scrollY, setScrollY] = useState(0);
+  const [viewportH, setViewportH] = useState(0);
+  const [contentH, setContentH] = useState(0);
+  const [scrolling, setScrolling] = useState(false);
+  const listRef = useRef<FlatList<ChatPreview>>(null);
+  const scrollbarVisible = scrolling && contentH > viewportH && viewportH > 0;
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setScrollY(e.nativeEvent.contentOffset.y);
+    setScrolling(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setScrolling(false), 700);
+  }, []);
+
+  const thumbHeight = scrollbarVisible
+    ? Math.max(32, (viewportH / contentH) * viewportH)
+    : 0;
+  const progress = contentH > viewportH ? scrollY / (contentH - viewportH) : 0;
+  const thumbTop = scrollbarVisible ? progress * (viewportH - thumbHeight) : 0;
 
   const visibleDevices = filteredDevices();
   const onlineCount = devices.filter((d) => d.status !== 'offline').length;
@@ -56,14 +85,29 @@ return (
         </View>
       </View>
 
-      <View style={styles.section}>
+      <View style={styles.chatSection}>
         <SectionHeader title="Recent Chats" />
-        <FlatList
-          data={chats}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ChatPreviewRow chat={item} onPress={onChatPress} />}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-        />
+        <View style={styles.chatListWrap}>
+          <FlatList
+            ref={listRef}
+            data={chats}
+            keyExtractor={(item) => item.id}
+            style={styles.chatList}
+            onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
+            onContentSizeChange={(_w, h) => setContentH(h)}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={styles.chatListContent}
+            renderItem={({ item }) => <ChatPreviewRow chat={item} onPress={onChatPress} />}
+            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            showsVerticalScrollIndicator={false}
+          />
+          <View style={styles.scrollTrack} pointerEvents="none">
+            {scrollbarVisible && (
+              <View style={[styles.scrollThumb, { height: thumbHeight, top: thumbTop }]} />
+            )}
+          </View>
+        </View>
       </View>
     </View>
   );
