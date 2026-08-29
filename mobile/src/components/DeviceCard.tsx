@@ -53,18 +53,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  id: { color: colors.textMuted, fontSize: 11 },
+  id: { color: '#E9DCCB', fontSize: 11 }, /** this is for the DEV- number i presume*/
   name: {
-    color: colors.textPrimary,
+    color: '#FFFFFF', /**thiis is for the time, lie 2mins ago and 1day */
     fontFamily: fonts.offside,
     marginTop: spacing.xs,
   },
-  os: { color: colors.textMuted, fontSize: 12 },
+  os: { color: '#cd7b01', fontSize: 12 } /** this is for the operating systems */,
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: spacing.sm,
   },
-  metaLabel: { color: colors.textMuted, fontSize: 11 },
-  metaValue: { color: colors.textMuted, fontSize: 11 },
+  metaLabel: { color: '#E9DCCB', fontSize: 11 }, /**i dont know wtf this is for and i am not fucking touching the shit */
+  metaValue: { color: '#bdbdbc', fontSize: 11 },
 });
