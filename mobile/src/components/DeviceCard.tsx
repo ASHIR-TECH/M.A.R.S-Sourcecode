@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
   id: { color: '#E9DCCB', fontSize: 11 }, /** this is for the DEV- number i presume*/
   name: {
-    color: '#FFFFFF', /**thiis is for the time, lie 2mins ago and 1day */
+    color: '#FFFFFF', /**this is for the time, lie 2mins ago and 1day */
     fontFamily: fonts.offside,
     marginTop: spacing.xs,
   },
