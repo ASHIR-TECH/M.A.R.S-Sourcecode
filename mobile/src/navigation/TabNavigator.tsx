@@ -1,35 +1,32 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { HomeScreen } from '../screens/Home/HomeScreen';
+import { TAB_CONFIG } from './tabConfig';
+import { tabBarOptions } from './TabNavigator.styles';
 import { AppBackground } from '../components/AppBackground';
-import { View, Text } from 'react-native';
-import { colors } from '../theme/colors';
 
 const Tab = createBottomTabNavigator();
 
-function StubScreen({ label }: { label: string }) {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: colors.textPrimary }}>{label} — coming in a later phase</Text>
-    </View>
-  );
-}
-
+/**
+ * Phase 4 standard bottom tab bar. Fully config-driven from TAB_CONFIG so the
+ * tab bar and the GestureFAB (when that phase lands) share one canonical
+ * route graph — the tab bar is the zero-learning-curve path to every tab.
+ */
 export function TabNavigator() {
   return (
     <AppBackground>
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: { backgroundColor: 'transparent', borderTopColor: 'rgba(255,255,255,0.08)', position: 'absolute' },
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.textMuted,
-        }}
-      >
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Devices">{() => <StubScreen label="Devices" />}</Tab.Screen>
-        <Tab.Screen name="Chat">{() => <StubScreen label="Chat" />}</Tab.Screen>
-        <Tab.Screen name="Settings">{() => <StubScreen label="Settings" />}</Tab.Screen>
+      <Tab.Navigator screenOptions={tabBarOptions}>
+        {TAB_CONFIG.map(({ name, label, icon: Icon, component }) => (
+          <Tab.Screen
+            key={name}
+            name={name}
+            component={component}
+            options={{
+              tabBarLabel: label,
+              tabBarIcon: ({ color, focused }) => <Icon color={color} focused={focused} />,
+              tabBarAccessibilityLabel: label,
+            }}
+          />
+        ))}
       </Tab.Navigator>
     </AppBackground>
   );
