@@ -8,17 +8,19 @@ import { TAB_CONFIG } from './tabConfig';
 import { tabBarMetrics } from './TabNavigator.styles';
 import { colors } from '../theme/colors';
 
-const AURA = { width: 68, height: 56, top: -3, radius: 16 };
-const AURA_CORE = { width: 46, height: 38, radius: 12 };
-const AURA_OFFSET_X = -1;
+const AURA = { width: 76, height: 62, top: 7, radius: 14 };
+const AURA_CORE = { width: 52, height: 44, radius: 12 };
+// Per-tab horizontal fine-tune: Home/Chat shifted right, Devices/Settings stay put
+const TAB_OFFSET = [1, -1, -1, -2];
 const ICON_COLOR_INACTIVE = 'rgba(232,163,77,0.45)';
 const LABEL_COLOR_INACTIVE = 'rgba(255,255,255,0.5)';
 const TAB_COUNT = TAB_CONFIG.length;
 
 /**
  * Phase 4 custom bottom tab bar: same data-driven TAB_CONFIG as the default
- * bar, plus a compact amber "box" that glides horizontally behind the active
- * tab's icon. First mount snaps to the initial tab; later switches glide.
+ * bar. The bar is divided into 4 equal cells, and a rectangular amber aura
+ * encloses the active cell (soft fill + glowing outline), gliding between
+ * cells when the tab changes. First mount snaps to the initial tab.
  */
 export function AnimatedTabBar({ state, navigation, insets }: BottomTabBarProps) {
   const [barWidth, setBarWidth] = useState(0);
@@ -30,7 +32,7 @@ export function AnimatedTabBar({ state, navigation, insets }: BottomTabBarProps)
   useEffect(() => {
     if (!barWidth) return;
     // Tabs are equal-width flex children, so the center of tab i is exact.
-    const target = (barWidth / TAB_COUNT) * (state.index + 0.5) - AURA.width / 2 + AURA_OFFSET_X;
+    const target = (barWidth / TAB_COUNT) * (state.index + 0.5) - AURA.width / 2 + TAB_OFFSET[state.index];
     if (!hasAnimated.current) {
       boxLeft.value = target;
       hasAnimated.current = true;
@@ -79,15 +81,26 @@ export function AnimatedTabBar({ state, navigation, insets }: BottomTabBarProps)
       <Animated.View pointerEvents="none" style={[styles.auraShell, hideStyle, boxStyle]}>
         <Svg width={AURA.width} height={AURA.height}>
           <Defs>
-            <RadialGradient id="tabAura" cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor="#E8A34D" stopOpacity={0.38} />
-              <Stop offset="0.55" stopColor="#E8A34D" stopOpacity={0.18} />
+            <RadialGradient id="tabAura" cx="50%" cy="50%" r="70%">
+              <Stop offset="0" stopColor="#E8A34D" stopOpacity={0.22} />
+              <Stop offset="0.75" stopColor="#E8A34D" stopOpacity={0.1} />
               <Stop offset="1" stopColor="#E8A34D" stopOpacity={0} />
             </RadialGradient>
           </Defs>
           <Rect x={0} y={0} width={AURA.width} height={AURA.height} rx={AURA.radius} fill="url(#tabAura)" />
+          <Rect
+            x={0.8}
+            y={0.8}
+            width={AURA.width - 1.6}
+            height={AURA.height - 1.6}
+            rx={AURA.radius}
+            fill="none"
+            stroke="#E8A34D"
+            strokeOpacity={0.5}
+            strokeWidth={1.2}
+          />
         </Svg>
-        <BlurView intensity={26} tint="dark" style={styles.auraCore} />
+        <BlurView intensity={24} tint="dark" style={styles.auraCore} />
       </Animated.View>
       {TAB_CONFIG.map(({ name, label, icon: Icon }, index) => {
         const focused = index === state.index;
@@ -119,6 +132,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
+    flexBasis: 0,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
