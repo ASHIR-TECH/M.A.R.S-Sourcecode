@@ -18,7 +18,7 @@ export function SearchBar({ value, onChangeText, placeholder }: SearchBarProps) 
         placeholder={placeholder ?? 'Search…'}
         placeholderTextColor={colors.textMuted}
         style={styles.input}
-        accessibilityLabel="Search active systems or peers"
+        accessibilityLabel="Search active systems or peers" /**this is the wordings for the search for active systems and history */
         accessibilityRole="search"
       />
     </View>
