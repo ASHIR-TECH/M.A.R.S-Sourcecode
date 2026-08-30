@@ -11,7 +11,7 @@ import { colors } from '../theme/colors';
 const AURA = { width: 76, height: 62, top: 7, radius: 14 };
 const AURA_CORE = { width: 52, height: 44, radius: 12 };
 // Per-tab horizontal fine-tune: Home/Chat shifted right, Devices/Settings stay put
-const TAB_OFFSET = [1, -1, -1, -2];
+const TAB_OFFSET = [1, -1, -1, -2]; /**this is where you set the aura. most are already set */
 const ICON_COLOR_INACTIVE = 'rgba(232,163,77,0.45)';
 const LABEL_COLOR_INACTIVE = 'rgba(255,255,255,0.5)';
 const TAB_COUNT = TAB_CONFIG.length;
