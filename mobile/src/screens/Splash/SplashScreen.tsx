@@ -24,6 +24,7 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     'Audiowide-Regular': require('../../../assets/fonts/Audiowide-Regular.ttf'),
     'Quantico-Bold': require('../../../assets/fonts/Quantico-Bold.ttf'),
     'Offside-Regular': require('../../../assets/fonts/Offside-Regular.ttf'),
+    'Megrim-Regular': require('../../../assets/fonts/Megrim-Regular.ttf'),
   });
 
   useEffect(() => {
