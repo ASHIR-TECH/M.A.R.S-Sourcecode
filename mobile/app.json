@@ -45,6 +45,12 @@
           }
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Mars needs camera access to scan your desktop's pairing code."
+        }
+      ],
       "expo-web-browser"
     ],
     "extra": {
