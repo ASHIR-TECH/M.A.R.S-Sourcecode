@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TAB_CONFIG } from './tabConfig';
 import { tabBarOptions } from './TabNavigator.styles';
+import { AnimatedTabBar } from './AnimatedTabBar';
 import { AppBackground } from '../components/AppBackground';
 
 const Tab = createBottomTabNavigator();
@@ -14,18 +15,9 @@ const Tab = createBottomTabNavigator();
 export function TabNavigator() {
   return (
     <AppBackground>
-      <Tab.Navigator screenOptions={tabBarOptions}>
-        {TAB_CONFIG.map(({ name, label, icon: Icon, component }) => (
-          <Tab.Screen
-            key={name}
-            name={name}
-            component={component}
-            options={{
-              tabBarLabel: label,
-              tabBarIcon: ({ color, focused }) => <Icon color={color} focused={focused} />,
-              tabBarAccessibilityLabel: label,
-            }}
-          />
+      <Tab.Navigator screenOptions={tabBarOptions} tabBar={(props) => <AnimatedTabBar {...props} />}>
+        {TAB_CONFIG.map(({ name, component }) => (
+          <Tab.Screen key={name} name={name} component={component} />
         ))}
       </Tab.Navigator>
     </AppBackground>
