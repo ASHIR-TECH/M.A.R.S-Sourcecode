@@ -1,17 +1,21 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../../theme/colors';
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { QRScannerScreen } from '../QRScanner/QRScannerScreen';
 
+/**
+ * Devices placeholder until the Device Hub phase lands. The pairing scanner
+ * opens immediately — no chrome of its own yet.
+ */
 export function DevicesScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Devices — coming in a later phase</Text>
-    </View>
-  );
+  const [scannerOpen, setScannerOpen] = useState(true);
+
+  if (scannerOpen) {
+    return <QRScannerScreen onPaired={() => setScannerOpen(false)} onClose={() => setScannerOpen(false)} />;
+  }
+
+  return <View style={styles.container} />;
 }
 
 const styles = StyleSheet.create({
-  /* transparent so AppBackground's orb shows through, same as every screen */
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  text: { color: colors.textPrimary },
+  container: { flex: 1 },
 });
