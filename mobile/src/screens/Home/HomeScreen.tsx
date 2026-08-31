@@ -10,11 +10,14 @@ import {
 import { BlurView } from 'expo-blur';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { useChatStore } from '../../store/useChatStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { MarsLogo } from '../../components/icons/MarsLogo';
+import { Avatar } from '../../components/Avatar';
 import { SearchBar } from '../../components/SearchBar';
 import { SectionHeader } from '../../components/SectionHeader';
 import { DeviceCard } from '../../components/DeviceCard';
 import { ChatPreviewRow } from '../../components/ChatPreviewRow';
+import { initialsFrom } from '../Profile/initialsFrom';
 import { glass } from '../../theme/glass';
 import { colors } from '../../theme/colors';
 import { Device } from '../../types/device';
@@ -29,6 +32,7 @@ interface HomeScreenProps {
 export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const { searchQuery, setSearchQuery, filteredDevices, devices } = useDeviceStore();
   const { chats } = useChatStore();
+  const session = useAuthStore((s) => s.session);
 
   const [scrollY, setScrollY] = useState(0);
   const [viewportH, setViewportH] = useState(0);
@@ -66,7 +70,11 @@ return (
           <Text style={styles.subtitle}>Command and Control Center</Text>
         </View>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>OP</Text>
+          <Avatar
+            photoUrl={session?.photoUrl}
+            fallbackInitials={initialsFrom(session?.fullName, session?.email)}
+            size={36}
+          />
         </View>
       </View>
 
