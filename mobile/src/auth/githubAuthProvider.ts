@@ -64,9 +64,29 @@ export const githubAuthProvider: AuthProvider = {
       throw new Error('GitHub sign-in failed: no access token returned.');
     }
 
+    // Fetch the user's profile now that we hold an access token, so the UI
+    // can render name / email / avatar (Phase 7 FR-1/FR-6).
+    const profileResponse = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${payload.access_token}` },
+    });
+
+    if (!profileResponse.ok) {
+      throw new Error('GitHub sign-in failed: could not fetch profile.');
+    }
+
+    const profile = (await profileResponse.json()) as {
+      name?: string | null;
+      login?: string;
+      email?: string | null;
+      avatar_url?: string;
+    };
+
     return {
       idToken: payload.access_token,
       provider: 'github',
+      fullName: profile.name || profile.login || undefined,
+      email: profile.email ?? undefined,
+      photoUrl: profile.avatar_url,
     };
   },
 };
