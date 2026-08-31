@@ -1,3 +1,16 @@
+// SettingsNow-hosted ProfileScreen transitively imports the auth store chain,
+// whose provider modules run a module-level makeRedirectUri side effect that
+// fails under jest without an expo manifest — mock them (see SignInScreen.test).
+jest.mock('../auth/googleAuthProvider', () => ({
+  googleAuthProvider: { signIn: jest.fn() },
+}));
+jest.mock('../auth/githubAuthProvider', () => ({
+  githubAuthProvider: { signIn: jest.fn() },
+}));
+jest.mock('../auth/sessionStorage', () => ({
+  sessionStorage: { save: jest.fn(), load: jest.fn(), clear: jest.fn() },
+}));
+
 import { TAB_CONFIG } from './tabConfig';
 
 describe('TAB_CONFIG', () => {

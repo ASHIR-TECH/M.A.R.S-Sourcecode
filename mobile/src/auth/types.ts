@@ -5,6 +5,7 @@ export interface AuthResult {
   provider: AuthProviderName;
   email?: string;
   fullName?: string;
+  photoUrl?: string; // provider-supplied avatar; falls back to initials in UI
 }
 
 export interface AuthProvider {

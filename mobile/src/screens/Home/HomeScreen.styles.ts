@@ -46,7 +46,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: colors.textPrimary, fontWeight: '700', fontSize: 12 },
   section: { gap: spacing.sm },
   chatSection: {
     gap: spacing.sm,
