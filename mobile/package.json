@@ -63,7 +63,8 @@
     "jest-expo": "~54.0.17",
     "react-dom": "19.1.0",
     "react-test-renderer": "^19.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "ws": "^8.21.3"
   },
   "jest": {
     "preset": "jest-expo",
