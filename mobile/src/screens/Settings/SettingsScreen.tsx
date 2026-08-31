@@ -1,17 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../../theme/colors';
+import { ProfileScreen } from '../Profile/ProfileScreen';
 
+/**
+ * Settings tab currently hosts the Profile screen (Phase 7). The full
+ * Settings surface is Phase 10 and will reuse ProfileScreen's primitives
+ * (SettingsRow / SettingsSection).
+ */
 export function SettingsScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Settings — coming in a later phase</Text>
-    </View>
-  );
+  return <ProfileScreen />;
 }
-
-const styles = StyleSheet.create({
-  /* transparent so AppBackground's orb shows through, same as every screen */
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  text: { color: colors.textPrimary },
-});
