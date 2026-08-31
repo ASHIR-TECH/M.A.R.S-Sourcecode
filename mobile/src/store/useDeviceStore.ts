@@ -7,10 +7,11 @@ interface DeviceState {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   filteredDevices: () => Device[];
+  hydrateFromRelay: (devices: Device[]) => void;
 }
 
 export const useDeviceStore = create<DeviceState>((set, get) => ({
-  devices: mockDevices, // TODO(relay): replace with live subscription in a later phase
+  devices: mockDevices, // overwritten once hydrateFromRelay fires post-connection
   searchQuery: '',
   setSearchQuery: (q) => set({ searchQuery: q }),
   filteredDevices: () => {
@@ -21,4 +22,5 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       (d) => d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q)
     );
   },
+  hydrateFromRelay: (devices) => set({ devices }),
 }));
