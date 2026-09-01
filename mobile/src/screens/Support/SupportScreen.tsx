@@ -49,7 +49,7 @@ export function SupportScreen({ onClose }: SupportScreenProps) {
         </Pressable>
         <Text style={styles.kicker}>GET IN TOUCH</Text>
         <Text style={styles.title}>REACH THE DEV</Text>
-        <Text style={styles.subtitle}>Direct line to the people building Mars.</Text>
+        <Text style={styles.subtitle}>Connect with the person building and maintaing Mars.</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.grid}>
