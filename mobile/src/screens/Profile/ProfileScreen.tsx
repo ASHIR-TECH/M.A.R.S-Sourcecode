@@ -1,15 +1,12 @@
-import React from 'react';
-import { View, Text, ScrollView, Alert, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Avatar } from '../../components/Avatar';
 import { SettingsSection } from '../../components/SettingsSection';
 import { SettingsRow } from '../../components/SettingsRow';
+import { SupportScreen } from '../Support/SupportScreen';
 import { initialsFrom } from './initialsFrom';
 import { styles } from './ProfileScreen.styles';
-
-// Support contact points for the Help & Support popup (swap for real values).
-const SUPPORT_EMAIL = 'support@mars.io';
-const SUPPORT_PHONE = '18005550199';
 
 interface ProfileScreenProps {
   onNavigatePrivacy?: () => void;
@@ -17,6 +14,7 @@ interface ProfileScreenProps {
 
 export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
   const { session, signOut } = useAuthStore();
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -25,13 +23,9 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
     ]);
   };
 
-  const handleHelp = () => {
-    Alert.alert('Help & Support', 'How would you like to reach us?', [
-      { text: 'Email Support', onPress: () => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`) },
-      { text: 'Call Support', onPress: () => void Linking.openURL(`tel:${SUPPORT_PHONE}`) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
+  if (supportOpen) {
+    return <SupportScreen onClose={() => setSupportOpen(false)} />;
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -57,7 +51,7 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
       </SettingsSection>
 
       <SettingsSection title="Support">
-        <SettingsRow label="Help & Support" onPress={handleHelp} />
+        <SettingsRow label="Help & Support" onPress={() => setSupportOpen(true)} />
       </SettingsSection>
 
       <SettingsSection>
