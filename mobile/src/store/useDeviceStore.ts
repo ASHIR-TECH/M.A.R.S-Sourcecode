@@ -8,6 +8,7 @@ interface DeviceState {
   setSearchQuery: (q: string) => void;
   filteredDevices: () => Device[];
   hydrateFromRelay: (devices: Device[]) => void;
+  renameDevice: (id: string, updates: { name?: string; os?: string }) => void;
 }
 
 export const useDeviceStore = create<DeviceState>((set, get) => ({
@@ -23,4 +24,8 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     );
   },
   hydrateFromRelay: (devices) => set({ devices }),
+  renameDevice: (id, updates) =>
+    set((s) => ({
+      devices: s.devices.map((d) => (d.id === id ? { ...d, ...updates } : d)),
+    })),
 }));
