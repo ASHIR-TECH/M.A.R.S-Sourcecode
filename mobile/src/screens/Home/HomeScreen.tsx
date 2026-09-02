@@ -22,6 +22,7 @@ import { glass } from '../../theme/glass';
 import { colors } from '../../theme/colors';
 import { Device } from '../../types/device';
 import { ChatPreview } from '../../types/chat';
+import { HOME_DEVICE_CAP } from '../../constants';
 import { styles } from './HomeScreen.styles';
 
 interface HomeScreenProps {
@@ -55,7 +56,8 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const progress = contentH > viewportH ? scrollY / (contentH - viewportH) : 0;
   const thumbTop = scrollbarVisible ? progress * (viewportH - thumbHeight) : 0;
 
-  const visibleDevices = filteredDevices();
+  // Home only shows the top devices; anything above the cap lives in the Device Hub.
+  const visibleDevices = filteredDevices().slice(0, HOME_DEVICE_CAP);
   const onlineCount = devices.filter((d) => d.status !== 'offline').length;
 /** Line 30 is where you change the SVG size */
 return (

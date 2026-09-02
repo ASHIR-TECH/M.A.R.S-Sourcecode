@@ -1,12 +1,17 @@
-import { Device } from '../types/device';
+import { DeviceWithMetrics } from '../types/device';
 
-export const mockDevices: Device[] = [
+/** Phase 8: mock nodes carry cpu/ram/collectionId for the Device Hub while
+ * the base fields (id/name/os/status/lastSeen) keep Home working unchanged. */
+export const mockDevices: DeviceWithMetrics[] = [
   {
     id: 'DEV-091',
     name: 'CONTRACTOR',
     os: 'Kali Linux',
     status: 'online',
     lastSeen: 'Just Now',
+    cpu: 42,
+    ram: 61,
+    collectionId: 'work-servers',
   },
   {
     id: 'DEV-022',
@@ -14,6 +19,9 @@ export const mockDevices: Device[] = [
     os: 'Windows 11 Pro',
     status: 'idle',
     lastSeen: '14m ago',
+    cpu: 8,
+    ram: 34,
+    collectionId: 'work-servers',
   },
   {
     id: 'DEV-034',
@@ -21,6 +29,19 @@ export const mockDevices: Device[] = [
     os: 'Ubuntu Server',
     status: 'online',
     lastSeen: '2m ago',
+    cpu: 26,
+    ram: 48,
+    collectionId: 'home-lab',
+  },
+  {
+    id: 'DEV-041',
+    name: 'MARS-NODE-01',
+    os: 'Debian 12',
+    status: 'online',
+    lastSeen: '1m ago',
+    cpu: 57,
+    ram: 73,
+    collectionId: 'home-lab',
   },
   {
     id: 'DEV-015',
@@ -28,5 +49,18 @@ export const mockDevices: Device[] = [
     os: 'Android 14',
     status: 'offline',
     lastSeen: '1d ago',
+    cpu: 0,
+    ram: 0,
+    collectionId: 'clients',
+  },
+  {
+    id: 'DEV-012',
+    name: 'PHONE-02',
+    os: 'Android 13',
+    status: 'idle',
+    lastSeen: '7m ago',
+    cpu: 12,
+    ram: 29,
+    collectionId: 'clients',
   },
 ];
