@@ -10,7 +10,9 @@ interface ChatSessionState {
 }
 
 export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
-  messages: [],
+  messages: [
+    { id: 'ai-greet', sessionId: 'default-session', sender: 'ai', text: 'what do you want to inquire?', timestamp: new Date().toISOString(), typing: true },
+  ],
   isAwaitingResponse: false,
 
   addUserMessage: (text, sessionId) => {
@@ -36,7 +38,7 @@ export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
     set({
       messages: [
         ...get().messages,
-        { id: `ai-${Date.now()}`, sessionId, sender: 'ai', text, timestamp },
+        { id: `ai-${Date.now()}`, sessionId, sender: 'ai', text, timestamp, typing: true },
       ],
       isAwaitingResponse: false,
     });
