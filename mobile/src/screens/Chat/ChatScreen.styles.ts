@@ -8,8 +8,6 @@ export const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
     marginBottom: spacing.sm,
   },
   title: { color: colors.textPrimary, fontFamily: fonts.quantico, fontWeight: '700', fontSize: 13, letterSpacing: 1 },
