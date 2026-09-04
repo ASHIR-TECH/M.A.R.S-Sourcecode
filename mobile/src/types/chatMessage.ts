@@ -5,4 +5,6 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   status?: 'sending' | 'sent' | 'failed';
+  /** when true, the AI message is revealed letter-by-letter with a typewriter effect */
+  typing?: boolean;
 }
