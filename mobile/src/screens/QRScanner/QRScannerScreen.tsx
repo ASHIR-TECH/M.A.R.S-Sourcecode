@@ -7,6 +7,7 @@ import { usePairingStore } from '../../store/usePairingStore';
 import { qrScannerReducer, initialScanState } from './qrScannerReducer';
 import { PermissionDeniedView } from './PermissionDeniedView';
 import { styles } from './QRScannerScreen.styles';
+import * as Haptics from 'expo-haptics';
 
 interface QRScannerScreenProps {
   onPaired: () => void;
@@ -61,6 +62,7 @@ export function QRScannerScreen({ onPaired, onClose }: QRScannerScreenProps) {
 
       await setPairedDesktop(parsed);
       dispatch({ type: 'VALIDATION_SUCCEEDED' });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       onPaired();
     },
     [onPaired, setPairedDesktop]
