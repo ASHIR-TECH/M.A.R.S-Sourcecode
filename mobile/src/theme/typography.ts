@@ -2,6 +2,7 @@ export const fonts = {
   display: 'Audiowide-Regular',
   quantico: 'Quantico-Bold',
   offside: 'Offside-Regular',
+  montserrat: 'Montserrat-Regular',
 } as const;
 
 export const typography = {

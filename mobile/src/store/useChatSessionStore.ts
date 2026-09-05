@@ -1,0 +1,47 @@
+import { create } from 'zustand';
+import { ChatAttachment, ChatMessage } from '../types/chatMessage';
+
+interface ChatSessionState {
+  messages: ChatMessage[];
+  isAwaitingResponse: boolean;
+  addUserMessage: (text: string, sessionId: string, attachment?: ChatAttachment) => ChatMessage;
+  markSent: (id: string) => void;
+  addAiMessage: (sessionId: string, text: string, timestamp: string) => void;
+}
+
+export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
+  messages: [
+    { id: 'ai-greet', sessionId: 'default-session', sender: 'ai', text: 'What do you want to inquire?', timestamp: new Date().toISOString(), typing: true },
+  ],
+  isAwaitingResponse: false,
+
+  addUserMessage: (text, sessionId, attachment) => {
+    const message: ChatMessage = {
+      id: `local-${Date.now()}`,
+      sessionId,
+      sender: 'user',
+      text,
+      timestamp: new Date().toISOString(),
+      status: 'sending',
+      attachment,
+    };
+    set({ messages: [...get().messages, message], isAwaitingResponse: true });
+    return message;
+  },
+
+  markSent: (id) => {
+    set({
+      messages: get().messages.map((m) => (m.id === id ? { ...m, status: 'sent' } : m)),
+    });
+  },
+
+  addAiMessage: (sessionId, text, timestamp) => {
+    set({
+      messages: [
+        ...get().messages,
+        { id: `ai-${Date.now()}`, sessionId, sender: 'ai', text, timestamp, typing: true },
+      ],
+      isAwaitingResponse: false,
+    });
+  },
+}));

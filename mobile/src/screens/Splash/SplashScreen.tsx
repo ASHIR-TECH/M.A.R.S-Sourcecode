@@ -25,6 +25,7 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     'Quantico-Bold': require('../../../assets/fonts/Quantico-Bold.ttf'),
     'Offside-Regular': require('../../../assets/fonts/Offside-Regular.ttf'),
     'Megrim-Regular': require('../../../assets/fonts/Megrim-Regular.ttf'),
+    'Montserrat-Regular': require('../../../assets/fonts/Montserrat-Regular.ttf'),
   });
 
   useEffect(() => {

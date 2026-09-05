@@ -41,9 +41,10 @@ export function AnimatedTabBar({ state, navigation, insets }: BottomTabBarProps)
     }
   }, [state.index, barWidth, boxLeft]);
 
-  // Preserve the old Android tabBarHideOnKeyboard behavior for the custom bar
+  // Hide the bar when the keyboard opens so the chat screen can use the full
+  // bottom half (old Android tabBarHideOnKeyboard behavior, extended to iOS).
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
+    if (Platform.OS === 'web') return;
     const show = Keyboard.addListener('keyboardDidShow', () => {
       keyboardHidden.value = withTiming(1, { duration: 180 });
     });
