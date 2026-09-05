@@ -11,7 +11,7 @@ interface ChatSessionState {
 
 export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
   messages: [
-    { id: 'ai-greet', sessionId: 'default-session', sender: 'ai', text: 'what do you want to inquire?', timestamp: new Date().toISOString(), typing: true },
+    { id: 'ai-greet', sessionId: 'default-session', sender: 'ai', text: 'What do you want to inquire?', timestamp: new Date().toISOString(), typing: true },
   ],
   isAwaitingResponse: false,
 
