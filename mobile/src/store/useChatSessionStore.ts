@@ -1,10 +1,10 @@
 import { create } from 'zustand';
-import { ChatMessage } from '../types/chatMessage';
+import { ChatAttachment, ChatMessage } from '../types/chatMessage';
 
 interface ChatSessionState {
   messages: ChatMessage[];
   isAwaitingResponse: boolean;
-  addUserMessage: (text: string, sessionId: string) => ChatMessage;
+  addUserMessage: (text: string, sessionId: string, attachment?: ChatAttachment) => ChatMessage;
   markSent: (id: string) => void;
   addAiMessage: (sessionId: string, text: string, timestamp: string) => void;
 }
@@ -15,7 +15,7 @@ export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
   ],
   isAwaitingResponse: false,
 
-  addUserMessage: (text, sessionId) => {
+  addUserMessage: (text, sessionId, attachment) => {
     const message: ChatMessage = {
       id: `local-${Date.now()}`,
       sessionId,
@@ -23,6 +23,7 @@ export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
       text,
       timestamp: new Date().toISOString(),
       status: 'sending',
+      attachment,
     };
     set({ messages: [...get().messages, message], isAwaitingResponse: true });
     return message;
