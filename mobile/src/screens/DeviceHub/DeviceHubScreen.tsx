@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { AppBackground } from '../../components/AppBackground';
 import { useDeviceStore } from '../../store/useDeviceStore';
@@ -23,6 +24,27 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
   // Devices shows the full list (top 4 and everything else); Home only surfaces the top cap.
   const hubDevices = devices;
   const [editing, setEditing] = useState<DeviceWithMetrics | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Brief "Device updated" confirmation that auto-dismisses after ~2s.
+  useEffect(() => {
+    if (!toast) return;
+    toastTimer.current = setTimeout(() => setToast(null), 2000);
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, [toast]);
+
+  const handleSave = useCallback(
+    (id: string, updates: { name: string; os: string }) => {
+      renameDevice(id, updates);
+      setEditing(null);
+      setToast(`${updates.name} updated`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    },
+    [renameDevice]
+  );
 
   return (
     <AppBackground>
@@ -53,11 +75,14 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
       <EditDeviceModal
         device={editing}
         onClose={() => setEditing(null)}
-        onSave={(id, updates) => {
-          renameDevice(id, updates);
-          setEditing(null);
-        }}
+        onSave={handleSave}
       />
+
+      {toast && (
+        <View style={styles.toast} pointerEvents="none" accessibilityLiveRegion="polite">
+          <Text style={styles.toastText}>✔ {toast}</Text>
+        </View>
+      )}
     </AppBackground>
   );
 }
