@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { ChatMessage } from '../types/chatMessage';
 import { TypeWriterText } from './TypeWriterText';
+import { AttachmentCard } from './AttachmentCard';
 import { MarsLogo } from './icons/MarsLogo';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -27,11 +28,15 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
         ]}
       >
         <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
-        {!isUser && message.typing ? (
-          <TypeWriterText text={message.text} style={[styles.text, styles.textAi]} />
-        ) : (
-          <Text style={[styles.text, isUser ? styles.textOnGlass : styles.textAi]}>{message.text}</Text>
+        {message.attachment && (
+          <AttachmentCard attachment={message.attachment} size="bubble" />
         )}
+        {message.text.length > 0 &&
+          (!isUser && message.typing ? (
+            <TypeWriterText text={message.text} style={[styles.text, styles.textAi]} />
+          ) : (
+            <Text style={[styles.text, isUser ? styles.textOnGlass : styles.textAi]}>{message.text}</Text>
+          ))}
         <Text style={[styles.timestamp, isUser && styles.timestampUser]}>{time}</Text>
       </View>
     </View>
