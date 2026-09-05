@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Animated, Easing, useWindowDimensions, Platform, KeyboardAvoidingView } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Haptics from 'expo-haptics';
 import { AppBackground } from '../../components/AppBackground';
 import { useChatSessionStore } from '../../store/useChatSessionStore';
 import { useRelayConnection } from '../../relay/useRelayConnection';
@@ -79,6 +80,7 @@ export function ChatScreen() {
     const message = addUserMessage(text, SESSION_ID, attachment ?? undefined);
     const sent = send({ type: 'chat_message', sessionId: SESSION_ID, text: message.text });
     if (sent) markSent(message.id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     const prompt = draft.trim() || (attachment && attachment.name) || '';
     setDraft('');
     setAttachment(null);
