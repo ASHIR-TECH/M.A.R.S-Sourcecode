@@ -5,7 +5,9 @@ import { AppBackground } from '../../components/AppBackground';
 import { useChatSessionStore } from '../../store/useChatSessionStore';
 import { useRelayConnection } from '../../relay/useRelayConnection';
 import { ChatBubble } from '../../components/ChatBubble';
+import { AttachmentCard } from '../../components/AttachmentCard';
 import { TypingIndicator } from '../../components/TypingIndicator';
+import { ChatAttachment } from '../../types/chatMessage';
 import { styles } from './ChatScreen.styles';
 
 const SESSION_ID = 'default-session'; // multi-session support deferred
@@ -66,15 +68,15 @@ export function ChatScreen() {
   const { messages, isAwaitingResponse, addUserMessage, markSent, addAiMessage } = useChatSessionStore();
   const { send } = useRelayConnection();
   const [draft, setDraft] = useState('');
-  const [attachment, setAttachment] = useState<{ name: string; mimeType?: string; size?: number } | null>(null);
+  const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
   const listRef = useRef<FlatList>(null);
 
   const handleSend = () => {
     if (!draft.trim() && !attachment) return;
 
     // Optimistic append — the user's message renders instantly (sending → sent).
-    const text = attachment ? `${draft.trim()}\n📎 ${attachment.name}` : draft.trim();
-    const message = addUserMessage(text, SESSION_ID);
+    const text = draft.trim();
+    const message = addUserMessage(text, SESSION_ID, attachment ?? undefined);
     const sent = send({ type: 'chat_message', sessionId: SESSION_ID, text: message.text });
     if (sent) markSent(message.id);
     const prompt = draft.trim() || (attachment && attachment.name) || '';
@@ -98,7 +100,7 @@ export function ChatScreen() {
       if (!result.canceled) {
         const asset = result.assets[0];
         if (asset) {
-          setAttachment({ name: asset.name, mimeType: asset.mimeType, size: asset.size });
+          setAttachment({ name: asset.name, mimeType: asset.mimeType, size: asset.size ?? undefined, uri: asset.uri });
         }
       }
     } catch {
@@ -132,15 +134,7 @@ export function ChatScreen() {
 
         <View style={styles.inputWrap}>
           {attachment && (
-            <View style={styles.attachmentRow}>
-              <Text style={styles.attachmentIcon}>{'📎'}</Text>
-              <Text style={styles.attachmentName} numberOfLines={1}>
-                {attachment.name}
-              </Text>
-              <Pressable onPress={() => setAttachment(null)} style={styles.attachmentRemove} accessibilityLabel="Remove attachment">
-                <Text style={styles.attachmentRemoveIcon}>{'✕'}</Text>
-              </Pressable>
-            </View>
+            <AttachmentCard attachment={attachment} size="preview" onRemove={() => setAttachment(null)} />
           )}
           <View style={styles.inputBar}>
             <TextInput
@@ -151,6 +145,8 @@ export function ChatScreen() {
               style={[styles.input, Platform.OS === 'web' && ({ outlineStyle: 'none' } as object)]}
               selectionColor="rgba(232,163,77,0.35)"
               onSubmitEditing={handleSend}
+              multiline
+              blurOnSubmit={false}
             />
             <View style={styles.actions}>
               {draft.trim().length > 0 && (
