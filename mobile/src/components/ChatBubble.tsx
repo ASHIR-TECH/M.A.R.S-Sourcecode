@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { ChatMessage } from '../types/chatMessage';
 import { TypeWriterText } from './TypeWriterText';
+import { MarsLogo } from './icons/MarsLogo';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import { glass } from '../theme/glass';
@@ -13,13 +14,21 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
   const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
     <View style={[styles.row, isUser && styles.rowUser]}>
-      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAi]}>
+      {!isUser && (
+        <View style={styles.aiAvatar}>
+          <MarsLogo size={16} color={colors.accent} />
+        </View>
+      )}
+      <View
+        style={[
+          styles.bubble,
+          isUser ? styles.bubbleUser : styles.bubbleAi,
+          isUser ? styles.bubbleShapeRight : styles.bubbleShapeLeft,
+        ]}
+      >
         <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
         {!isUser && message.typing ? (
-          <TypeWriterText
-            text={message.text}
-            style={[styles.text, styles.textAi]}
-          />
+          <TypeWriterText text={message.text} style={[styles.text, styles.textAi]} />
         ) : (
           <Text style={[styles.text, isUser ? styles.textOnGlass : styles.textAi]}>{message.text}</Text>
         )}
@@ -30,13 +39,41 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
 }
 
 const styles = StyleSheet.create({
-  row: { paddingHorizontal: spacing.md, marginVertical: spacing.md, alignItems: 'flex-start' },
-  rowUser: { alignItems: 'flex-end' },
-  bubble: { maxWidth: '80%', borderRadius: 14, padding: spacing.sm, overflow: 'hidden' },
+  row: { paddingHorizontal: spacing.md, marginVertical: spacing.sm, alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
+  rowUser: { alignItems: 'flex-end', flexDirection: 'row-reverse' },
+  aiAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(232,163,77,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubble: {
+    maxWidth: '82%',
+    padding: spacing.md + 1,
+    paddingBottom: spacing.sm + 8,
+    overflow: 'hidden',
+    flexShrink: 1,
+  },
+  // Asymmetric radii = speech-bubble feel; the near-zero corner sits where the
+  // tail would be (top-right for user on the right, top-left for AI on the left).
+  bubbleShapeRight: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 6,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  bubbleShapeLeft: {
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
   bubbleAi: {
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(232, 163, 77, 0.25)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(247, 247, 246, 0.7)',
+    borderColor: 'rgba(232, 163, 77, 0.7)',
   },
   bubbleUser: {
     backgroundColor: 'rgba(37, 17, 1, 0.38)',
@@ -45,7 +82,7 @@ const styles = StyleSheet.create({
   },
   text: { color: colors.textPrimary, fontSize: 14, fontFamily: fonts.montserrat },
   textOnGlass: { color: '#FFFFFF' },
-  textAi: { color: '#FFC46B' },
-  timestamp: { color: colors.textMuted, fontSize: 10, marginTop: 4, marginHorizontal: spacing.xs, textAlign: 'right' },
-  timestampUser: { color: 'rgba(232,163,77,0.9)', marginHorizontal: spacing.xs, textAlign: 'right' },
+  textAi: { color: '#FFFFFF', fontWeight: 'bold' },
+  timestamp: { color: 'rgba(255,255,255,0.75)', fontSize: 10, marginTop: 10, marginHorizontal: spacing.xs, textAlign: 'right', fontFamily: fonts.montserrat },
+  timestampUser: { color: 'rgba(232,163,77,0.9)', marginTop: 10, marginHorizontal: spacing.xs, textAlign: 'right' },
 });
