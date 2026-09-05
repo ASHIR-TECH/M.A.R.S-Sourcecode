@@ -17,4 +17,14 @@ export const styles = StyleSheet.create({
   sectionLabel: { color: '#FFFFFF', fontFamily: fonts.quantico, fontSize: 12, marginBottom: spacing.sm, textTransform: 'uppercase' },
   grid: { gap: spacing.sm, paddingBottom: spacing.xxl },
   row: { gap: spacing.sm },
+  toast: {
+    position: 'absolute',
+    bottom: spacing.xxl + spacing.lg,
+    alignSelf: 'center',
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+  },
+  toastText: { color: '#0B0704', fontFamily: fonts.montserrat, fontSize: 13, fontWeight: '700' },
 });
