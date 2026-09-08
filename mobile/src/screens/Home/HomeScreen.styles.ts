@@ -2,12 +2,16 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxl + 24,
+    paddingBottom: tabBarMetrics.height + 24,
     gap: spacing.lg,
   },
   header: {
@@ -78,6 +82,12 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 12,
+    rowGap: 12,
+    columnGap: 12,
+  },
+  deviceGridItem: {
+    flexBasis: '45%',
+    flexGrow: 1,
+    maxWidth: 180,
   },
 });
