@@ -12,7 +12,8 @@ export const typography = {
     letterSpacing: 4,
   },
   splashFooter: {
-    fontSize: 12,
+    fontFamily: fonts.display,
+    fontSize: 18,
     letterSpacing: 2,
     textTransform: 'uppercase' as const,
   },
