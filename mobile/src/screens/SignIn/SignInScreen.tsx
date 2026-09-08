@@ -31,14 +31,14 @@ export function SignInScreen() {
           <View style={styles.actions}>
             <OAuthButton
             label="Continue with Google"
-            icon={<GoogleIcon />}
+            icon={<GoogleIcon size={26} />}
             onPress={signInWithGoogle}
             loading={loadingProvider === 'google'}
             />
 
             <OAuthButton
             label="Continue with GitHub"
-            icon={<GitHubIcon />}
+            icon={<GitHubIcon size={26} />}
             onPress={signInWithGithub}
             loading={loadingProvider === 'github'}
             />
