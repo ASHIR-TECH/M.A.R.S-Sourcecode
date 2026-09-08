@@ -33,6 +33,11 @@ export const styles = StyleSheet.create({
     gap: 12,
     marginTop: 215,
   },
+  appleButton: {
+    width: 280,
+    height: 46,
+    alignSelf: 'center',
+  },
   errorText: {
     color: '#E05A47',
     textAlign: 'center',
