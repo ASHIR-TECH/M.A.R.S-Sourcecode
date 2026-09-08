@@ -39,6 +39,7 @@ export function SignInScreen() {
             <OAuthButton
             label="Continue with GitHub"
             icon={<GitHubIcon size={26} />}
+            iconPosition="end"
             onPress={signInWithGithub}
             loading={loadingProvider === 'github'}
             />
