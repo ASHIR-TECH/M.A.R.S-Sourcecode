@@ -10,6 +10,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxl,
+    paddingBottom: 50,
   },
   title: {
     ...typography.splashTitle,
@@ -21,12 +22,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    transform: [{ translateY: 20 }], /**move the welcome text and buttons downwards */
   },
   subtitle: {
     color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
-    marginBottom: -150,
+    marginBottom: -170,
     fontSize: 16,
     lineHeight: 26,
   },
