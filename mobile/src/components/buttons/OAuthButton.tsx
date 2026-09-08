@@ -8,9 +8,10 @@ interface OAuthButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
+  iconPosition?: 'start' | 'end';
 }
 
-export function OAuthButton({ label, icon, onPress, loading, disabled }: OAuthButtonProps) {
+export function OAuthButton({ label, icon, onPress, loading, disabled, iconPosition = 'start' }: OAuthButtonProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -29,8 +30,9 @@ export function OAuthButton({ label, icon, onPress, loading, disabled }: OAuthBu
         <ActivityIndicator color="#F5EFE6" />
       ) : (
         <View style={styles.content}>
-          {icon}
+          {iconPosition === 'end' && icon}
           <Text style={styles.label}>{label}</Text>
+          {iconPosition === 'start' && icon}
         </View>
       )}
     </Pressable>
