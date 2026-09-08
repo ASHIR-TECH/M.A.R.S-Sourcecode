@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SplashScreen } from './src/screens/Splash/SplashScreen';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
@@ -32,15 +33,17 @@ export default function App() {
   };
 
   return (
-    <View style={styles.root}>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: contentOpacity }]}>
-        <RootNavigator />
-      </Animated.View>
-      {showSplash ? (
-        <Animated.View style={[StyleSheet.absoluteFill, { opacity: splashOpacity }]}>
-          <SplashScreen onFinished={handleSplashFinished} />
+    <SafeAreaProvider>
+      <View style={styles.root}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: contentOpacity }]}>
+          <RootNavigator />
         </Animated.View>
-      ) : null}
-    </View>
+        {showSplash ? (
+          <Animated.View style={[StyleSheet.absoluteFill, { opacity: splashOpacity }]}>
+            <SplashScreen onFinished={handleSplashFinished} />
+          </Animated.View>
+        ) : null}
+      </View>
+    </SafeAreaProvider>
   );
 }
