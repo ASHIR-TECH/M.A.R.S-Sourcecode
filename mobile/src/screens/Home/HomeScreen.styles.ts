@@ -65,6 +65,9 @@ export const styles = StyleSheet.create({
   chatListContent: {
     paddingBottom: 0,
   },
+  chatSeparator: {
+    height: 8,
+  },
   scrollTrack: {
     width: 3,
     borderRadius: 2,
