@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
   },
   title: {
     ...typography.splashTitle,
-    fontSize: 28,
+    fontSize: 36,
     color: colors.textPrimary,
     marginBottom: 24,
   },
@@ -27,15 +27,16 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
     marginBottom: -150,
-    lineHeight: 19,
+    fontSize: 16,
+    lineHeight: 26,
   },
   actions: {
     gap: 12,
     marginTop: 215,
   },
   appleButton: {
-    width: 280,
-    height: 46,
+    width: 320,
+    height: 54,
     alignSelf: 'center',
   },
   errorText: {
