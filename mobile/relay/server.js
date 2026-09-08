@@ -3,6 +3,12 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
+// GitHub is slow to connect on some networks and its DNS can hand out a
+// NAT64 / IPv6 address that has no route. Talk to GitHub over IPv4 only and
+// allow up to 45s for the connect + TLS handshake instead of undici's 10s default.
+const { Agent, setGlobalDispatcher } = require('undici');
+setGlobalDispatcher(new Agent({ connect: { timeout: 45000, family: 4 } }));
+
 // Load .env from parent directory
 const envPath = path.resolve(__dirname, '..', '.env');
 const envContent = fs.readFileSync(envPath, 'utf8');
@@ -35,6 +41,9 @@ const GITHUB_CLIENT_SECRET = envVars.GITHUB_CLIENT_SECRET;
 
 app.post('/auth/github', async (req, res) => {
   const { code, redirectUri, codeVerifier } = req.body;
+
+  console.log('[relay] exchange request -> redirectUri:', redirectUri);
+  console.log('[relay] exchange request -> hasCode:', !!code, 'hasCodeVerifier:', !!codeVerifier);
 
   if (!code || !redirectUri) {
     return res.status(400).json({ error: 'Missing code or redirectUri' });
@@ -69,6 +78,7 @@ app.post('/auth/github', async (req, res) => {
 
     res.json({ access_token: data.access_token });
   } catch (err) {
+    console.error('[relay] exchange error:', err && err.message ? err.message : String(err));
     res.status(500).json({ error: 'Token exchange failed' });
   }
 });
