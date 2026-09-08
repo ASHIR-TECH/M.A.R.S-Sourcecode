@@ -32,6 +32,7 @@ export function SignInScreen() {
             <OAuthButton
             label="Continue with Google"
             icon={<GoogleIcon size={26} />}
+            iconPosition="end"
             onPress={signInWithGoogle}
             loading={loadingProvider === 'google'}
             />
