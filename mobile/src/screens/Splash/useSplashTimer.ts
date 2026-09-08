@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 
-const MIN_SPLASH_DURATION_MS = 750;
+const MIN_SPLASH_DURATION_MS = 2500;
 
 interface UseSplashTimerResult {
   /** True once the minimum display duration has elapsed AND assets are ready */
