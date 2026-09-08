@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  ScrollView,
   StyleSheet,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -24,6 +25,7 @@ import { Device } from '../../types/device';
 import { ChatPreview } from '../../types/chat';
 import { HOME_DEVICE_CAP } from '../../constants';
 import { styles } from './HomeScreen.styles';
+import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
 interface HomeScreenProps {
   onDevicePress?: (device: Device) => void;
@@ -61,8 +63,11 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const onlineCount = devices.filter((d) => d.status !== 'offline').length;
 /** Line 30 is where you change the SVG size */
 return (
-    <View style={styles.container}>
-      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
 <View style={styles.headerLogo}>
           <MarsLogo size={48} />
@@ -90,7 +95,9 @@ return (
         <SectionHeader title="Connected Devices" badge={`${onlineCount}/${devices.length} ON`} />
         <View style={styles.deviceGrid}>
           {visibleDevices.map((item) => (
-            <DeviceCard key={item.id} device={item} onPress={onDevicePress} />
+            <View key={item.id} style={styles.deviceGridItem}>
+              <DeviceCard device={item} onPress={onDevicePress} />
+            </View>
           ))}
         </View>
       </View>
@@ -119,6 +126,6 @@ return (
           </View>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
