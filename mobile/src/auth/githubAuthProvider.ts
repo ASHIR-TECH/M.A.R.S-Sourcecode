@@ -1,12 +1,16 @@
 import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 import { AuthProvider, AuthResult, AuthCancelledError } from './types';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const GITHUB_CLIENT_ID = process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID ?? '';
 const AUTH_RELAY_URL = process.env.EXPO_PUBLIC_AUTH_RELAY_URL ?? '';
 
 if (__DEV__) {
   // Register this exact value as the GitHub OAuth App "Authorization callback URL".
-  console.log('[auth] GitHub redirect URI:', AuthSession.makeRedirectUri());
+  console.log('[auth] GitHub redirect URI:', AuthSession.makeRedirectUri(Platform.OS !== 'web' ? { path: 'auth' } : {}));
 }
 
 /**
@@ -21,7 +25,10 @@ export const githubAuthProvider: AuthProvider = {
       throw new Error('GitHub sign-in is not configured yet.');
     }
 
-    const redirectUri = AuthSession.makeRedirectUri();
+    // Expo Go dev links require the `/--/` root: `exp://<host>:<port>/--/auth`,
+    // otherwise Expo Go's linking router treats the redirect as unhandled.
+    // Pass a path so linking builds the full routable URL; web keeps its bare origin.
+    const redirectUri = AuthSession.makeRedirectUri(Platform.OS !== 'web' ? { path: 'auth' } : {});
 
     const request = new AuthSession.AuthRequest({
       clientId: GITHUB_CLIENT_ID,
