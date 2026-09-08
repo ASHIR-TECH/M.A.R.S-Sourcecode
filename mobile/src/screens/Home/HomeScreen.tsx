@@ -2,7 +2,6 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
   ScrollView,
   StyleSheet,
   NativeScrollEvent,
@@ -41,7 +40,7 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const [viewportH, setViewportH] = useState(0);
   const [contentH, setContentH] = useState(0);
   const [scrolling, setScrolling] = useState(false);
-  const listRef = useRef<FlatList<ChatPreview>>(null);
+  const listRef = useRef<ScrollView>(null);
   const scrollbarVisible = scrolling && contentH > viewportH && viewportH > 0;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -105,20 +104,24 @@ return (
       <View style={styles.chatSection}>
         <SectionHeader title="Recent Chats" />
         <View style={styles.chatListWrap}>
-          <FlatList
+          <ScrollView
             ref={listRef}
-            data={chats}
-            keyExtractor={(item) => item.id}
             style={styles.chatList}
+            nestedScrollEnabled
             onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
             onContentSizeChange={(_w, h) => setContentH(h)}
             onScroll={onScroll}
             scrollEventThrottle={16}
             contentContainerStyle={styles.chatListContent}
-            renderItem={({ item }) => <ChatPreviewRow chat={item} onPress={onChatPress} />}
-            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             showsVerticalScrollIndicator={false}
-          />
+          >
+            {chats.map((chat, index) => (
+              <View key={chat.id}>
+                {index > 0 && <View style={styles.chatSeparator} />}
+                <ChatPreviewRow chat={chat} onPress={onChatPress} />
+              </View>
+            ))}
+          </ScrollView>
           <View style={styles.scrollTrack} pointerEvents="none">
             {scrollbarVisible && (
               <View style={[styles.scrollThumb, { height: thumbHeight, top: thumbTop }]} />
