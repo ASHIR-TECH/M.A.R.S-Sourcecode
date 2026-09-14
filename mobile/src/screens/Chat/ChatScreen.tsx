@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Animated, Easing, useWindowDimensions, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Animated, Easing, useWindowDimensions, Platform, KeyboardAvoidingView, Keyboard } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import { AppBackground } from '../../components/AppBackground';
@@ -10,6 +10,8 @@ import { AttachmentCard } from '../../components/AttachmentCard';
 import { TypingIndicator } from '../../components/TypingIndicator';
 import { ChatAttachment } from '../../types/chatMessage';
 import { styles } from './ChatScreen.styles';
+import { spacing } from '../../theme/spacing';
+import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
 const SESSION_ID = 'default-session'; // multi-session support deferred
 
@@ -70,7 +72,23 @@ export function ChatScreen() {
   const { send } = useRelayConnection();
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
+  const [keyboardH, setKeyboardH] = useState(0);
   const listRef = useRef<FlatList>(null);
+
+  // Standard chat behavior: when the keyboard opens the input bar rides on
+  // top of it (container bottom padding shrinks) and the thread scrolls up so
+  // the latest bubble stays visible above the input.
+  React.useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardH(e.endCoordinates.height);
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardH(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const handleSend = () => {
     if (!draft.trim() && !attachment) return;
@@ -117,7 +135,7 @@ export function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : undefined}
       >
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingBottom: keyboardH > 0 ? spacing.sm : tabBarMetrics.height + 24 }]}>
         <View style={styles.header}>
           <Text style={styles.title}>CHAT</Text>
           <View style={styles.statusDot} />
