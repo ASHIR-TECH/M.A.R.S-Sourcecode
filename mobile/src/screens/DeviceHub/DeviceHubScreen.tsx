@@ -21,6 +21,7 @@ interface DeviceHubScreenProps {
 export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
   const devices = useDeviceStore((s) => s.devices) as DeviceWithMetrics[];
   const renameDevice = useDeviceStore((s) => s.renameDevice);
+  const removeDevice = useDeviceStore((s) => s.removeDevice);
   // Devices shows the full list (top 4 and everything else); Home only surfaces the top cap.
   const hubDevices = devices;
   const [editing, setEditing] = useState<DeviceWithMetrics | null>(null);
@@ -46,6 +47,15 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
     [renameDevice]
   );
 
+  const handleRemove = useCallback(
+    (device: DeviceWithMetrics) => {
+      removeDevice(device.id);
+      setToast(`${device.name} removed`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    },
+    [removeDevice]
+  );
+
   return (
     <AppBackground>
       <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
@@ -68,7 +78,7 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.grid}
-          renderItem={({ item }) => <NodeCard node={item} onEdit={setEditing} />}
+          renderItem={({ item }) => <NodeCard node={item} onEdit={setEditing} onRemove={handleRemove} />}
         />
       </View>
 
