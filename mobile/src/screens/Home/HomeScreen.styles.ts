@@ -20,11 +20,6 @@ export const styles = StyleSheet.create({
   },
   headerTitleBlock: {
     alignItems: 'center',
-  },
-  headerLogo: {
-    position: 'absolute',
-    left: 0,
-    top: -47, /** to mve the SVG upwards */
   }, /**this is for the cc2 heading */
   title: {
     color: colors.textPrimary,
