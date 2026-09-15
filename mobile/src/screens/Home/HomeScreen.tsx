@@ -61,11 +61,13 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const onlineCount = devices.filter((d) => d.status !== 'offline').length;
 /** Line 30 is where you change the SVG size */
 return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.blurBg}>
+      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.header}>
         <View style={styles.headerTitleBlock}>
           <Text style={styles.title}>COMMAND CENTER</Text>
@@ -125,6 +127,7 @@ return (
           </View>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
