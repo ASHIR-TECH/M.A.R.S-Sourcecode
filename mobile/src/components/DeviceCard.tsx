@@ -22,7 +22,7 @@ export function DeviceCard({ device, onPress }: DeviceCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`${device.name}, ${device.status}`}
     >
-      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
       <View style={styles.topRow}>
         <Text style={styles.id}>{device.id}</Text>
         <StatusPill status={device.status} />
