@@ -10,22 +10,25 @@ export const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl + 16,
+    paddingTop: spacing.xxl + 8,
     paddingBottom: tabBarMetrics.height + 24,
     gap: spacing.lg,
   },
   header: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
   },
   headerTitleBlock: {
-    alignItems: 'center',
+    alignSelf: 'stretch',
+    alignItems: 'flex-start',
   }, /**this is for the cc2 heading */
   title: {
     color: colors.textPrimary,
     fontFamily: fonts.display,
     fontSize: 15,
     letterSpacing: 1.5,
+    alignSelf: 'stretch',
+    textAlign: 'left',
   },
   subtitle: { /** this is for the subtitle under the heading */
     color: colors.textMuted,
@@ -33,11 +36,13 @@ export const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.5,
     marginTop: 1,
+    alignSelf: 'stretch',
+    textAlign: 'left',
   },
   avatar: { /** this is for the OP */
     position: 'absolute',
     right: 0,
-    top: -39,
+    top: -2.5,
     width: 36,
     height: 36,
     borderRadius: 18,
