@@ -9,6 +9,7 @@ interface DeviceState {
   filteredDevices: () => Device[];
   hydrateFromRelay: (devices: Device[]) => void;
   renameDevice: (id: string, updates: { name?: string; os?: string }) => void;
+  removeDevice: (id: string) => void;
 }
 
 export const useDeviceStore = create<DeviceState>((set, get) => ({
@@ -27,5 +28,9 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   renameDevice: (id, updates) =>
     set((s) => ({
       devices: s.devices.map((d) => (d.id === id ? { ...d, ...updates } : d)),
+    })),
+  removeDevice: (id) =>
+    set((s) => ({
+      devices: s.devices.filter((d) => d.id !== id),
     })),
 }));
