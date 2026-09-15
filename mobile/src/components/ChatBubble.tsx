@@ -27,7 +27,7 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
           isUser ? styles.bubbleShapeRight : styles.bubbleShapeLeft,
         ]}
       >
-        <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+        <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
         {message.attachment && (
           <AttachmentCard attachment={message.attachment} size="bubble" />
         )}
