@@ -19,7 +19,7 @@ export function ChatPreviewRow({ chat, onPress }: ChatPreviewRowProps) {
       accessibilityRole="button"
       accessibilityLabel={`Chat with ${chat.name}`}
     >
-      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{chat.initials}</Text>
       </View>
