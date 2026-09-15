@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { googleAuthProvider } from '../auth/googleAuthProvider';
 import { githubAuthProvider } from '../auth/githubAuthProvider';
+import { appleAuthProvider } from '../auth/appleAuthProvider';
 import { sessionStorage } from '../auth/sessionStorage';
 import { AuthCancelledError, AuthResult, AuthProviderName } from '../auth/types';
 
-type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'error';
+type AuthStatus = 'restoring' | 'idle' | 'loading' | 'authenticated' | 'error';
 
 interface AuthState {
   status: AuthStatus;
@@ -13,6 +14,7 @@ interface AuthState {
   loadingProvider: AuthProviderName | null;
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   restoreSession: () => Promise<void>;
 }
@@ -25,7 +27,7 @@ async function runSignIn(
   set({ status: 'loading', loadingProvider: provider, error: null });
   try {
     const result = await signInFn();
-    await sessionStorage.save(result.idToken);
+    await sessionStorage.save(result);
     set({ status: 'authenticated', session: result, error: null, loadingProvider: null });
   } catch (err) {
     if (err instanceof AuthCancelledError) {
@@ -41,13 +43,14 @@ async function runSignIn(
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  status: 'idle',
+  status: 'restoring',
   session: null,
   error: null,
   loadingProvider: null,
 
   signInWithGoogle: () => runSignIn(set, 'google', googleAuthProvider.signIn),
   signInWithGithub: () => runSignIn(set, 'github', githubAuthProvider.signIn),
+  signInWithApple: () => runSignIn(set, 'apple', appleAuthProvider.signIn),
 
   signOut: async () => {
     await sessionStorage.clear();
@@ -55,9 +58,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   restoreSession: async () => {
-    const token = await sessionStorage.load();
-    if (token) {
-      set({ status: 'authenticated' });
+    const stored = await sessionStorage.load();
+    if (stored) {
+      set({ status: 'authenticated', session: stored, error: null, loadingProvider: null });
+    } else {
+      set({ status: 'idle', session: null, error: null, loadingProvider: null });
     }
   },
 }));

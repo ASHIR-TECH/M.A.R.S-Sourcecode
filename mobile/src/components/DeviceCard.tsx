@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(215, 128, 30, 0.7)', /**this is for the border  */
     padding: spacing.md,
-    width: 160,
+    width: '100%',
     gap: 4,
     overflow: 'hidden',
   },

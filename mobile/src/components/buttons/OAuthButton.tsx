@@ -1,7 +1,5 @@
 import React from 'react';
 import { Pressable, Text, ActivityIndicator, View, StyleSheet } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { glass } from '../../theme/glass';
 import { styles } from './OAuthButton.styles';
 
 interface OAuthButtonProps {
@@ -10,9 +8,10 @@ interface OAuthButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
+  iconPosition?: 'start' | 'end';
 }
 
-export function OAuthButton({ label, icon, onPress, loading, disabled }: OAuthButtonProps) {
+export function OAuthButton({ label, icon, onPress, loading, disabled, iconPosition = 'start' }: OAuthButtonProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -26,17 +25,14 @@ export function OAuthButton({ label, icon, onPress, loading, disabled }: OAuthBu
         (disabled || loading) && styles.buttonDisabled,
       ]}
     >
-      <BlurView
-        intensity={glass.intensity}
-        tint={glass.tint}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={styles.topGloss} pointerEvents="none" />
       {loading ? (
         <ActivityIndicator color="#F5EFE6" />
       ) : (
         <View style={styles.content}>
-          {icon}
+          {iconPosition === 'end' && icon}
           <Text style={styles.label}>{label}</Text>
+          {iconPosition === 'start' && icon}
         </View>
       )}
     </Pressable>

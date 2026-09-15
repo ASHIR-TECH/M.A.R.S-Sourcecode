@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Linking } from 'react-native';
+import { View, Text, Linking, Platform } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { AppBackground } from '../../components/AppBackground';
 import { GoogleIcon } from '../../components/icons/GoogleIcon';
 import { GitHubIcon } from '../../components/icons/GitHubIcon';
@@ -11,7 +12,7 @@ const TERMS_URL = 'https://example.com/terms';
 const PRIVACY_URL = 'https://example.com/privacy';
 
 export function SignInScreen() {
-  const { status, error, loadingProvider, signInWithGoogle, signInWithGithub } = useAuthStore();
+  const { status, error, loadingProvider, signInWithGoogle, signInWithGithub, signInWithApple } = useAuthStore();
   const isLoading = status === 'loading';
 /* Line 21 is how you rotate the svg  */
   /* This is where you change the mars SVG. kinda sucks that i dont know how to write a comment in a .tsx file. well python does thst to your head*/
@@ -30,17 +31,29 @@ export function SignInScreen() {
           <View style={styles.actions}>
             <OAuthButton
             label="Continue with Google"
-            icon={<GoogleIcon />}
+            icon={<GoogleIcon size={26} />}
+            iconPosition="end"
             onPress={signInWithGoogle}
             loading={loadingProvider === 'google'}
             />
 
             <OAuthButton
             label="Continue with GitHub"
-            icon={<GitHubIcon />}
+            icon={<GitHubIcon size={26} />}
+            iconPosition="end"
             onPress={signInWithGithub}
             loading={loadingProvider === 'github'}
             />
+
+            {Platform.OS === 'ios' && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                cornerRadius={10}
+                onPress={isLoading ? () => {} : signInWithApple}
+                style={styles.appleButton}
+              />
+            )}
 
             {error && (
               <Text style={styles.errorText} accessibilityRole="alert">

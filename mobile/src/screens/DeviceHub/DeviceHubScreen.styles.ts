@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
   row: { gap: spacing.sm },
   toast: {
     position: 'absolute',
-    bottom: spacing.xxl + spacing.lg,
+    bottom: 140, /** raised so the tick confirmation floats higher above the tab bar */
     alignSelf: 'center',
     backgroundColor: colors.accent,
     borderRadius: 10,

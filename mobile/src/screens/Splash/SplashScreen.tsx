@@ -3,7 +3,6 @@ import { View, Text } from 'react-native';
 import * as SplashScreenNative from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { AppBackground } from '../../components/AppBackground';
-import { MarsLogo } from '../../components/icons/MarsLogo';
 import { useSplashTimer } from './useSplashTimer';
 import { styles } from './SplashScreen.styles';
 
@@ -50,7 +49,6 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     <AppBackground>
       <View style={styles.container}>
         <View style={styles.centerContent}>
-          <MarsLogo size={130} style={{ transform: [{ scaleX: -1 }] }} />
           <Text style={styles.title}>MARS</Text>
         </View>
         <Text style={styles.footer}>By ASHIR</Text>

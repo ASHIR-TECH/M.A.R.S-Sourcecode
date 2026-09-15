@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useConnectionStore } from '../store/useConnectionStore';
 import { colors } from '../theme/colors';
 
@@ -12,10 +13,11 @@ const STATUS_COPY: Record<string, string> = {
 
 export function ConnectionStatusBanner() {
   const status = useConnectionStore((s) => s.status);
+  const insets = useSafeAreaInsets();
   if (status === 'connected') return null;
 
   return (
-    <View style={styles.banner}>
+    <View style={[styles.banner, { paddingTop: insets.top }]}>
       <Text style={styles.text}>{STATUS_COPY[status] ?? ''}</Text>
     </View>
   );

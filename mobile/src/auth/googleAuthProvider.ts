@@ -1,5 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import { Platform } from 'react-native';
 import { AuthProvider, AuthResult, AuthCancelledError } from './types';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -7,7 +8,7 @@ WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
 
 if (__DEV__) {
-  console.log('[auth] Google redirect URI:', AuthSession.makeRedirectUri());
+  console.log('[auth] Google redirect URI:', AuthSession.makeRedirectUri(Platform.OS !== 'web' ? { path: 'auth' } : {}));
 }
 
 const discovery = {
@@ -17,7 +18,8 @@ const discovery = {
 
 export const googleAuthProvider: AuthProvider = {
   async signIn(): Promise<AuthResult> {
-    const redirectUri = AuthSession.makeRedirectUri();
+    // Expo Go dev links require the `/--/` root, see githubAuthProvider.
+    const redirectUri = AuthSession.makeRedirectUri(Platform.OS !== 'web' ? { path: 'auth' } : {});
 
     const request = new AuthSession.AuthRequest({
       clientId: GOOGLE_CLIENT_ID,

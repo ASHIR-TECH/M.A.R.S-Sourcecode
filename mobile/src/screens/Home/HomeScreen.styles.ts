@@ -2,12 +2,19 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
 export const styles = StyleSheet.create({
+  blurBg: {
+    flex: 1,
+  },
   container: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxl + 24,
+    paddingBottom: tabBarMetrics.height + 24,
     gap: spacing.lg,
   },
   header: {
@@ -16,11 +23,6 @@ export const styles = StyleSheet.create({
   },
   headerTitleBlock: {
     alignItems: 'center',
-  },
-  headerLogo: {
-    position: 'absolute',
-    left: 0,
-    top: -47, /** to mve the SVG upwards */
   }, /**this is for the cc2 heading */
   title: {
     color: colors.textPrimary,
@@ -61,6 +63,9 @@ export const styles = StyleSheet.create({
   chatListContent: {
     paddingBottom: 0,
   },
+  chatSeparator: {
+    height: 8,
+  },
   scrollTrack: {
     width: 3,
     borderRadius: 2,
@@ -78,6 +83,12 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 12,
+    rowGap: 12,
+    columnGap: 12,
+  },
+  deviceGridItem: {
+    flexBasis: '45%',
+    flexGrow: 1,
+    maxWidth: 180,
   },
 });

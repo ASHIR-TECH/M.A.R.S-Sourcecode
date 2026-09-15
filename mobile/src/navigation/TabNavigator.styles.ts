@@ -15,6 +15,6 @@ export const tabBarMetrics = {
   height: Platform.OS === 'ios' ? 92 : 84,
   paddingTop: 8,
   paddingBottom: Platform.OS === 'ios' ? 32 : 20,
-  labelFontSize: 13,
+  labelFontSize: 15,
   labelFontFamily: 'Offside-Regular',
 } as const;
