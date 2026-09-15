@@ -5,6 +5,9 @@ import { spacing } from '../../theme/spacing';
 import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
 export const styles = StyleSheet.create({
+  blurBg: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
