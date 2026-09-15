@@ -12,7 +12,7 @@ interface AppBackgroundProps {
 export function AppBackground({ children, style, blurred }: AppBackgroundProps) {
   return (
     <ImageBackground
-      source={blurred ? require('../../assets/images/splash-bg-frosted.jpg') : require('../../assets/images/splash-bg.jpg')}
+      source={blurred ? require('../../assets/images/orb-background-frosted.jpg') : require('../../assets/images/orb-background.jpg')}
       style={[{ flex: 1, width: '100%', height: '100%' }, style]}
       resizeMode="cover"
     >
