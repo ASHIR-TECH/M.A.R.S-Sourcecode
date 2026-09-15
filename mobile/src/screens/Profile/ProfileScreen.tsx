@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useDeviceStore } from '../../store/useDeviceStore';
 import { Avatar } from '../../components/Avatar';
 import { SettingsSection } from '../../components/SettingsSection';
 import { SettingsRow } from '../../components/SettingsRow';
@@ -14,6 +15,7 @@ interface ProfileScreenProps {
 
 export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
   const { session, signOut } = useAuthStore();
+  const pairedDeviceCount = useDeviceStore((s) => s.devices.length);
   const [supportOpen, setSupportOpen] = useState(false);
 
   const handleSignOut = () => {
@@ -43,7 +45,10 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
       </View>
 
       <SettingsSection title="Paired Desktop">
-        <SettingsRow label="No devices paired" showChevron={false} />
+        <SettingsRow
+          label={pairedDeviceCount === 0 ? 'No devices paired' : `${pairedDeviceCount} device${pairedDeviceCount === 1 ? '' : 's'} paired`}
+          showChevron={false}
+        />
       </SettingsSection>
 
       <SettingsSection title="Preferences">
