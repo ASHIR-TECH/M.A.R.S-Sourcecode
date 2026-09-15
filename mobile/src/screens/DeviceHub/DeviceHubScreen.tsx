@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
 import { AppBackground } from '../../components/AppBackground';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { NodeCard } from '../../components/NodeCard';
 import { EditDeviceModal } from './EditDeviceModal';
 import { DeviceWithMetrics } from '../../types/device';
-import { glass } from '../../theme/glass';
 import { styles } from './DeviceHubScreen.styles';
 
 interface DeviceHubScreenProps {
@@ -57,8 +55,7 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
   );
 
   return (
-    <AppBackground>
-      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+    <AppBackground blurred>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text onPress={onBack} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
