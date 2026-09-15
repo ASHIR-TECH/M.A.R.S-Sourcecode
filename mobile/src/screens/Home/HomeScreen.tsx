@@ -11,7 +11,6 @@ import { BlurView } from 'expo-blur';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { MarsLogo } from '../../components/icons/MarsLogo';
 import { Avatar } from '../../components/Avatar';
 import { SearchBar } from '../../components/SearchBar';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -68,9 +67,6 @@ return (
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-<View style={styles.headerLogo}>
-          <MarsLogo size={48} />
-        </View>
         <View style={styles.headerTitleBlock}>
           <Text style={styles.title}>COMMAND CENTER</Text>
           <Text style={styles.subtitle}>Command and Control Center</Text>
