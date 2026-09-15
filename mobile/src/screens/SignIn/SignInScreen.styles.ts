@@ -17,6 +17,8 @@ export const styles = StyleSheet.create({
     fontSize: 36,
     color: colors.textPrimary,
     marginBottom: 24,
+    alignSelf: 'stretch',
+    textAlign: 'center',
   },
   centerBlock: {
     flex: 1,
