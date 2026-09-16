@@ -99,5 +99,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: tabBarMetrics.labelFontSize,
     fontFamily: tabBarMetrics.labelFontFamily,
+    alignSelf: 'stretch',
+    textAlign: 'center',
   },
 });

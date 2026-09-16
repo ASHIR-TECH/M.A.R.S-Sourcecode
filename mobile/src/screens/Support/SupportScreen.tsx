@@ -5,28 +5,30 @@ import { spacing } from '../../theme/spacing';
 import { GitHubIcon } from '../../components/icons/GitHubIcon';
 import { XIcon } from '../../components/icons/XIcon';
 import { EmailIcon } from '../../components/icons/EmailIcon';
-import { DiscordIcon } from '../../components/icons/DiscordIcon';
+import { MarsLogo } from '../../components/icons/MarsLogo';
 import { RickRollScreen } from './RickRollScreen';
 
 type Channel =
   | { key: string; label: string; sub: string; Icon: typeof GitHubIcon; image?: undefined; url: string }
   | { key: string; label: string; sub: string; Icon?: typeof GitHubIcon; image?: number; url: string }
-  | { key: string; label: string; sub: string; Icon?: typeof GitHubIcon; image: number; action: 'mystery' };
+  | { key: string; label: string; sub: string; Icon?: typeof GitHubIcon; image: number; action: 'mystery' }
+  | { key: string; label: string; sub: string; Icon?: typeof GitHubIcon; image?: undefined; action: 'donate' };
 
 const CHANNELS: Channel[] = [
   { key: 'github', label: 'GitHub', sub: 'Open an issue / star the repo', Icon: GitHubIcon, url: 'https://github.com/ASHIR-TECH/M.A.R.S-Sourcecode' },
   { key: 'x', label: 'X', sub: 'Pitch with the Dev', Icon: XIcon, url: 'https://x.com/Ashir_Official' },
   { key: 'email', label: 'Email', sub: 'Support@Ashir.io', Icon: EmailIcon, url: 'mailto:ashir.support.mail@googlte.com?subject=MARS%20Support%20Ticket' },
   { key: 'whatsapp', label: 'WhatsApp', sub: 'Chat with the Dev', image: require('../../../assets/images/whatsapp.png'), url: 'https://wa.me/+2348158378585' },
-  { key: 'discord', label: 'Discord', sub: 'Join the server', Icon: DiscordIcon, url: 'https://discord.gg/x_contractor_x' },
+  { key: 'donate', label: 'Donate', sub: 'Support the build', Icon: MarsLogo, action: 'donate' },
   { key: 'mystery', label: '???', sub: 'Do not touch', image: require('../../../assets/images/box.png'), action: 'mystery' },
 ];
 
 interface SupportScreenProps {
   onClose: () => void;
+  onDonate?: () => void;
 }
 
-export function SupportScreen({ onClose }: SupportScreenProps) {
+export function SupportScreen({ onClose, onDonate }: SupportScreenProps) {
   const [mysteryOpen, setMysteryOpen] = useState(false);
 
   if (mysteryOpen) {
@@ -36,6 +38,10 @@ export function SupportScreen({ onClose }: SupportScreenProps) {
   const handlePress = (channel: Channel) => {
     if (channel.key === 'mystery') {
       setMysteryOpen(true);
+      return;
+    }
+    if (channel.key === 'donate') {
+      onDonate?.();
       return;
     }
     if ('url' in channel) void Linking.openURL(channel.url);
@@ -66,6 +72,8 @@ export function SupportScreen({ onClose }: SupportScreenProps) {
               <View style={styles.iconWrap}>
                 {image ? (
                   <Image source={image} style={styles.cardImage} />
+                ) : key === 'donate' ? (
+                  <MarsLogo size={32} color={colors.accent} />
                 ) : (
                   Icon && <Icon size={32} />
                 )}

@@ -3,11 +3,10 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { AppBackground } from '../../components/AppBackground';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -17,7 +16,6 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { DeviceCard } from '../../components/DeviceCard';
 import { ChatPreviewRow } from '../../components/ChatPreviewRow';
 import { initialsFrom } from '../Profile/initialsFrom';
-import { glass } from '../../theme/glass';
 import { colors } from '../../theme/colors';
 import { Device } from '../../types/device';
 import { ChatPreview } from '../../types/chat';
@@ -61,8 +59,7 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const onlineCount = devices.filter((d) => d.status !== 'offline').length;
 /** Line 30 is where you change the SVG size */
 return (
-    <View style={styles.blurBg}>
-      <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+    <AppBackground blurred>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -128,6 +125,6 @@ return (
         </View>
       </View>
       </ScrollView>
-    </View>
+    </AppBackground>
   );
 }

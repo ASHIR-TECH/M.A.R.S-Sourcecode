@@ -43,7 +43,7 @@ export function NodeCard({ node, onEdit, onRemove }: NodeCardProps) {
   return (
     <View style={styles.wrap}>
       <View style={styles.card}>
-        <BlurView intensity={glass.intensity} tint={glass.tint} style={StyleSheet.absoluteFill} />
+        <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
         <View style={styles.topRow}>
           <Text style={styles.id}>{node.id}</Text>
           <StatusPill status={node.status} />
