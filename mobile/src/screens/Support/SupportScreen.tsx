@@ -72,6 +72,8 @@ export function SupportScreen({ onClose, onDonate }: SupportScreenProps) {
               <View style={styles.iconWrap}>
                 {image ? (
                   <Image source={image} style={styles.cardImage} />
+                ) : key === 'donate' ? (
+                  <MarsLogo size={32} color={colors.accent} />
                 ) : (
                   Icon && <Icon size={32} />
                 )}
