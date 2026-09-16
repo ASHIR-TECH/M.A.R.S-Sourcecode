@@ -1,5 +1,6 @@
 import React, { useReducer, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { PayWithFlutterwave } from 'flutterwave-react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { generateTxRef } from '../../donation/generateTxRef';
@@ -54,8 +55,10 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
     const result = await verifyDonation(data.tx_ref);
 
     if (result.verified) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       dispatch({ type: 'VERIFICATION_SUCCEEDED' });
     } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       dispatch({ type: 'VERIFICATION_FAILED', message: result.message ?? 'Verification failed.' });
     }
   };
