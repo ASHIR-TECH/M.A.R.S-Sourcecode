@@ -6,6 +6,7 @@ import { Avatar } from '../../components/Avatar';
 import { SettingsSection } from '../../components/SettingsSection';
 import { SettingsRow } from '../../components/SettingsRow';
 import { SupportScreen } from '../Support/SupportScreen';
+import { DonateScreen } from '../Donate/DonateScreen';
 import { initialsFrom } from './initialsFrom';
 import { styles } from './ProfileScreen.styles';
 
@@ -17,6 +18,7 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
   const { session, signOut } = useAuthStore();
   const pairedDeviceCount = useDeviceStore((s) => s.devices.length);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -25,8 +27,17 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
     ]);
   };
 
+  if (donateOpen) {
+    return <DonateScreen onClose={() => setDonateOpen(false)} />;
+  }
+
   if (supportOpen) {
-    return <SupportScreen onClose={() => setSupportOpen(false)} />;
+    return (
+      <SupportScreen
+        onClose={() => setSupportOpen(false)}
+        onDonate={() => setDonateOpen(true)}
+      />
+    );
   }
 
   return (
