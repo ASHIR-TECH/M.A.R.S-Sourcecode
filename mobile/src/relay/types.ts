@@ -25,6 +25,12 @@ export interface InboundChatResponse {
   sessionId: string;
   text: string;
   timestamp: string;
+  /**
+   * Display-only. Names whichever desktop-side AI adapter answered (e.g.
+   * "Claude", "Ollama (local)"). Never branch behaviour on this value
+   * (PHASE_12 NFR-1); omit it and the UI simply shows no label.
+   */
+  providerLabel?: string;
 }
 
 export interface InboundAuthAck {
