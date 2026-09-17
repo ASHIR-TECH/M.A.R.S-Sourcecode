@@ -8,8 +8,10 @@ import { DevicesScreen } from '../screens/Devices/DevicesScreen';
 import { ChatScreen } from '../screens/Chat/ChatScreen';
 import { SettingsScreen } from '../screens/Settings/SettingsScreen';
 
+export type TabName = 'Home' | 'Devices' | 'Chat' | 'Settings';
+
 export interface TabConfig {
-  name: 'Home' | 'Devices' | 'Chat' | 'Settings';
+  name: TabName;
   label: string;
   icon: ComponentType<{ color: string; focused: boolean }>;
   component: ComponentType<any>;
