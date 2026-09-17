@@ -16,10 +16,19 @@ interface RedirectParams {
   tx_ref: string;
 }
 
-const PRESET_AMOUNTS = [5, 10, 25, 50];
-const CURRENCIES = ['USD', 'NGN'] as const;
+type Currency = 'USD' | 'NGN';
+
+const PRESET_AMOUNTS: Record<Currency, number[]> = {
+  USD: [100, 250, 350, 500],
+  NGN: [30000, 50000, 70000, 100000],
+};
+const CURRENCIES: Currency[] = ['USD', 'NGN'];
 const FLUTTERWAVE_PUBLIC_KEY = process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY ?? '';
 const FLUTTERWAVE_SYMBOLS: Record<string, string> = { USD: '$', NGN: '₦' };
+
+function formatAmount(amount: number): string {
+  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
 
 interface DonateScreenProps {
   onClose: () => void;
@@ -28,9 +37,9 @@ interface DonateScreenProps {
 export function DonateScreen({ onClose }: DonateScreenProps) {
   const { session } = useAuthStore();
   const [state, dispatch] = useReducer(donationReducer, initialDonationState);
-  const [selectedAmount, setSelectedAmount] = useState<number>(10);
+  const [selectedAmount, setSelectedAmount] = useState<number>(PRESET_AMOUNTS.USD[0]);
   const [customAmount, setCustomAmount] = useState('');
-  const [currency, setCurrency] = useState<'USD' | 'NGN'>('USD');
+  const [currency, setCurrency] = useState<Currency>('USD');
   const [txRef, setTxRef] = useState('');
 
   const parsedCustom = parseFloat(customAmount);
@@ -43,6 +52,13 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
     if (!finalAmount || finalAmount <= 0) return;
     setTxRef(generateTxRef());
     dispatch({ type: 'OPEN_CHECKOUT' });
+  };
+
+  const handleCurrencyChange = (next: Currency) => {
+    if (next === currency) return;
+    setCurrency(next);
+    setSelectedAmount(PRESET_AMOUNTS[next][0]);
+    setCustomAmount('');
   };
 
   const handleRedirect = async (data: RedirectParams) => {
@@ -90,15 +106,16 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.sectionLabel}>Choose an amount</Text>
           <View style={styles.chipRow}>
-            {PRESET_AMOUNTS.map((amt) => (
+            {PRESET_AMOUNTS[currency].map((amt) => (
               <AmountChip
                 key={amt}
-                label={`${symbol}${amt}`}
+                label={`${symbol}${formatAmount(amt)}`}
                 active={!customAmount && selectedAmount === amt}
                 onPress={() => {
                   setSelectedAmount(amt);
                   setCustomAmount('');
                 }}
+                style={styles.amountChip}
               />
             ))}
           </View>
@@ -120,7 +137,7 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
                 key={cur}
                 label={cur}
                 active={currency === cur}
-                onPress={() => setCurrency(cur)}
+                onPress={() => handleCurrencyChange(cur)}
               />
             ))}
           </View>
