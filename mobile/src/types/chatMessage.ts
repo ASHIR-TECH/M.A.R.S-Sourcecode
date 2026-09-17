@@ -16,4 +16,8 @@ export interface ChatMessage {
   attachment?: ChatAttachment;
   /** when true, the AI message is revealed letter-by-letter with a typewriter effect */
   typing?: boolean;
+  /** display-only desktop adapter that answered (PHASE_12). Never branch on this. */
+  providerLabel?: string;
+  /** true when the reply came from quick-response fallback rather than a paired desktop */
+  viaFallback?: boolean;
 }
