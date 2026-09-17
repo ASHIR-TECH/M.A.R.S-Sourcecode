@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { TAB_CONFIG } from './tabConfig';
+import { TAB_CONFIG, TabName } from './tabConfig';
 import { tabBarMetrics } from './TabNavigator.styles';
 import { colors } from '../theme/colors';
 
@@ -10,14 +10,27 @@ import { colors } from '../theme/colors';
 const ICON_COLOR_INACTIVE = 'rgba(232,163,77,0.8)';
 const LABEL_COLOR_INACTIVE = 'rgba(255,255,255,0.85)';
 
+interface AnimatedTabBarProps {
+  activeIndex: number;
+  onSelect: (name: TabName) => void;
+  hidden?: boolean;
+}
+
 /**
- * Phase 4 custom bottom tab bar: same data-driven TAB_CONFIG as the default
- * bar. The bar is divided into 4 equal cells; the active tab is indicated by
- * the full-accent icon and full-white label. The bar slides down when the
- * keyboard opens so the chat screen can use the full bottom half.
+ * Phase 4 custom bottom tab bar: same data-driven TAB_CONFIG as the pager.
+ * The bar is divided into 4 equal cells; the active tab is indicated by the
+ * full-accent icon and full-white label. The bar slides down when the keyboard
+ * opens so the chat screen can use the full bottom half, and when a page asks
+ * it to hide (e.g. while reading the Privacy & Security screen).
  */
-export function AnimatedTabBar({ state, navigation, insets }: BottomTabBarProps) {
+export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: AnimatedTabBarProps) {
+  const insets = useSafeAreaInsets();
   const keyboardHidden = useSharedValue(0);
+  const contentHidden = useSharedValue(0);
+
+  useEffect(() => {
+    contentHidden.value = withTiming(hidden ? 1 : 0, { duration: 180 });
+  }, [hidden, contentHidden]);
 
   // Hide the bar when the keyboard opens so the chat screen can use the full
   // bottom half (old Android tabBarHideOnKeyboard behavior, extended to iOS).
@@ -36,17 +49,20 @@ export function AnimatedTabBar({ state, navigation, insets }: BottomTabBarProps)
   }, [keyboardHidden]);
 
   const hideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: 300 * keyboardHidden.value }],
+    transform: [{ translateY: 300 * Math.max(keyboardHidden.value, contentHidden.value) }],
   }));
 
   const onTabPress = useCallback(
-    (name: 'Home' | 'Chat' | 'Devices' | 'Settings') => {
-      navigation.navigate(name);
+    (name: TabName) => {
+      onSelect(name);
     },
-    [navigation]
+    [onSelect]
   );
 
-  const bottomPad = Platform.OS === 'ios' ? tabBarMetrics.paddingBottom : Math.max(tabBarMetrics.paddingBottom, insets.bottom);
+  const bottomPad =
+    Platform.OS === 'ios'
+      ? tabBarMetrics.paddingBottom
+      : Math.max(tabBarMetrics.paddingBottom, insets.bottom);
 
   return (
     <Animated.View
@@ -61,7 +77,7 @@ export function AnimatedTabBar({ state, navigation, insets }: BottomTabBarProps)
       ]}
     >
       {TAB_CONFIG.map(({ name, label, icon: Icon }, index) => {
-        const focused = index === state.index;
+        const focused = index === activeIndex;
         return (
           <Pressable
             key={name}
