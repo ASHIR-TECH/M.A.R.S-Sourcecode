@@ -33,7 +33,8 @@ export const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  chipRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  chipRow: { flexDirection: 'row', gap: spacing.sm },
+  amountChip: { flex: 1, paddingHorizontal: spacing.xs },
   customInput: {
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 10,
