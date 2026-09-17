@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { TAB_CONFIG, TabName } from './tabConfig';
 import { AnimatedTabBar } from './AnimatedTabBar';
 import { PagerTabView } from './PagerTabView';
+import { TabBarVisibilityProvider } from './TabBarVisibility';
 import { AppBackground } from '../components/AppBackground';
 import { ConnectionStatusBanner } from '../components/ConnectionStatusBanner';
 import { useRelayConnection } from '../relay/useRelayConnection';
@@ -22,6 +23,7 @@ function RelayConnectionProvider({ children }: { children: React.ReactNode }) {
  */
 export function TabNavigator() {
   const [index, setIndex] = useState(0);
+  const [tabBarHidden, setTabBarHidden] = useState(false);
 
   const selectTab = useCallback((name: TabName) => {
     const next = TAB_CONFIG.findIndex((tab) => tab.name === name);
@@ -33,10 +35,12 @@ export function TabNavigator() {
       <AppBackground>
         <View style={styles.root}>
           <ConnectionStatusBanner />
-          <View style={styles.flex}>
-            <PagerTabView index={index} onIndexChange={setIndex} />
-            <AnimatedTabBar activeIndex={index} onSelect={selectTab} />
-          </View>
+          <TabBarVisibilityProvider setHidden={setTabBarHidden}>
+            <View style={styles.flex}>
+              <PagerTabView index={index} onIndexChange={setIndex} />
+              <AnimatedTabBar activeIndex={index} onSelect={selectTab} hidden={tabBarHidden} />
+            </View>
+          </TabBarVisibilityProvider>
         </View>
       </AppBackground>
     </RelayConnectionProvider>
