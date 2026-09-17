@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SplashScreen } from './src/screens/Splash/SplashScreen';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -33,17 +34,19 @@ export default function App() {
   };
 
   return (
-    <SafeAreaProvider>
-      <View style={styles.root}>
-        <Animated.View style={[StyleSheet.absoluteFill, { opacity: contentOpacity }]}>
-          <RootNavigator />
-        </Animated.View>
-        {showSplash ? (
-          <Animated.View style={[StyleSheet.absoluteFill, { opacity: splashOpacity }]}>
-            <SplashScreen onFinished={handleSplashFinished} />
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <View style={styles.root}>
+          <Animated.View style={[StyleSheet.absoluteFill, { opacity: contentOpacity }]}>
+            <RootNavigator />
           </Animated.View>
-        ) : null}
-      </View>
-    </SafeAreaProvider>
+          {showSplash ? (
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: splashOpacity }]}>
+              <SplashScreen onFinished={handleSplashFinished} />
+            </Animated.View>
+          ) : null}
+        </View>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
