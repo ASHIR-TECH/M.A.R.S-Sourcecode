@@ -13,17 +13,24 @@ const LABEL_COLOR_INACTIVE = 'rgba(255,255,255,0.85)';
 interface AnimatedTabBarProps {
   activeIndex: number;
   onSelect: (name: TabName) => void;
+  hidden?: boolean;
 }
 
 /**
  * Phase 4 custom bottom tab bar: same data-driven TAB_CONFIG as the pager.
  * The bar is divided into 4 equal cells; the active tab is indicated by the
  * full-accent icon and full-white label. The bar slides down when the keyboard
- * opens so the chat screen can use the full bottom half.
+ * opens so the chat screen can use the full bottom half, and when a page asks
+ * it to hide (e.g. while reading the Privacy & Security screen).
  */
-export function AnimatedTabBar({ activeIndex, onSelect }: AnimatedTabBarProps) {
+export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: AnimatedTabBarProps) {
   const insets = useSafeAreaInsets();
   const keyboardHidden = useSharedValue(0);
+  const contentHidden = useSharedValue(0);
+
+  useEffect(() => {
+    contentHidden.value = withTiming(hidden ? 1 : 0, { duration: 180 });
+  }, [hidden, contentHidden]);
 
   // Hide the bar when the keyboard opens so the chat screen can use the full
   // bottom half (old Android tabBarHideOnKeyboard behavior, extended to iOS).
@@ -42,7 +49,7 @@ export function AnimatedTabBar({ activeIndex, onSelect }: AnimatedTabBarProps) {
   }, [keyboardHidden]);
 
   const hideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: 300 * keyboardHidden.value }],
+    transform: [{ translateY: 300 * Math.max(keyboardHidden.value, contentHidden.value) }],
   }));
 
   const onTabPress = useCallback(
