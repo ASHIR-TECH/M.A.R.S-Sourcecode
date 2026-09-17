@@ -48,6 +48,13 @@ const PORT = Number(envVars.PORT || 3001);
 const FLUTTERWAVE_SECRET_KEY = envVars.FLUTTERWAVE_SECRET_KEY;
 const FLUTTERWAVE_WEBHOOK_SECRET_HASH = envVars.FLUTTERWAVE_WEBHOOK_SECRET_HASH;
 
+// Phase 12 — fallback (quick-response) chat. The Groq key is server-only; the
+// mobile app never sees it (same reasoning as the Flutterwave secret key).
+const GROQ_API_KEY = envVars.GROQ_API_KEY;
+const GROQ_MODEL = envVars.GROQ_MODEL || 'openai/gpt-oss-120b';
+const FALLBACK_DAILY_LIMIT = Number(envVars.FALLBACK_DAILY_LIMIT || 50);
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -55,6 +62,14 @@ app.use(express.json());
 // Phase 11 — confirmed-donation store (in-memory). Replace with a real DB
 // (SQLite/Postgres) before production; this keeps the phase testable locally.
 const confirmations = new Map();
+
+// Phase 12 — per-device fallback-chat usage for the daily cap. In-memory as
+// well; swap for Redis/DB before scaling past a single instance.
+const fallbackUsage = new Map();
+
+function utcDayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /**
  * POST /auth/github
@@ -214,12 +229,124 @@ app.get('/donation-history', (req, res) => {
   res.json({ donations });
 });
 
+/**
+ * Turns the app-level snapshot (paired desktop + visible devices) into a compact
+ * system prompt so quick-response mode can answer questions about them. Context
+ * is read-only descriptive data — never executed, never trusted as instructions.
+ */
+function buildFallbackMessages(text, context) {
+  const lines = [];
+  if (context && typeof context === 'object') {
+    const desktop = context.pairedDesktop;
+    if (desktop && typeof desktop.name === 'string' && desktop.name) {
+      const id = typeof desktop.id === 'string' && desktop.id ? ` (${desktop.id})` : '';
+      lines.push(`Paired desktop: ${desktop.name}${id}.`);
+    }
+
+    const devices = Array.isArray(context.devices) ? context.devices.slice(0, 50) : [];
+    if (devices.length) {
+      lines.push('Devices/nodes visible in the app:');
+      for (const d of devices) {
+        if (!d || typeof d !== 'object') continue;
+        const metrics = [];
+        if (typeof d.cpu === 'number') metrics.push(`cpu ${d.cpu}%`);
+        if (typeof d.ram === 'number') metrics.push(`ram ${d.ram}%`);
+        lines.push(
+          `- ${d.name || 'Unnamed'} [${d.id || '?'}] ${d.os || 'unknown OS'}, ` +
+            `status ${d.status || 'unknown'}, last seen ${d.lastSeen || 'unknown'}` +
+            (metrics.length ? `, ${metrics.join(', ')}` : '')
+        );
+      }
+    } else {
+      lines.push('No devices are currently visible in the app.');
+    }
+  }
+
+  const system =
+    'You are MARS Co-Pilot, a concise assistant inside the MARS app. ' +
+    "You may be given a live snapshot of the user's paired desktop and their node/device list. " +
+    'Use it when relevant and answer directly. Never invent devices that are not in the snapshot; ' +
+    'if asked about something not listed, say you do not have that information.' +
+    (lines.length ? `\n\nCurrent app snapshot:\n${lines.join('\n')}` : '');
+
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: text },
+  ];
+}
+
+/**
+ * POST /fallback-chat
+ * Contract expected by the app (fallbackChatClient.ts):
+ *   body    { deviceId, text, context? }
+ *   success { reply, providerLabel }
+ * Quick-response mode used when no desktop is paired/reachable (PHASE_12).
+ * The Groq key stays server-side, and the per-device daily cap is enforced
+ * here (not client-side, which would be trivially bypassed) — PHASE_12 §8.
+ */
+app.post('/fallback-chat', async (req, res) => {
+  const { deviceId, text, context } = req.body || {};
+
+  if (!deviceId || typeof text !== 'string' || !text.trim()) {
+    return res.status(400).json({ error: 'Missing deviceId or text' });
+  }
+
+  if (!GROQ_API_KEY) {
+    return res
+      .status(500)
+      .json({ error: 'Fallback chat not configured on server (GROQ_API_KEY)' });
+  }
+
+  const day = utcDayKey();
+  const usage = fallbackUsage.get(deviceId);
+  const usedToday = usage && usage.day === day ? usage.count : 0;
+
+  if (usedToday >= FALLBACK_DAILY_LIMIT) {
+    return res.status(429).json({
+      error: 'Rate limit reached',
+      message: "You've reached today's quick-response limit. Pair a desktop or try again tomorrow.",
+    });
+  }
+
+  // Count the attempt before calling upstream so failed/abusive requests still
+  // consume budget.
+  fallbackUsage.set(deviceId, { day, count: usedToday + 1 });
+
+  try {
+    const groq = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: buildFallbackMessages(text, context),
+      }),
+    });
+
+    const data = await groq.json();
+    const reply = data?.choices?.[0]?.message?.content;
+
+    if (!groq.ok || !reply) {
+      console.error('[relay] fallback groq error:', JSON.stringify(data).slice(0, 300));
+      return res.status(502).json({ error: 'Upstream chat failed' });
+    }
+
+    return res.json({ reply, providerLabel: 'Groq' });
+  } catch (err) {
+    console.error('[relay] fallback error:', err && err.message ? err.message : String(err));
+    return res.status(502).json({ error: 'Fallback chat request failed.' });
+  }
+});
+
 /** GET /health - liveness + config report (no secrets). */
 app.get('/health', (req, res) => {
   res.json({
     ok: true,
     githubConfigured: !!(GITHUB_CLIENT_ID && GITHUB_CLIENT_SECRET),
     flutterwaveConfigured: !!FLUTTERWAVE_SECRET_KEY,
+    fallbackChatConfigured: !!GROQ_API_KEY,
     publicUrl: PUBLIC_URL,
   });
 });
@@ -233,6 +360,9 @@ app.get('/', (req, res) => {
       verify: 'POST /verify-transaction',
       webhook: 'POST /flutterwave-webhook',
       history: 'GET /donation-history?email=...',
+    },
+    chat: {
+      fallback: 'POST /fallback-chat',
     },
     note: 'Google returns an id_token straight to the app, so Google does not need this relay.',
   });
@@ -251,6 +381,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`[relay] GitHub client secret:\t${GITHUB_CLIENT_SECRET ? 'configured' : 'MISSING (relay/.env)'}`);
   console.log(`[relay] Flutterwave secret key:\t${FLUTTERWAVE_SECRET_KEY ? 'configured' : 'MISSING (relay/.env)'}`);
   console.log(`[relay] Flutterwave webhook hash:\t${FLUTTERWAVE_WEBHOOK_SECRET_HASH ? 'configured' : 'MISSING (relay/.env)'}`);
+  console.log(`[relay] Groq fallback key:\t${GROQ_API_KEY ? 'configured' : 'MISSING (relay/.env)'}`);
   console.log(`[relay] edit mobile/.env, then ${''}reload the app (bundle re-inlines EXPO_PUBLIC_* vars)`);
   console.log(`[relay] self-check: curl http://localhost:${PORT}/health`);
 });
