@@ -1,13 +1,15 @@
-import React, { useReducer, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useReducer, useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, Modal, ActivityIndicator } from 'react-native';
+import { WebView } from 'react-native-webview';
 import * as Haptics from 'expo-haptics';
-import { PayWithFlutterwave } from 'flutterwave-react-native';
+import { FlutterwaveInit } from 'flutterwave-react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { generateTxRef } from '../../donation/generateTxRef';
 import { verifyDonation } from '../../donation/donationApi';
 import { donationReducer, initialDonationState } from '../../donation/donationReducer';
 import { AmountChip } from '../../components/AmountChip';
 import { DonationSuccessView } from './DonationSuccessView';
+import { colors } from '../../theme/colors';
 import { styles } from './DonateScreen.styles';
 
 interface RedirectParams {
@@ -25,9 +27,26 @@ const PRESET_AMOUNTS: Record<Currency, number[]> = {
 const CURRENCIES: Currency[] = ['USD', 'NGN'];
 const FLUTTERWAVE_PUBLIC_KEY = process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY ?? '';
 const FLUTTERWAVE_SYMBOLS: Record<string, string> = { USD: '$', NGN: '₦' };
+const FLUTTERWAVE_REDIRECT_URL = 'https://flutterwave.com/rn-redirect';
+const FLUTTERWAVE_REDIRECT_PATTERN = /flutterwave\.com\/rn-redirect/;
 
 function formatAmount(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function parseRedirectParams(url: string): Record<string, string> {
+  const query = url.split('?')[1] ?? '';
+  const params: Record<string, string> = {};
+  for (const pair of query.split('&')) {
+    if (!pair) continue;
+    const eq = pair.indexOf('=');
+    if (eq === -1) {
+      params[pair] = '';
+    } else {
+      params[pair.slice(0, eq)] = decodeURIComponent(pair.slice(eq + 1)).trim();
+    }
+  }
+  return params;
 }
 
 interface DonateScreenProps {
@@ -41,6 +60,10 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
   const [customAmount, setCustomAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('USD');
   const [txRef, setTxRef] = useState('');
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  const [checkoutVisible, setCheckoutVisible] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const redirectHandledRef = useRef(false);
 
   const parsedCustom = parseFloat(customAmount);
   const finalAmount = customAmount ? parsedCustom : selectedAmount;
@@ -48,10 +71,44 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
 
   const notConfigured = !FLUTTERWAVE_PUBLIC_KEY;
 
-  const handleDonatePress = () => {
-    if (!finalAmount || finalAmount <= 0) return;
-    setTxRef(generateTxRef());
+  const handleDonatePress = async () => {
+    if (!finalAmount || finalAmount <= 0 || notConfigured) return;
+    if (state.status === 'checkout_open' || state.status === 'verifying') return;
+
+    const reference = generateTxRef();
+    setTxRef(reference);
+    redirectHandledRef.current = false;
     dispatch({ type: 'OPEN_CHECKOUT' });
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const link = await FlutterwaveInit(
+        {
+          authorization: FLUTTERWAVE_PUBLIC_KEY,
+          tx_ref: reference,
+          amount: finalAmount,
+          currency,
+          payment_options: 'card,mobilemoney,ussd,banktransfer',
+          redirect_url: FLUTTERWAVE_REDIRECT_URL,
+          customer: {
+            email: session?.email ?? 'donor@example.com',
+            name: session?.fullName ?? 'Anonymous Donor',
+          },
+        },
+        controller
+      );
+      setPaymentLink(link);
+      setCheckoutVisible(true);
+    } catch (error) {
+      if (/aborterror/i.test((error as { code?: string })?.code ?? '')) return;
+      dispatch({
+        type: 'VERIFICATION_FAILED',
+        message: (error as { message?: string })?.message || 'Checkout failed to open.',
+      });
+    }
   };
 
   const handleCurrencyChange = (next: Currency) => {
@@ -61,14 +118,26 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
     setCustomAmount('');
   };
 
+  const closeCheckout = () => {
+    setCheckoutVisible(false);
+    setPaymentLink(null);
+  };
+
+  const handleAbort = () => {
+    closeCheckout();
+    dispatch({ type: 'CHECKOUT_CLOSED_CANCELLED' });
+  };
+
   const handleRedirect = async (data: RedirectParams) => {
+    closeCheckout();
+
     if (data.status !== 'successful') {
       dispatch({ type: 'CHECKOUT_CLOSED_CANCELLED' });
       return;
     }
 
     dispatch({ type: 'CHECKOUT_CLOSED_SUCCESS' });
-    const result = await verifyDonation(data.tx_ref);
+    const result = await verifyDonation(data.tx_ref ?? txRef);
 
     if (result.verified) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -79,7 +148,22 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
     }
   };
 
+  const handleCheckoutUrl = (url: string): boolean => {
+    if (!FLUTTERWAVE_REDIRECT_PATTERN.test(url)) return true;
+    if (redirectHandledRef.current) return false;
+    redirectHandledRef.current = true;
+    const params = parseRedirectParams(url);
+    void handleRedirect({
+      status: (params.status ?? 'cancelled') as RedirectParams['status'],
+      tx_ref: params.tx_ref,
+      transaction_id: params.transaction_id,
+    });
+    return false;
+  };
+
   const resetAndClose = () => {
+    abortRef.current?.abort();
+    closeCheckout();
     dispatch({ type: 'RESET' });
     onClose();
   };
@@ -155,36 +239,60 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
           )}
 
           <Pressable
-            style={({ pressed }) => [styles.donateButton, (!finalAmount || notConfigured) && styles.donateButtonDisabled, pressed && styles.donateButtonPressed]}
+            style={({ pressed }) => [
+              styles.donateButton,
+              (!finalAmount || notConfigured || state.status === 'checkout_open' || state.status === 'verifying') &&
+                styles.donateButtonDisabled,
+              pressed && styles.donateButtonPressed,
+            ]}
             onPress={handleDonatePress}
-            disabled={!finalAmount || notConfigured || state.status === 'verifying'}
+            disabled={!finalAmount || notConfigured || state.status === 'checkout_open' || state.status === 'verifying'}
             accessibilityRole="button"
             accessibilityLabel={`Donate ${symbol}${finalAmount || 0}`}
           >
             <Text style={styles.donateButtonText}>
-              {state.status === 'verifying' ? 'Verifying…' : `Donate ${symbol}${finalAmount || 0}`}
+              {state.status === 'verifying'
+                ? 'Verifying…'
+                : state.status === 'checkout_open'
+                  ? 'Opening checkout…'
+                  : `Donate ${symbol}${finalAmount || 0}`}
             </Text>
           </Pressable>
-
-          {state.status === 'checkout_open' && (
-            <PayWithFlutterwave
-              options={{
-                tx_ref: txRef,
-                authorization: FLUTTERWAVE_PUBLIC_KEY,
-                customer: {
-                  email: session?.email ?? 'donor@example.com',
-                  name: session?.fullName ?? 'Anonymous Donor',
-                },
-                amount: finalAmount,
-                currency,
-                payment_options: 'card,mobilemoney,ussd,banktransfer',
-              }}
-              customButton={() => null}
-              onRedirect={handleRedirect}
-              onInitializeError={({ message }) => dispatch({ type: 'VERIFICATION_FAILED', message: message || 'Checkout failed to open.' })}
-            />
-          )}
         </ScrollView>
+
+        <Modal
+          visible={checkoutVisible}
+          animationType="slide"
+          onRequestClose={handleAbort}
+          statusBarTranslucent
+        >
+          <View style={styles.checkoutModal}>
+            <View style={styles.checkoutHeader}>
+              <Text style={styles.checkoutTitle}>Complete your donation</Text>
+              <Pressable
+                style={styles.checkoutClose}
+                onPress={handleAbort}
+                accessibilityLabel="Cancel payment"
+                hitSlop={12}
+              >
+                <Text style={styles.checkoutCloseText}>✕</Text>
+              </Pressable>
+            </View>
+            {paymentLink ? (
+              <WebView
+                source={{ uri: paymentLink }}
+                onShouldStartLoadWithRequest={(event) => handleCheckoutUrl(event.url)}
+                onNavigationStateChange={(navState) => {
+                  if (!navState.loading) handleCheckoutUrl(navState.url);
+                }}
+                startInLoadingState
+                style={styles.checkoutWebView}
+              />
+            ) : (
+              <ActivityIndicator color={colors.accent} size="large" style={styles.checkoutLoading} />
+            )}
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </View>
   );
