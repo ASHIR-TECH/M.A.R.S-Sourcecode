@@ -7,6 +7,7 @@ import { SettingsSection } from '../../components/SettingsSection';
 import { SettingsRow } from '../../components/SettingsRow';
 import { SupportScreen } from '../Support/SupportScreen';
 import { DonateScreen } from '../Donate/DonateScreen';
+import { PrivacySecurityScreen } from '../Privacy/PrivacySecurityScreen';
 import { initialsFrom } from './initialsFrom';
 import { styles } from './ProfileScreen.styles';
 
@@ -19,6 +20,7 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
   const pairedDeviceCount = useDeviceStore((s) => s.devices.length);
   const [supportOpen, setSupportOpen] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -26,6 +28,10 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
       { text: 'Sign Out', style: 'destructive', onPress: () => void signOut() },
     ]);
   };
+
+  if (privacyOpen) {
+    return <PrivacySecurityScreen onClose={() => setPrivacyOpen(false)} />;
+  }
 
   if (donateOpen) {
     return <DonateScreen onClose={() => setDonateOpen(false)} />;
@@ -63,7 +69,7 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
       </SettingsSection>
 
       <SettingsSection title="Preferences">
-        <SettingsRow label="Privacy & Security" onPress={onNavigatePrivacy} />
+        <SettingsRow label="Privacy & Security" onPress={onNavigatePrivacy ?? (() => setPrivacyOpen(true))} />
       </SettingsSection>
 
       <SettingsSection title="Support">
