@@ -57,19 +57,9 @@ function AnimatedHeaderLine() {
   );
 }
 
-// Simulated Co-Pilot replies so the thinking + typewriter flow is visible
-// without a live relay echo (replace with real chat_response handling later).
-function mockAiReply(prompt: string): string {
-  const p = prompt.trim().toLowerCase();
-  if (p.includes('status') || p.includes('node') || p.includes('device')) {
-    return 'All nodes are online. CPU usage is nominal across DEV-001 through DEV-004. No alerts in the last 24 hours.';
-  }
-  return `I found some info related to "${prompt.trim()}". Want me to dig deeper into any specific node or metric?`;
-}
-
 export function ChatScreen() {
-  const { messages, isAwaitingResponse, addUserMessage, markSent, addAiMessage } = useChatSessionStore();
-  const { send } = useRelayConnection();
+  const { messages, isAwaitingResponse, addUserMessage, markSent } = useChatSessionStore();
+  const { sendChatMessage } = useRelayConnection();
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
   const [keyboardH, setKeyboardH] = useState(0);
@@ -96,17 +86,15 @@ export function ChatScreen() {
     // Optimistic append — the user's message renders instantly (sending → sent).
     const text = draft.trim();
     const message = addUserMessage(text, SESSION_ID, attachment ?? undefined);
-    const sent = send({ type: 'chat_message', sessionId: SESSION_ID, text: message.text });
-    if (sent) markSent(message.id);
+    markSent(message.id);
+
+    // Routing (relay vs. quick-response fallback) is decided inside the hook,
+    // never here — PHASE_12 NFR-2.
+    void sendChatMessage(SESSION_ID, message.text);
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const prompt = draft.trim() || (attachment && attachment.name) || '';
     setDraft('');
     setAttachment(null);
-
-    // Simulated thinking delay, then a typed response (demo fallback).
-    setTimeout(() => {
-      addAiMessage(SESSION_ID, mockAiReply(prompt), new Date().toISOString());
-    }, 700);
   };
 
   // File attach: pick a document from local storage and surface it as a chip.
