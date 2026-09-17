@@ -1,19 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { SignInScreen } from '../screens/SignIn/SignInScreen';
 import { TabNavigator } from './TabNavigator';
 import { useAuthStore } from '../store/useAuthStore';
 import { colors } from '../theme/colors';
-
-// Transparent scene background so AppBackground's orb shows through
-const navigationTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: 'transparent',
-  },
-};
 
 /**
  * Branches on auth status (Phase 2): unauthenticated users get the Sign In
@@ -37,11 +27,7 @@ export function RootNavigator() {
   }
 
   if (status === 'authenticated') {
-    return (
-      <NavigationContainer theme={navigationTheme}>
-        <TabNavigator />
-      </NavigationContainer>
-    );
+    return <TabNavigator />;
   }
 
   return <SignInScreen />;
