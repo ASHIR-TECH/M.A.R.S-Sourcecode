@@ -82,9 +82,9 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
           <Pressable style={styles.closeButton} onPress={resetAndClose} accessibilityLabel="Close donate">
             <Text style={styles.closeText}>✕</Text>
           </Pressable>
-          <Text style={styles.kicker}>SUPPORT THE STATION</Text>
+          <Text style={styles.kicker}>SUPPORT THE DEVELOPER</Text>
           <Text style={styles.title}>DONATE</Text>
-          <Text style={styles.subtitle}>Your contribution keeps Mars running and the build active.</Text>
+          <Text style={styles.subtitle}>This is the work of a solo developer, kindly help to keep it updated.</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
