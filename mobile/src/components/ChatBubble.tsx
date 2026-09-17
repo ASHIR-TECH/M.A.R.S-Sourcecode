@@ -4,6 +4,7 @@ import { BlurView } from 'expo-blur';
 import { ChatMessage } from '../types/chatMessage';
 import { TypeWriterText } from './TypeWriterText';
 import { AttachmentCard } from './AttachmentCard';
+import { ProviderBadge } from './ProviderBadge';
 import { MarsLogo } from './icons/MarsLogo';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -38,6 +39,7 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             <Text style={[styles.text, isUser ? styles.textOnGlass : styles.textAi]}>{message.text}</Text>
           ))}
         <Text style={[styles.timestamp, isUser && styles.timestampUser]}>{time}</Text>
+        {!isUser && <ProviderBadge label={message.providerLabel} viaFallback={message.viaFallback} />}
       </View>
     </View>
   );
