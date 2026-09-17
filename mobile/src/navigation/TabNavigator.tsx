@@ -1,14 +1,11 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { TAB_CONFIG } from './tabConfig';
-import { tabBarOptions } from './TabNavigator.styles';
+import { TAB_CONFIG, TabName } from './tabConfig';
 import { AnimatedTabBar } from './AnimatedTabBar';
+import { PagerTabView } from './PagerTabView';
 import { AppBackground } from '../components/AppBackground';
 import { ConnectionStatusBanner } from '../components/ConnectionStatusBanner';
 import { useRelayConnection } from '../relay/useRelayConnection';
-
-const Tab = createBottomTabNavigator();
 
 function RelayConnectionProvider({ children }: { children: React.ReactNode }) {
   // Opens the WS connection to the paired desktop once authenticated. It also
@@ -18,22 +15,27 @@ function RelayConnectionProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Phase 4 standard bottom tab bar. Fully config-driven from TAB_CONFIG so the
- * tab bar and the GestureFAB (when that phase lands) share one canonical
- * route graph — the tab bar is the zero-learning-curve path to every tab.
+ * Phase 4 tab shell. Fully config-driven from TAB_CONFIG: the bottom bar and
+ * the drag-follow pager share the same route order, so reordering or adding a
+ * tab stays a data change. Swiping horizontally anywhere on the page moves to
+ * the adjacent tab (WebView-style), and the bar reflects the settled index.
  */
 export function TabNavigator() {
+  const [index, setIndex] = useState(0);
+
+  const selectTab = useCallback((name: TabName) => {
+    const next = TAB_CONFIG.findIndex((tab) => tab.name === name);
+    if (next >= 0) setIndex(next);
+  }, []);
+
   return (
     <RelayConnectionProvider>
       <AppBackground>
         <View style={styles.root}>
           <ConnectionStatusBanner />
           <View style={styles.flex}>
-            <Tab.Navigator screenOptions={tabBarOptions} tabBar={(props) => <AnimatedTabBar {...props} />}>
-              {TAB_CONFIG.map(({ name, component }) => (
-                <Tab.Screen key={name} name={name} component={component} />
-              ))}
-            </Tab.Navigator>
+            <PagerTabView index={index} onIndexChange={setIndex} />
+            <AnimatedTabBar activeIndex={index} onSelect={selectTab} />
           </View>
         </View>
       </AppBackground>
