@@ -50,10 +50,22 @@ interface PairingPayload {
   issuedAt: string;   // ISO 8601
   expiresAt: string;  // ISO 8601
   relayUrl: string;   // wss:// endpoint the mobile app should connect to
+  // Optional (Phase 14): agent REST endpoint. When present, scanning also
+  // configures device control — the phone can then task the desktop agent.
+  agentApiUrl?: string;
+  agentApiToken?: string;
 }
 ```
 
-`relayUrl` being embedded in the QR itself (rather than hardcoded in the app) is deliberate — it means the relay endpoint can be environment-specific (staging/prod, or even self-hosted relays) without an app rebuild.
+`relayUrl` being embedded in the QR itself (rather than hardcoded in the app) is deliberate — it means the relay endpoint can be environment-specific (staging/prod, or even self-hosted relays) without an app rebuild. The optional `agentApiUrl`/`agentApiToken` follow the same principle: the desktop advertises its own agent endpoint, so scanning a single QR is all it takes to pair **and** enable device control (no manual settings entry).
+
+**Agent endpoint derivation (`mobile/src/pairing/deriveAgentConnection.ts`).** Scanning stays a single step even when a QR omits the optional agent fields. The app falls back to deriving the Phase 14 REST endpoint from the relay URL + pairing token:
+- host = the `relayUrl` host (the desktop that printed the QR also hosts the FastAPI gateway)
+- port = `40003` (`ADTP_API_PORT`; see `docs/MOBILE_HANDOFF.md`)
+- scheme = `https` if the relay was `wss://`, else `http`
+- bearer token = `pairingToken` (a non-empty secret already present in every QR)
+
+So the desktop needs no extra QR fields — serving `/api/v1/health/ready` + `/api/v1/agent/*` on port `40003` is enough for the phone to auto-configure.
 
 ### 2.2 Validation as a pure, isolated function
 `parsePairingPayload(raw: string): PairingPayload | PairingError` lives entirely outside any React/camera code. It:
@@ -140,6 +152,8 @@ export interface PairingPayload {
   issuedAt: string;
   expiresAt: string;
   relayUrl: string;
+  agentApiUrl?: string;
+  agentApiToken?: string;
 }
 
 export type PairingErrorReason = 'malformed' | 'invalid_schema' | 'expired' | 'unsupported_version';
@@ -156,6 +170,10 @@ export interface PairingError {
 // src/pairing/parsePairingPayload.ts
 import { PairingPayload, PairingError } from './types';
 
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string';
+}
+
 function isPairingErrorFree(payload: any): payload is PairingPayload {
   return (
     typeof payload === 'object' &&
@@ -166,7 +184,9 @@ function isPairingErrorFree(payload: any): payload is PairingPayload {
     typeof payload.pairingToken === 'string' &&
     typeof payload.issuedAt === 'string' &&
     typeof payload.expiresAt === 'string' &&
-    typeof payload.relayUrl === 'string'
+    typeof payload.relayUrl === 'string' &&
+    isOptionalString(payload.agentApiUrl) &&
+    isOptionalString(payload.agentApiToken)
   );
 }
 
