@@ -60,4 +60,31 @@ describe('parsePairingPayload', () => {
     expect(isPairingError(result)).toBe(true);
     if (isPairingError(result)) expect(result.reason).toBe('unsupported_version');
   });
+
+  it('carries optional agent REST config when present', () => {
+    const withAgent = {
+      ...validPayload,
+      agentApiUrl: 'https://192.168.1.20:40003',
+      agentApiToken: 'adtp_tok',
+    };
+    const result = parsePairingPayload(JSON.stringify(withAgent));
+    expect(isPairingError(result)).toBe(false);
+    if (!isPairingError(result)) {
+      expect(result.agentApiUrl).toBe('https://192.168.1.20:40003');
+      expect(result.agentApiToken).toBe('adtp_tok');
+    }
+  });
+
+  it('still accepts a payload without agent config (backwards compatible)', () => {
+    const result = parsePairingPayload(JSON.stringify(validPayload));
+    expect(isPairingError(result)).toBe(false);
+    if (!isPairingError(result)) expect(result.agentApiUrl).toBeUndefined();
+  });
+
+  it('rejects a non-string agentApiUrl', () => {
+    const wrongType = { ...validPayload, agentApiUrl: 123 };
+    const result = parsePairingPayload(JSON.stringify(wrongType));
+    expect(isPairingError(result)).toBe(true);
+    if (isPairingError(result)) expect(result.reason).toBe('invalid_schema');
+  });
 });
