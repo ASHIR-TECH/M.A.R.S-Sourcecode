@@ -13,20 +13,46 @@ setGlobalDispatcher(new Agent({ connect: { timeout: 45000, family: 4 } }));
  * Load a KEY=VALUE .env file into an object. Returns {} when the file is
  * missing so every source is optional: the relay works as long as the
  * GitHub client id + secret end up in the merged env.
+ *
+ * Values may be wrapped in single or double quotes and span multiple lines
+ * (needed for FALLBACK_SYSTEM_PROMPT): the parser keeps reading until the
+ * closing quote. \n and \" escapes inside quoted values are unescaped.
  */
 function loadEnvFile(filePath) {
   const vars = {};
   if (!fs.existsSync(filePath)) return vars;
-  const content = fs.readFileSync(filePath, 'utf8');
-  content.split('\n').forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) return;
+  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const trimmed = lines[i].trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
     const eq = trimmed.indexOf('=');
-    if (eq === -1) return;
+    if (eq === -1) continue;
     const key = trimmed.slice(0, eq).trim();
-    const value = trimmed.slice(eq + 1).trim();
-    if (key) vars[key] = value;
-  });
+    if (!key) continue;
+
+    let raw = trimmed.slice(eq + 1).trim();
+    const quote = raw[0];
+    const isQuoted = quote === '"' || quote === "'";
+
+    if (isQuoted && !(raw.length > 1 && raw.endsWith(quote))) {
+      const parts = [raw.slice(1)];
+      while (i + 1 < lines.length) {
+        i += 1;
+        const next = lines[i];
+        if (next.trimEnd().endsWith(quote)) {
+          parts.push(next.trimEnd().slice(0, -1));
+          break;
+        }
+        parts.push(next);
+      }
+      raw = parts.join('\n').replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\'/g, "'");
+    } else if (isQuoted) {
+      raw = raw.slice(1, -1);
+    }
+
+    vars[key] = raw;
+  }
   return vars;
 }
 
@@ -53,6 +79,10 @@ const FLUTTERWAVE_WEBHOOK_SECRET_HASH = envVars.FLUTTERWAVE_WEBHOOK_SECRET_HASH;
 const GROQ_API_KEY = envVars.GROQ_API_KEY;
 const GROQ_MODEL = envVars.GROQ_MODEL || 'openai/gpt-oss-120b';
 const FALLBACK_DAILY_LIMIT = Number(envVars.FALLBACK_DAILY_LIMIT || 50);
+// Optional override for the quick-response coach prompt/guardrails. Set
+// FALLBACK_SYSTEM_PROMPT in relay/.env to change the assistant's tone and rules
+// without touching code; the app snapshot is still appended underneath.
+const FALLBACK_SYSTEM_PROMPT = envVars.FALLBACK_SYSTEM_PROMPT;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const app = express();
@@ -262,12 +292,14 @@ function buildFallbackMessages(text, context) {
     }
   }
 
-  const system =
+  const defaultInstruction =
     'You are MARS Co-Pilot, a concise assistant inside the MARS app. ' +
     "You may be given a live snapshot of the user's paired desktop and their node/device list. " +
     'Use it when relevant and answer directly. Never invent devices that are not in the snapshot; ' +
-    'if asked about something not listed, say you do not have that information.' +
-    (lines.length ? `\n\nCurrent app snapshot:\n${lines.join('\n')}` : '');
+    'if asked about something not listed, say you do not have that information.';
+
+  const instruction = FALLBACK_SYSTEM_PROMPT || defaultInstruction;
+  const system = instruction + (lines.length ? `\n\nCurrent app snapshot:\n${lines.join('\n')}` : '');
 
   return [
     { role: 'system', content: system },
