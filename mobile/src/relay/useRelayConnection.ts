@@ -2,11 +2,14 @@ import { useEffect, useRef } from 'react';
 import { RelayClient } from './RelayClient';
 import { sendFallbackMessage } from './fallbackChatClient';
 import { buildAppChatContext } from './appContext';
+import { runAgentChat } from '../desktop/agentChat';
+import { ApiError } from '../desktop/errors';
 import { usePairingStore } from '../store/usePairingStore';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { useChatStore } from '../store/useChatStore';
 import { useChatSessionStore } from '../store/useChatSessionStore';
 import { useConnectionStore } from '../store/useConnectionStore';
+import { useDesktopStore } from '../store/useDesktopStore';
 import { OutboundMessage } from './types';
 
 export function useRelayConnection() {
@@ -66,6 +69,29 @@ export function useRelayConnection() {
    * The routing decision lives here — never in the Chat screen.
    */
   const sendChatMessage = async (sessionId: string, text: string): Promise<void> => {
+    // Preferred path: the desktop's embedded agent over REST (PHASE_14). It owns
+    // the tool loop, so this is what can actually command other devices.
+    const desktop = useDesktopStore.getState();
+    if (desktop.connection && desktop.isConfigured()) {
+      try {
+        const reply = await runAgentChat(desktop.connection, text, sessionId);
+        const timestamp = new Date().toISOString();
+        const replyText = reply.text || 'Done.';
+        useChatSessionStore.getState().addAiMessage(sessionId, replyText, timestamp, {
+          toolCalls: reply.toolCalls,
+          ...(reply.providerLabel ? { providerLabel: reply.providerLabel } : {}),
+        });
+        useChatStore.getState().appendChatResponse(sessionId, replyText, timestamp);
+        return;
+      } catch (error) {
+        // A rejected token is terminal — drop it so the setup UI can re-prompt.
+        if (error instanceof ApiError && error.kind === 'auth') {
+          void desktop.clearConnection();
+        }
+        // Otherwise fall through to the relay / quick-response paths below.
+      }
+    }
+
     const isDesktopReachable = useConnectionStore.getState().status === 'connected';
 
     if (isDesktopReachable) {
