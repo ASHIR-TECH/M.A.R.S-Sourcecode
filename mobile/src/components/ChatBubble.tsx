@@ -5,6 +5,8 @@ import { ChatMessage } from '../types/chatMessage';
 import { TypeWriterText } from './TypeWriterText';
 import { AttachmentCard } from './AttachmentCard';
 import { ProviderBadge } from './ProviderBadge';
+import { CopyMessageButton } from './CopyMessageButton';
+import { ToolCallStep } from './ToolCallStep';
 import { MarsLogo } from './icons/MarsLogo';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -38,8 +40,19 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
           ) : (
             <Text style={[styles.text, isUser ? styles.textOnGlass : styles.textAi]}>{message.text}</Text>
           ))}
+        {!isUser &&
+          message.toolCalls?.map((call, index) => (
+            <ToolCallStep key={call.id ?? `${call.name}-${index}`} call={call} />
+          ))}
         <Text style={[styles.timestamp, isUser && styles.timestampUser]}>{time}</Text>
-        {!isUser && <ProviderBadge label={message.providerLabel} viaFallback={message.viaFallback} />}
+        {!isUser && (
+          <View style={styles.footer}>
+            <View style={styles.footerBadge}>
+              <ProviderBadge label={message.providerLabel} viaFallback={message.viaFallback} />
+            </View>
+            {message.text.length > 0 && <CopyMessageButton text={message.text} />}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -92,4 +105,6 @@ const styles = StyleSheet.create({
   textAi: { color: '#FFFFFF', fontWeight: 'bold' },
   timestamp: { color: 'rgba(255,255,255,0.75)', fontSize: 10, marginTop: 10, marginHorizontal: spacing.xs, textAlign: 'right', fontFamily: fonts.montserrat },
   timestampUser: { color: 'rgba(232,163,77,0.9)', marginTop: 10, marginHorizontal: spacing.xs, textAlign: 'right' },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  footerBadge: { flex: 1 },
 });
