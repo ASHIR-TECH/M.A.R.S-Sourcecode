@@ -1,5 +1,9 @@
 import { PairingPayload, PairingError } from './types';
 
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string';
+}
+
 function isPairingErrorFree(payload: any): payload is PairingPayload {
   return (
     typeof payload === 'object' &&
@@ -10,7 +14,9 @@ function isPairingErrorFree(payload: any): payload is PairingPayload {
     typeof payload.pairingToken === 'string' &&
     typeof payload.issuedAt === 'string' &&
     typeof payload.expiresAt === 'string' &&
-    typeof payload.relayUrl === 'string'
+    typeof payload.relayUrl === 'string' &&
+    isOptionalString(payload.agentApiUrl) &&
+    isOptionalString(payload.agentApiToken)
   );
 }
 
