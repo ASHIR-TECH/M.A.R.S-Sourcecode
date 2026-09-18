@@ -10,6 +10,23 @@ jest.mock('react-native-webview', () => {
   return { WebView: MockWebView, default: MockWebView };
 });
 
+// In-memory expo-secure-store so stores that persist (pairing, desktop
+// connection, install id) are testable without the native module.
+jest.mock('expo-secure-store', () => {
+  const store = {};
+  return {
+    setItemAsync: jest.fn((key, value) => {
+      store[key] = value;
+      return Promise.resolve();
+    }),
+    getItemAsync: jest.fn((key) => Promise.resolve(store[key] ?? null)),
+    deleteItemAsync: jest.fn((key) => {
+      delete store[key];
+      return Promise.resolve();
+    }),
+  };
+});
+
 jest.mock('expo-video', () => {
   const React = require('react');
   const { View } = require('react-native');
