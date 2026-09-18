@@ -1,11 +1,11 @@
+import { AgentToolCall } from '../desktop/types';
+
 export interface ChatAttachment {
   name: string;
   mimeType?: string;
   size?: number;
   uri?: string;
-}
-
-export interface ChatMessage {
+}export interface ChatMessage {
   id: string;
   sessionId: string;
   sender: 'user' | 'ai';
@@ -20,4 +20,6 @@ export interface ChatMessage {
   providerLabel?: string;
   /** true when the reply came from quick-response fallback rather than a paired desktop */
   viaFallback?: boolean;
+  /** Tool calls the desktop agent executed while answering (PHASE_14). */
+  toolCalls?: AgentToolCall[];
 }
