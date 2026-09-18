@@ -92,7 +92,7 @@ export function QRScannerScreen({ onPaired, onClose }: QRScannerScreenProps) {
           <Animated.View style={[styles.textBlock, textBlockStyle]}>
             <Text style={styles.scanText}>Scan to Connect</Text>
             <Text style={styles.scanSubtitle}>
-              Align the station's QR code within the boundaries to establish peer link
+              Align the station's QR code to pair and configure device control
             </Text>
 
             {state.status === 'validating' && <Text style={styles.statusText}>Pairing…</Text>}
