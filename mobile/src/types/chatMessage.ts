@@ -1,4 +1,4 @@
-import { AgentToolCall } from '../desktop/types';
+import { AgentToolCall, TransferReference } from '../desktop/types';
 
 export interface ChatAttachment {
   name: string;
@@ -22,4 +22,6 @@ export interface ChatAttachment {
   viaFallback?: boolean;
   /** Tool calls the desktop agent executed while answering (PHASE_14). */
   toolCalls?: AgentToolCall[];
+  /** File transfers the reply references, rendered as file tiles (PHASE_14 §Chat). */
+  transfers?: TransferReference[];
 }
