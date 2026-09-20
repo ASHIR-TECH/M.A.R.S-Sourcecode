@@ -15,6 +15,12 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   headerTitle: { color: colors.textPrimary, fontFamily: fonts.quantico, letterSpacing: 2, fontSize: 13 },
+  manualButton: {
+    position: 'absolute',
+    left: spacing.md,
+    padding: spacing.sm,
+  },
+  manualText: { color: colors.textMuted, fontFamily: fonts.montserrat, fontSize: 13 },
   closeButton: {
     position: 'absolute',
     right: spacing.md,
