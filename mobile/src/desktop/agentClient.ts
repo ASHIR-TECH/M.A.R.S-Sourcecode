@@ -8,11 +8,11 @@ function trimBase(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, '');
 }
 
-function str(value: unknown): string | undefined {
+export function str(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
+export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 }
 
@@ -33,7 +33,7 @@ function normalizeToolCall(raw: unknown): AgentToolCall | null {
   };
 }
 
-async function request<T>(
+export async function request<T>(
   conn: DesktopConnection,
   path: string,
   init: RequestInit,
