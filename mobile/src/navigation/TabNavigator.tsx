@@ -5,6 +5,7 @@ import { AnimatedTabBar } from './AnimatedTabBar';
 import { PagerTabView } from './PagerTabView';
 import { TabBarVisibilityProvider } from './TabBarVisibility';
 import { AppBackground } from '../components/AppBackground';
+import { ConnectionStatusBanner } from '../components/ConnectionStatusBanner';
 import { useRelayConnection } from '../relay/useRelayConnection';
 
 function RelayConnectionProvider({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ export function TabNavigator() {
     <RelayConnectionProvider>
       <AppBackground>
         <View style={styles.root}>
+          <ConnectionStatusBanner />
           <TabBarVisibilityProvider setHidden={setTabBarHidden}>
             <View style={styles.flex}>
               <PagerTabView index={index} onIndexChange={setIndex} />
