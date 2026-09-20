@@ -4,7 +4,7 @@ import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, padding: spacing.lg },
+  container: { flex: 1, padding: spacing.lg, paddingTop: spacing.xxl * 2 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

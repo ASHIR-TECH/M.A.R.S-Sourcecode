@@ -120,8 +120,8 @@ export function ChatScreen() {
     <AppBackground>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
         <View style={[styles.container, { paddingBottom: keyboardH > 0 ? spacing.sm : tabBarMetrics.height + 24 }]}>
         <View style={styles.header}>

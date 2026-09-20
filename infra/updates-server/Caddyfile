@@ -1,0 +1,10 @@
+# Caddy automatically provisions and renews HTTPS (Let's Encrypt) for DOMAIN.
+# Requests go to the xprem service; the Android app talks to https://$DOMAIN.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy xprem:3000
+}

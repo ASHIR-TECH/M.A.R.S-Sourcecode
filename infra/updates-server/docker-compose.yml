@@ -1,0 +1,41 @@
+services:
+  xprem:
+    image: ghcr.io/mercuretechnologies/xprem:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000" # only reachable through Caddy
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      DB_URL: '' # unset → stateless mode; see README to migrate to the control plane later
+    volumes:
+      # Signing keys: private-key.pem + public-key.pem (generated, never commit).
+      - ./certs:/keys:ro
+      # Update assets live on the host filesystem. The image runs as uid 100/gid 101,
+      # so: chown 100:101 ./updates  (see storage/local-storage docs).
+      - ./updates:/updates
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/hc']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+    depends_on:
+      - xprem
+
+volumes:
+  caddy_data:
+  caddy_config:

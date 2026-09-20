@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xxl * 2,
     paddingBottom: spacing.md,
   },
   title: { color: colors.textPrimary, fontFamily: fonts.quantico, fontWeight: '700', fontSize: 20, letterSpacing: 2 },

@@ -25,6 +25,7 @@
     "android": {
       "package": "world.ashir.mars",
       "usesCleartextTraffic": true,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#0B0704",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -37,6 +38,15 @@
       "favicon": "./assets/favicon.png",
       "backgroundColor": "#0B0704",
       "bundler": "metro"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/de93ee69-8f27-4c55-a8d1-ab851751cfbb",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
     },
     "plugins": [
       [

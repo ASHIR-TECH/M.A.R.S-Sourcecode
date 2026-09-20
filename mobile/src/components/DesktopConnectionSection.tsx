@@ -134,7 +134,7 @@ export function DesktopConnectionSection() {
               autoCorrect={false}
               keyboardType="url"
               placeholder="https://192.168.1.20:40003"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#A89A84"
               style={styles.input}
             />
 
@@ -146,7 +146,7 @@ export function DesktopConnectionSection() {
               autoCorrect={false}
               secureTextEntry
               placeholder="ADTP_API_TOKEN"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#A89A84"
               style={styles.input}
             />
 
@@ -186,18 +186,18 @@ export function DesktopConnectionSection() {
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: spacing.lg },
   sheet: { backgroundColor: '#140C05', borderRadius: 16, padding: spacing.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(232,163,77,0.4)' },
-  title: { color: colors.textPrimary, fontSize: 18, fontFamily: fonts.quantico, marginBottom: spacing.xs },
-  hint: { color: colors.textMuted, fontSize: 12, marginBottom: spacing.md, fontFamily: fonts.montserrat },
-  label: { color: colors.textMuted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.xs },
-  input: { color: colors.textPrimary, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md, fontFamily: fonts.montserrat },
-  ok: { color: '#5BC48A', fontSize: 12, marginBottom: spacing.sm },
-  err: { color: '#E05A47', fontSize: 12, marginBottom: spacing.sm },
+  title: { color: colors.textPrimary, fontSize: 20, fontFamily: fonts.quantico, marginBottom: spacing.xs },
+  hint: { color: '#E6D9C3', fontSize: 14, marginBottom: spacing.md, fontFamily: fonts.montserrat },
+  label: { color: colors.accent, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.xs },
+  input: { color: '#FFFFFF', fontSize: 15, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md, fontFamily: fonts.montserrat },
+  ok: { color: '#5BC48A', fontSize: 14, marginBottom: spacing.sm },
+  err: { color: '#FF6B55', fontSize: 14, marginBottom: spacing.sm },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.xs },
   primary: { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  primaryText: { color: '#1A0F08', fontSize: 14, fontFamily: fonts.quantico },
+  primaryText: { color: '#1A0F08', fontSize: 15, fontFamily: fonts.quantico },
   secondary: { borderRadius: 10, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(232,163,77,0.6)', minWidth: 150, alignItems: 'center' },
-  secondaryText: { color: colors.accent, fontSize: 13, fontFamily: fonts.montserrat },
+  secondaryText: { color: colors.accent, fontSize: 14, fontFamily: fonts.montserrat },
   ghost: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  ghostText: { color: colors.textMuted, fontSize: 13 },
-  destructive: { color: '#E05A47', fontSize: 13 },
+  ghostText: { color: '#E6D9C3', fontSize: 14 },
+  destructive: { color: '#FF6B55', fontSize: 14 },
 });
