@@ -1,5 +1,6 @@
 import React, { useReducer, useRef, useCallback, useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { parsePairingPayload, isPairingError } from '../../pairing/parsePairingPayload';
@@ -7,6 +8,7 @@ import { usePairingStore } from '../../store/usePairingStore';
 import { qrScannerReducer, initialScanState } from './qrScannerReducer';
 import { PermissionDeniedView } from './PermissionDeniedView';
 import { styles } from './QRScannerScreen.styles';
+import { spacing } from '../../theme/spacing';
 import * as Haptics from 'expo-haptics';
 
 interface QRScannerScreenProps {
@@ -22,6 +24,7 @@ export function QRScannerScreen({ onPaired, onClose, onManualSetup }: QRScannerS
   const [permission, requestPermission] = useCameraPermissions();
   const [state, dispatch] = useReducer(qrScannerReducer, initialScanState);
   const setPairedDesktop = usePairingStore((s) => s.setPairedDesktop);
+  const insets = useSafeAreaInsets();
 
   // Guards against onBarcodeScanned firing repeatedly for the same code
   // while it remains in frame — see NFR-2.
@@ -75,7 +78,7 @@ export function QRScannerScreen({ onPaired, onClose, onManualSetup }: QRScannerS
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: spacing.lg + insets.top }]}>
         {onManualSetup && (
           <Pressable style={styles.manualButton} onPress={onManualSetup} accessibilityLabel="Manual setup">
             <Text style={styles.manualText}>Manual</Text>
