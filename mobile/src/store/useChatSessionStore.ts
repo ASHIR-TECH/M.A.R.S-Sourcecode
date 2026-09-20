@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { ChatAttachment, ChatMessage } from '../types/chatMessage';
-import { AgentToolCall } from '../desktop/types';
+import { AgentToolCall, TransferReference } from '../desktop/types';
 
 interface AiMessageMeta {
   providerLabel?: string;
   viaFallback?: boolean;
   toolCalls?: AgentToolCall[];
+  transfers?: TransferReference[];
 }
 
 // Monotonic suffix so two messages created in the same millisecond (e.g. a
