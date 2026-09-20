@@ -7,6 +7,8 @@ import { AttachmentCard } from './AttachmentCard';
 import { ProviderBadge } from './ProviderBadge';
 import { CopyMessageButton } from './CopyMessageButton';
 import { ToolCallStep } from './ToolCallStep';
+import { TransferFileTile } from './TransferFileTile';
+import { MarkdownText } from './MarkdownText';
 import { MarsLogo } from './icons/MarsLogo';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -38,7 +40,11 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
           (!isUser && message.typing ? (
             <TypeWriterText text={message.text} style={[styles.text, styles.textAi]} />
           ) : (
-            <Text style={[styles.text, isUser ? styles.textOnGlass : styles.textAi]}>{message.text}</Text>
+            <MarkdownText text={message.text} style={[styles.text, isUser ? styles.textOnGlass : styles.textAi]} />
+          ))}
+        {!isUser &&
+          message.transfers?.map((transfer, index) => (
+            <TransferFileTile key={`${transfer.fileName}-${index}`} transfer={transfer} />
           ))}
         {!isUser &&
           message.toolCalls?.map((call, index) => (
