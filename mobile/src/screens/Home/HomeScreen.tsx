@@ -7,6 +7,7 @@ import {
   NativeSyntheticEvent,
 } from 'react-native';
 import { AppBackground } from '../../components/AppBackground';
+import { ConnectionStatusBanner } from '../../components/ConnectionStatusBanner';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -60,6 +61,8 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
 /** Line 30 is where you change the SVG size */
 return (
     <AppBackground blurred>
+      <View style={styles.container}>
+      <ConnectionStatusBanner />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -125,6 +128,7 @@ return (
         </View>
       </View>
       </ScrollView>
+      </View>
     </AppBackground>
   );
 }
