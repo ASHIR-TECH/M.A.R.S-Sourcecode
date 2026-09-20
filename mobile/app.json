@@ -25,6 +25,7 @@
     "android": {
       "package": "world.ashir.mars",
       "usesCleartextTraffic": true,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#0B0704",
         "foregroundImage": "./assets/android-icon-foreground.png",
