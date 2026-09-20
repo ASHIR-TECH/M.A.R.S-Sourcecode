@@ -12,11 +12,13 @@ import * as Haptics from 'expo-haptics';
 interface QRScannerScreenProps {
   onPaired: () => void;
   onClose: () => void;
+  /** When provided, shows a "Manual" link (e.g. Settings' advanced agent form). */
+  onManualSetup?: () => void;
 }
 
 const ERROR_RESUME_DELAY_MS = 2000;
 
-export function QRScannerScreen({ onPaired, onClose }: QRScannerScreenProps) {
+export function QRScannerScreen({ onPaired, onClose, onManualSetup }: QRScannerScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [state, dispatch] = useReducer(qrScannerReducer, initialScanState);
   const setPairedDesktop = usePairingStore((s) => s.setPairedDesktop);
@@ -74,6 +76,11 @@ export function QRScannerScreen({ onPaired, onClose }: QRScannerScreenProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        {onManualSetup && (
+          <Pressable style={styles.manualButton} onPress={onManualSetup} accessibilityLabel="Manual setup">
+            <Text style={styles.manualText}>Manual</Text>
+          </Pressable>
+        )}
         <Text style={styles.headerTitle}>QR SCANNER</Text>
         <Pressable style={styles.closeButton} onPress={onClose} accessibilityLabel="Close scanner">
           <Text style={styles.closeText}>✕</Text>
