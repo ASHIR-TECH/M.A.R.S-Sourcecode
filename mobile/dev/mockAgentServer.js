@@ -21,6 +21,57 @@ app.use(express.json());
 const jobs = new Map();
 let counter = 0;
 
+const transfers = [
+  {
+    id: 'tr-1',
+    file_name: 'delivery-manifest.pdf',
+    size_bytes: 2516582,
+    direction: 'incoming',
+    status: 'completed',
+    peer_id: 'WORK-LAPTOP',
+    peer_name: 'WORK-LAPTOP',
+    started_at: new Date(Date.now() - 3600e3).toISOString(),
+    completed_at: new Date(Date.now() - 3540e3).toISOString(),
+    progress: 1,
+  },
+  {
+    id: 'tr-2',
+    file_name: 'mission-log.xlsx',
+    size_bytes: 838860,
+    direction: 'outgoing',
+    status: 'transferring',
+    peer_id: 'MARS-DEVICE',
+    peer_name: 'MARS-DEVICE',
+    started_at: new Date(Date.now() - 12e3).toISOString(),
+    progress: 0.45,
+  },
+];
+
+const sessions = [
+  {
+    id: 'sess-1',
+    peer_id: 'MARS-DEVICE',
+    peer_name: 'MARS-DEVICE',
+    connected_at: new Date(Date.now() - 7200e3).toISOString(),
+    last_activity_at: new Date(Date.now() - 5e3).toISOString(),
+    transfer_count: 1,
+    bytes_transferred: 2516582,
+  },
+  {
+    id: 'sess-2',
+    peer_id: 'WORK-LAPTOP',
+    peer_name: 'WORK-LAPTOP',
+    connected_at: new Date(Date.now() - 86400e3).toISOString(),
+    last_activity_at: new Date(Date.now() - 60e3).toISOString(),
+    transfer_count: 3,
+    bytes_transferred: 7340032,
+  },
+];
+
+const watchers = [
+  { path: '/home/operator/adtp-inbox', peer_id: 'MARS-DEVICE', peer_name: 'MARS-DEVICE', active: true },
+];
+
 app.use((req, res, next) => {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
@@ -91,6 +142,26 @@ app.get('/api/v1/agent/messages/:id', (req, res) => {
         },
       ];
 
+  if (isSend) {
+    transfers.unshift({
+      id: `tr-${Date.now()}`,
+      file_name: 'report.pdf',
+      size_bytes: 2516582,
+      direction: 'outgoing',
+      status: 'completed',
+      peer_id: 'MARS-DEVICE',
+      peer_name: 'MARS-DEVICE',
+      started_at: new Date(job.createdAt).toISOString(),
+      completed_at: new Date().toISOString(),
+      progress: 1,
+    });
+    const session = sessions.find((s) => s.peer_id === 'MARS-DEVICE');
+    if (session) {
+      session.transfer_count += 1;
+      session.bytes_transferred += 2516582;
+    }
+  }
+
   return res.json({
     id: job.id,
     status: 'completed',
@@ -100,6 +171,18 @@ app.get('/api/v1/agent/messages/:id', (req, res) => {
       : 'You have 2 peers online: MARS-DEVICE and WORK-LAPTOP.',
     tool_calls,
   });
+});
+
+app.get('/api/v1/transfers', (req, res) => {
+  res.json(transfers);
+});
+
+app.get('/api/v1/sessions', (req, res) => {
+  res.json(sessions);
+});
+
+app.get('/api/v1/watchers', (req, res) => {
+  res.json(watchers);
 });
 
 app.listen(PORT, () => {
