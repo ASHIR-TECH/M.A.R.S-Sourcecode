@@ -15,10 +15,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "world.ashir.mars"
+      "bundleIdentifier": "world.ashir.mars",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
     },
     "android": {
       "package": "world.ashir.mars",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0B0704",
         "foregroundImage": "./assets/android-icon-foreground.png",

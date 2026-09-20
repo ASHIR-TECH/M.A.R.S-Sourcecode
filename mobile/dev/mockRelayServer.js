@@ -7,6 +7,11 @@ const mockDevices = [
   { id: 'DEV-022', name: 'WORK-LAPTOP', os: 'Windows 11 Pro', status: 'idle', lastSeen: '14m ago' },
 ];
 
+// Cycle the advertised adapter so Phase 12's providerLabel can be exercised
+// locally without a real desktop (switch by commenting entries in/out).
+const mockProviderLabels = ['Ollama (local)', 'OpenAI', 'Claude'];
+let providerIndex = 0;
+
 wss.on('connection', (ws) => {
   console.log('Mobile client connected');
 
@@ -25,6 +30,8 @@ wss.on('connection', (ws) => {
     }
 
     if (message.type === 'chat_message') {
+      const providerLabel = mockProviderLabels[providerIndex % mockProviderLabels.length];
+      providerIndex += 1;
       setTimeout(() => {
         ws.send(
           JSON.stringify({
@@ -32,6 +39,7 @@ wss.on('connection', (ws) => {
             sessionId: message.sessionId,
             text: `Echo: ${message.text}`,
             timestamp: new Date().toISOString(),
+            providerLabel,
           })
         );
       }, 500);

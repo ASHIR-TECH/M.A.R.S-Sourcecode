@@ -14,11 +14,11 @@ export interface TabConfig {
   name: TabName;
   label: string;
   icon: ComponentType<{ color: string; focused: boolean }>;
-  component: ComponentType<any>;
+  component: ComponentType;
 }
 
 /**
- * Tab metadata as data (Phase 4, §5.1): reordering tabs or adding a badge
+ * Tab metadata as data (Phase 4 §5.1): reordering tabs or adding a badge
  * later is a data change here, never a structural edit in the navigator.
  */
 export const TAB_CONFIG: TabConfig[] = [

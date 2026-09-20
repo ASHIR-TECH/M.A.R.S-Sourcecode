@@ -5,6 +5,7 @@ import { useDeviceStore } from '../../store/useDeviceStore';
 import { Avatar } from '../../components/Avatar';
 import { SettingsSection } from '../../components/SettingsSection';
 import { SettingsRow } from '../../components/SettingsRow';
+import { DesktopConnectionSection } from '../../components/DesktopConnectionSection';
 import { SupportScreen } from '../Support/SupportScreen';
 import { DonateScreen } from '../Donate/DonateScreen';
 import { PrivacySecurityScreen } from '../Privacy/PrivacySecurityScreen';
@@ -67,6 +68,8 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
           showChevron={false}
         />
       </SettingsSection>
+
+      <DesktopConnectionSection />
 
       <SettingsSection title="Preferences">
         <SettingsRow label="Privacy & Security" onPress={onNavigatePrivacy ?? (() => setPrivacyOpen(true))} />

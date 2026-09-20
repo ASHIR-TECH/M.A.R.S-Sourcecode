@@ -1,11 +1,11 @@
+import { AgentToolCall, TransferReference } from '../desktop/types';
+
 export interface ChatAttachment {
   name: string;
   mimeType?: string;
   size?: number;
   uri?: string;
-}
-
-export interface ChatMessage {
+}export interface ChatMessage {
   id: string;
   sessionId: string;
   sender: 'user' | 'ai';
@@ -16,4 +16,12 @@ export interface ChatMessage {
   attachment?: ChatAttachment;
   /** when true, the AI message is revealed letter-by-letter with a typewriter effect */
   typing?: boolean;
+  /** display-only desktop adapter that answered (PHASE_12). Never branch on this. */
+  providerLabel?: string;
+  /** true when the reply came from quick-response fallback rather than a paired desktop */
+  viaFallback?: boolean;
+  /** Tool calls the desktop agent executed while answering (PHASE_14). */
+  toolCalls?: AgentToolCall[];
+  /** File transfers the reply references, rendered as file tiles (PHASE_14 §Chat). */
+  transfers?: TransferReference[];
 }
