@@ -1,6 +1,5 @@
 # MARS — Mobile Remote Agent System
 
-> **World.ashir.mars — a command-and-control center in your pocket.**
 > MARS is a React Native (Expo) mobile app that turns your phone into a remote
 > co-pilot for the **embedded AI agent running on your desktop**. Scan one QR
 > code, and the phone is securely paired — from there you can chat with the
