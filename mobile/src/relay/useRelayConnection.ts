@@ -4,6 +4,7 @@ import { sendFallbackMessage } from './fallbackChatClient';
 import { buildAppChatContext } from './appContext';
 import { runAgentChat } from '../desktop/agentChat';
 import { ApiError } from '../desktop/errors';
+import { AgentToolCall, TransferReference } from '../desktop/types';
 import { usePairingStore } from '../store/usePairingStore';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { useChatStore } from '../store/useChatStore';
@@ -11,6 +12,30 @@ import { useChatSessionStore } from '../store/useChatSessionStore';
 import { useConnectionStore } from '../store/useConnectionStore';
 import { useDesktopStore } from '../store/useDesktopStore';
 import { OutboundMessage } from './types';
+
+function basename(path: string): string {
+  const cleaned = path.replace(/\\/g, '/');
+  return cleaned.slice(cleaned.lastIndexOf('/') + 1) || cleaned;
+}
+
+/** Lifts completed send/receive tool calls into file tiles for the reply bubble. */
+function transfersFromToolCalls(toolCalls: AgentToolCall[] | undefined): TransferReference[] {
+  if (!toolCalls) return [];
+  return toolCalls
+    .filter((tc) => tc.name === 'send_file' || tc.name === 'receive_file')
+    .filter((tc) => tc.status === 'completed')
+    .map((tc) => {
+      const params = tc.params ?? {};
+      const filePath = String(params.file_path ?? params.file ?? params.path ?? '');
+      return {
+        fileName: basename(filePath) || 'file',
+        direction: tc.name === 'send_file' ? 'outgoing' : 'incoming',
+        peerName: String(params.peer_id ?? params.peer ?? '').trim() || undefined,
+        sizeBytes: typeof params.size_bytes === 'number' ? params.size_bytes : undefined,
+        result: tc.result,
+      };
+    });
+}
 
 export function useRelayConnection() {
   const pairedDesktop = usePairingStore((s) => s.pairedDesktop);
@@ -79,6 +104,7 @@ export function useRelayConnection() {
         const replyText = reply.text || 'Done.';
         useChatSessionStore.getState().addAiMessage(sessionId, replyText, timestamp, {
           toolCalls: reply.toolCalls,
+          transfers: transfersFromToolCalls(reply.toolCalls),
           ...(reply.providerLabel ? { providerLabel: reply.providerLabel } : {}),
         });
         useChatStore.getState().appendChatResponse(sessionId, replyText, timestamp);
