@@ -5,13 +5,16 @@ import { SettingsRow } from './SettingsRow';
 import { useDesktopStore } from '../store/useDesktopStore';
 import { checkReady } from '../desktop/agentClient';
 import { ApiError } from '../desktop/errors';
+import { QRScannerScreen } from '../screens/QRScanner/QRScannerScreen';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts } from '../theme/typography';
 
 type TestState = 'idle' | 'testing' | 'ok' | 'error';
 
-/** Enter the desktop peer's REST API URL + ADTP_API_TOKEN (PHASE_14 §Settings). */
+/** Pair with the desktop agent. Not connected -> tap opens the QR scanner;
+ * a scan auto-pairs (the QR carries/derives the agent endpoint). The manual
+ * URL + ADTP_API_TOKEN form stays as an advanced option. */
 export function DesktopConnectionSection() {
   const connection = useDesktopStore((s) => s.connection);
   const hydrated = useDesktopStore((s) => s.hydrated);
@@ -20,6 +23,7 @@ export function DesktopConnectionSection() {
   const hydrate = useDesktopStore((s) => s.hydrate);
 
   const [open, setOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [token, setToken] = useState('');
   const [test, setTest] = useState<TestState>('idle');
@@ -70,6 +74,16 @@ export function DesktopConnectionSection() {
     setOpen(false);
   };
 
+  // Scanner is the primary entry point when nothing is paired yet; the manual
+  // form stays reachable via the scanner's "Manual" link and while connected.
+  const handleRowPress = () => {
+    if (connection) {
+      setOpen(true);
+    } else {
+      setScannerOpen(true);
+    }
+  };
+
   return (
     <>
       <SettingsSection title="Desktop Agent">
@@ -80,11 +94,27 @@ export function DesktopConnectionSection() {
               ? `${connection.baseUrl.replace(/^https?:\/\//, '')} (${
                   connection.origin === 'qr' ? 'pairing' : 'manual'
                 })`
-              : 'Set up'
+              : 'Scan a pairing QR'
           }
-          onPress={() => setOpen(true)}
+          onPress={handleRowPress}
         />
       </SettingsSection>
+
+      <Modal
+        visible={scannerOpen}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setScannerOpen(false)}
+      >
+        <QRScannerScreen
+          onPaired={() => setScannerOpen(false)}
+          onClose={() => setScannerOpen(false)}
+          onManualSetup={() => {
+            setScannerOpen(false);
+            setOpen(true);
+          }}
+        />
+      </Modal>
 
       <Modal visible={open} animationType="slide" transparent onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
@@ -92,7 +122,8 @@ export function DesktopConnectionSection() {
             <Text style={styles.title}>Desktop Agent</Text>
             <Text style={styles.hint}>
               The desktop runs the AI and executes device commands (send file, list peers).
-              Paste its REST API URL and ADTP API token.
+              Scanning its pairing QR configures this automatically; you can also enter the REST
+              API URL and ADTP API token manually.
             </Text>
 
             <Text style={styles.label}>API URL</Text>
