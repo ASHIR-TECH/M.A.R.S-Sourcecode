@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl + 8,
+    paddingTop: spacing.xxl * 2,
     paddingBottom: tabBarMetrics.height + 24,
     gap: spacing.lg,
   },
