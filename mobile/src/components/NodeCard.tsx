@@ -19,7 +19,7 @@ interface NodeCardProps {
  * status, lastSeen). No decorations inside; the edit button sits below the card.
  * The per-device "+" opens a small popup with Edit and Remove (delete that ONE
  * device only, followed by a haptic). */
-export function NodeCard({ node, onEdit, onRemove }: NodeCardProps) {
+function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
   // Longer names get a smaller font so they always fit on one line.
   const nameFontSize = Math.max(12, Math.min(20, 26 - node.name.length * 0.75));
   const [menuOpen, setMenuOpen] = useState(false);
@@ -102,6 +102,8 @@ export function NodeCard({ node, onEdit, onRemove }: NodeCardProps) {
     </View>
   );
 }
+
+export const NodeCard = React.memo(NodeCardBase);
 
 const styles = StyleSheet.create({
   wrap: {
