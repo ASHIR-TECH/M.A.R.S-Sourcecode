@@ -11,7 +11,7 @@ interface ChatPreviewRowProps {
   onPress?: (chat: ChatPreview) => void;
 }
 
-export function ChatPreviewRow({ chat, onPress }: ChatPreviewRowProps) {
+function ChatPreviewRowBase({ chat, onPress }: ChatPreviewRowProps) {
   return (
     <Pressable
       onPress={() => onPress?.(chat)}
@@ -40,6 +40,8 @@ export function ChatPreviewRow({ chat, onPress }: ChatPreviewRowProps) {
     </Pressable>
   );
 }
+
+export const ChatPreviewRow = React.memo(ChatPreviewRowBase);
 
 const styles = StyleSheet.create({
   row: {
