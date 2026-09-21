@@ -6,7 +6,6 @@ import { SplashScreen } from './src/screens/Splash/SplashScreen';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { usePairingStore } from './src/store/usePairingStore';
 import { useDesktopStore } from './src/store/useDesktopStore';
-import { checkForUpdatesOnLaunch } from './src/update/ota';
 
 const styles = StyleSheet.create({
   root: {
@@ -24,7 +23,6 @@ export default function App() {
   useEffect(() => {
     void usePairingStore.getState().restorePairing();
     void useDesktopStore.getState().hydrate();
-    void checkForUpdatesOnLaunch();
   }, []);
 
   const handleSplashFinished = () => {
