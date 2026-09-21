@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -85,9 +86,63 @@ const FALLBACK_DAILY_LIMIT = Number(envVars.FALLBACK_DAILY_LIMIT || 50);
 const FALLBACK_SYSTEM_PROMPT = envVars.FALLBACK_SYSTEM_PROMPT;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+// Comma-separated browser origins allowed to call this relay. Native builds send
+// no Origin header and are always allowed; browsers must be listed explicitly.
+const CORS_ALLOWED_ORIGINS = (envVars.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+// Optional shared secret that gates /donation-history. When unset the endpoint
+// is disabled entirely (it exposes donation PII and has no other auth).
+const RELAY_ADMIN_TOKEN = envVars.RELAY_ADMIN_TOKEN;
+
 const app = express();
-app.use(cors());
-app.use(express.json());
+// Behind a tunnel (cloudflared) the real client IP is in X-Forwarded-For, which
+// the rate limiter below relies on.
+app.set('trust proxy', 1);
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || CORS_ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      return callback(null, false);
+    },
+  })
+);
+app.use(express.json({ limit: '64kb' }));
+
+/** Constant-time string comparison so secret checks don't leak via timing. */
+function timingSafeEqualStr(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
+/** Tiny in-memory per-IP + per-route limiter (no dependency). */
+const rateBuckets = new Map();
+function rateLimit({ windowMs, max }) {
+  return (req, res, next) => {
+    const key = `${req.ip}:${req.path}`;
+    const now = Date.now();
+    const bucket = rateBuckets.get(key);
+    if (!bucket || now > bucket.resetAt) {
+      rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    bucket.count += 1;
+    if (bucket.count > max) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+    return next();
+  };
+}
 
 // Phase 11 — confirmed-donation store (in-memory). Replace with a real DB
 // (SQLite/Postgres) before production; this keeps the phase testable locally.
@@ -109,11 +164,8 @@ function utcDayKey() {
  * The GitHub authorize step already happened in the OS browser and landed
  * the user back on mars://auth; this endpoint only swaps the code for a token.
  */
-app.post('/auth/github', async (req, res) => {
+app.post('/auth/github', rateLimit({ windowMs: 60_000, max: 30 }), async (req, res) => {
   const { code, redirectUri, codeVerifier } = req.body || {};
-
-  console.log('[relay] exchange request -> redirectUri:', redirectUri);
-  console.log('[relay] exchange request -> hasCode:', !!code, 'hasCodeVerifier:', !!codeVerifier);
 
   if (!code || !redirectUri) {
     return res.status(400).json({ error: 'Missing code or redirectUri' });
@@ -142,12 +194,12 @@ app.post('/auth/github', async (req, res) => {
     });
 
     const data = await response.json();
-    console.log('[relay] GitHub response:', JSON.stringify(data));
 
     if (data.error) {
       return res.status(401).json({ error: data.error_description || data.error });
     }
 
+    // Never log the response body: it contains the GitHub access token.
     res.json({ access_token: data.access_token });
   } catch (err) {
     console.error('[relay] exchange error:', err && err.message ? err.message : String(err));
@@ -164,7 +216,7 @@ app.post('/auth/github', async (req, res) => {
  * transaction against Flutterwave using the secret key, so a client-side
  * "success" callback can't be faked by the app on its own.
  */
-app.post('/verify-transaction', async (req, res) => {
+app.post('/verify-transaction', rateLimit({ windowMs: 60_000, max: 30 }), async (req, res) => {
   const { txRef } = req.body || {};
 
   if (!txRef) {
@@ -219,7 +271,11 @@ app.post('/verify-transaction', async (req, res) => {
 app.post('/flutterwave-webhook', express.json(), (req, res) => {
   const signature = req.headers['verif-hash'];
 
-  if (!signature || signature !== FLUTTERWAVE_WEBHOOK_SECRET_HASH) {
+  if (
+    !FLUTTERWAVE_WEBHOOK_SECRET_HASH ||
+    typeof signature !== 'string' ||
+    !timingSafeEqualStr(signature, FLUTTERWAVE_WEBHOOK_SECRET_HASH)
+  ) {
     return res.status(401).send('Invalid signature');
   }
 
@@ -249,6 +305,14 @@ app.post('/flutterwave-webhook', express.json(), (req, res) => {
  * store — replace with a real persistence layer before relying on it in prod.
  */
 app.get('/donation-history', (req, res) => {
+  // Disabled unless an admin token is configured: this returns donation PII
+  // (email + amount) and has no other authentication.
+  if (!RELAY_ADMIN_TOKEN) return res.status(404).json({ error: 'Not found' });
+  const provided = req.headers['x-admin-token'];
+  if (typeof provided !== 'string' || !timingSafeEqualStr(provided, RELAY_ADMIN_TOKEN)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const email = String(req.query.email || '');
   if (!email) return res.status(400).json({ error: 'Missing email' });
 
@@ -316,7 +380,7 @@ function buildFallbackMessages(text, context) {
  * The Groq key stays server-side, and the per-device daily cap is enforced
  * here (not client-side, which would be trivially bypassed) — PHASE_12 §8.
  */
-app.post('/fallback-chat', async (req, res) => {
+app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res) => {
   const { deviceId, text, context } = req.body || {};
 
   if (!deviceId || typeof text !== 'string' || !text.trim()) {
