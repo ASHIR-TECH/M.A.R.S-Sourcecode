@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { RelayClient } from './RelayClient';
 import { sendFallbackMessage } from './fallbackChatClient';
 import { buildAppChatContext } from './appContext';
@@ -84,16 +84,18 @@ export function useRelayConnection() {
     };
   }, [pairedDesktop, hydrateDevices, appendChatResponse, setConnectionStatus]);
 
-  const send = (message: OutboundMessage): boolean => {
+  // Stable identity: both close over the ref + module-level `getState()` reads,
+  // so consumers can safely depend on them without re-running effects.
+  const send = useCallback((message: OutboundMessage): boolean => {
     return clientRef.current?.send(message) ?? false;
-  };
+  }, []);
 
   /**
    * Routes a chat message to the paired desktop when it's reachable, otherwise
    * transparently falls back to quick-response mode (PHASE_12 FR-3/NFR-2).
    * The routing decision lives here — never in the Chat screen.
    */
-  const sendChatMessage = async (sessionId: string, text: string): Promise<void> => {
+  const sendChatMessage = useCallback(async (sessionId: string, text: string): Promise<void> => {
     // Preferred path: the desktop's embedded agent over REST (PHASE_14). It owns
     // the tool loop, so this is what can actually command other devices.
     const desktop = useDesktopStore.getState();
@@ -139,7 +141,7 @@ export function useRelayConnection() {
         .getState()
         .addAiMessage(sessionId, message, new Date().toISOString(), { viaFallback: true });
     }
-  };
+  }, []);
 
   return { send, sendChatMessage };
 }
