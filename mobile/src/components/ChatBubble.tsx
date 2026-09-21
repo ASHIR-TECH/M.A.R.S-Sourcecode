@@ -15,7 +15,7 @@ import { fonts } from '../theme/typography';
 import { glass } from '../theme/glass';
 import { spacing } from '../theme/spacing';
 
-export function ChatBubble({ message }: { message: ChatMessage }) {
+function ChatBubbleBase({ message }: { message: ChatMessage }) {
   const isUser = message.sender === 'user';
   const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
@@ -63,6 +63,10 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
     </View>
   );
 }
+
+/** Memoized: the thread re-renders whenever any message changes, but only the
+ * bubble whose `message` object actually changed should repaint. */
+export const ChatBubble = React.memo(ChatBubbleBase);
 
 const styles = StyleSheet.create({
   row: { paddingHorizontal: spacing.md, marginVertical: spacing.sm, alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
