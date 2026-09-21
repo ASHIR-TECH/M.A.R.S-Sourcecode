@@ -1,7 +1,30 @@
 import { PairingPayload, PairingError } from './types';
 
+const MAX_TEXT_LENGTH = 256;
+const MAX_URL_LENGTH = 2048;
+const MAX_TOKEN_LENGTH = 512;
+
 function isOptionalString(value: unknown): boolean {
   return value === undefined || typeof value === 'string';
+}
+
+function isShortString(value: unknown, max: number): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= max;
+}
+
+/**
+ * Rejects schemes the app must never follow from a scanned QR. Without this a
+ * hostile code could point `relayUrl` at `javascript:`/`file:`/`data:` or a
+ * cleartext `http:` host, leaking the pairing token to an arbitrary server.
+ */
+function hasScheme(value: string, allowed: readonly string[]): boolean {
+  if (value.length === 0 || value.length > MAX_URL_LENGTH) return false;
+  try {
+    const protocol = new URL(value).protocol.replace(/:$/, '').toLowerCase();
+    return allowed.includes(protocol);
+  } catch {
+    return false;
+  }
 }
 
 function isPairingErrorFree(payload: any): payload is PairingPayload {
@@ -9,14 +32,17 @@ function isPairingErrorFree(payload: any): payload is PairingPayload {
     typeof payload === 'object' &&
     payload !== null &&
     payload.version === 1 &&
-    typeof payload.desktopId === 'string' &&
-    typeof payload.desktopName === 'string' &&
-    typeof payload.pairingToken === 'string' &&
+    isShortString(payload.desktopId, MAX_TEXT_LENGTH) &&
+    isShortString(payload.desktopName, MAX_TEXT_LENGTH) &&
+    isShortString(payload.pairingToken, MAX_TOKEN_LENGTH) &&
     typeof payload.issuedAt === 'string' &&
     typeof payload.expiresAt === 'string' &&
-    typeof payload.relayUrl === 'string' &&
+    isShortString(payload.relayUrl, MAX_URL_LENGTH) &&
+    hasScheme(payload.relayUrl, ['ws', 'wss']) &&
     isOptionalString(payload.agentApiUrl) &&
-    isOptionalString(payload.agentApiToken)
+    (payload.agentApiUrl === undefined || hasScheme(payload.agentApiUrl, ['http', 'https'])) &&
+    isOptionalString(payload.agentApiToken) &&
+    (payload.agentApiToken === undefined || isShortString(payload.agentApiToken, MAX_TOKEN_LENGTH))
   );
 }
 
