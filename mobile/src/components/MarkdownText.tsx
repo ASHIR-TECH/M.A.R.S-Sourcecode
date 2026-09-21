@@ -75,7 +75,7 @@ interface MarkdownTextProps {
   style?: StyleProp<TextStyle>;
 }
 
-export function MarkdownText({ text, style }: MarkdownTextProps) {
+function MarkdownTextBase({ text, style }: MarkdownTextProps) {
   const blocks = React.useMemo(() => parse(text), [text]);
 
   return (
@@ -109,6 +109,8 @@ export function MarkdownText({ text, style }: MarkdownTextProps) {
     </React.Fragment>
   );
 }
+
+export const MarkdownText = React.memo(MarkdownTextBase);
 
 const styles = StyleSheet.create({
   tableWrap: {
