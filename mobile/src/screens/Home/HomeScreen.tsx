@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -55,8 +55,13 @@ export function HomeScreen({ onDevicePress, onChatPress }: HomeScreenProps) {
   const thumbTop = scrollbarVisible ? progress * (viewportH - thumbHeight) : 0;
 
   // Home only shows the top devices; anything above the cap lives in the Device Hub.
-  const visibleDevices = filteredDevices().slice(0, HOME_DEVICE_CAP);
-  const onlineCount = devices.filter((d) => d.status !== 'offline').length;
+  // Memoized so the 60fps scroll-driven re-renders don't re-filter the list.
+  const visibleDevices = useMemo(
+    () => filteredDevices().slice(0, HOME_DEVICE_CAP),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [devices, searchQuery]
+  );
+  const onlineCount = useMemo(() => devices.filter((d) => d.status !== 'offline').length, [devices]);
 /** Line 30 is where you change the SVG size */
 return (
     <AppBackground blurred>
