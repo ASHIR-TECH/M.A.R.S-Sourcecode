@@ -87,4 +87,34 @@ describe('parsePairingPayload', () => {
     expect(isPairingError(result)).toBe(true);
     if (isPairingError(result)) expect(result.reason).toBe('invalid_schema');
   });
+
+  it('rejects a relayUrl whose scheme is not ws/wss', () => {
+    for (const relayUrl of ['javascript:alert(1)', 'file:///etc/passwd', 'https://relay.example.com', 'data:text/plain,x']) {
+      const result = parsePairingPayload(JSON.stringify({ ...validPayload, relayUrl }));
+      expect(isPairingError(result)).toBe(true);
+      if (isPairingError(result)) expect(result.reason).toBe('invalid_schema');
+    }
+  });
+
+  it('rejects an agentApiUrl whose scheme is not http/https', () => {
+    const result = parsePairingPayload(
+      JSON.stringify({ ...validPayload, agentApiUrl: 'file:///etc/passwd', agentApiToken: 'adtp_tok' })
+    );
+    expect(isPairingError(result)).toBe(true);
+    if (isPairingError(result)) expect(result.reason).toBe('invalid_schema');
+  });
+
+  it('still accepts a ws:// relay for local-network pairing', () => {
+    const lan = { ...validPayload, relayUrl: 'ws://192.168.1.20:40000' };
+    const result = parsePairingPayload(JSON.stringify(lan));
+    expect(isPairingError(result)).toBe(false);
+  });
+
+  it('rejects an over-long field (defends against payload flooding)', () => {
+    const result = parsePairingPayload(
+      JSON.stringify({ ...validPayload, desktopName: 'x'.repeat(1000) })
+    );
+    expect(isPairingError(result)).toBe(true);
+    if (isPairingError(result)) expect(result.reason).toBe('invalid_schema');
+  });
 });

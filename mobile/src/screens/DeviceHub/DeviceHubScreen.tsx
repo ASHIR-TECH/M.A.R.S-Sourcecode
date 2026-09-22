@@ -54,6 +54,14 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
     [removeDevice]
   );
 
+  const keyExtractor = useCallback((d: DeviceWithMetrics) => d.id, []);
+  const renderNode = useCallback(
+    ({ item }: { item: DeviceWithMetrics }) => (
+      <NodeCard node={item} onEdit={setEditing} onRemove={handleRemove} />
+    ),
+    [handleRemove]
+  );
+
   return (
     <AppBackground blurred>
       <View style={styles.container}>
@@ -71,11 +79,11 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
 
         <FlatList
           data={hubDevices}
-          keyExtractor={(d) => d.id}
+          keyExtractor={keyExtractor}
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.grid}
-          renderItem={({ item }) => <NodeCard node={item} onEdit={setEditing} onRemove={handleRemove} />}
+          renderItem={renderNode}
         />
       </View>
 

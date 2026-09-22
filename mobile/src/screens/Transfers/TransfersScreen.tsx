@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RefreshControl, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
 import { useDesktopStore } from '../../store/useDesktopStore';
 import { useTransferStore } from '../../store/useTransferStore';
@@ -44,7 +45,7 @@ const PILL_TEXT = {
   bad: styles.statusBadText,
 } as const;
 
-function TransferRow({ transfer }: { transfer: TransferRecord }) {
+function TransferRowBase({ transfer }: { transfer: TransferRecord }) {
   const tone = statusTone(transfer.status);
   const glyph = transfer.direction === 'incoming' ? '↓' : '↑';
   const meta = [
@@ -77,7 +78,7 @@ function TransferRow({ transfer }: { transfer: TransferRecord }) {
   );
 }
 
-function SessionRow({ session }: { session: SessionRecord }) {
+function SessionRowBase({ session }: { session: SessionRecord }) {
   const meta = [
     'active',
     session.transferCount != null ? `${session.transferCount} transfers` : '',
@@ -100,7 +101,7 @@ function SessionRow({ session }: { session: SessionRecord }) {
   );
 }
 
-function WatcherRow({ watcher }: { watcher: WatcherRecord }) {
+function WatcherRowBase({ watcher }: { watcher: WatcherRecord }) {
   const meta = [watcher.peerName || watcher.peerId, 'auto-receive'].filter(Boolean).join(' · ');
   return (
     <View style={styles.row}>
@@ -125,6 +126,10 @@ function EmptyRow({ label }: { label: string }) {
     </View>
   );
 }
+
+const TransferRow = React.memo(TransferRowBase);
+const SessionRow = React.memo(SessionRowBase);
+const WatcherRow = React.memo(WatcherRowBase);
 
 /** Transfers tab (PHASE_14 §Transfers): polls the desktop's REST gateway for
  * recent transfers, active sessions and watchers. No transfer bytes ever touch
@@ -162,6 +167,34 @@ export function TransfersScreen() {
     setRefreshing(false);
   }, [connection, refresh]);
 
+  // Rebuilt only when the underlying records change, so the poll's periodic
+  // store writes don't remount every row on unrelated renders.
+  const listData: { key: string; node: React.ReactElement }[] = useMemo(
+    () => [
+      { key: 'x', node: <Text style={styles.sectionLabel}>Recent Transfers ({transfers.length})</Text> },
+      ...(transfers.length === 0
+        ? [{ key: 'x-empty', node: <EmptyRow label="No transfers yet." /> }]
+        : transfers.map((t) => ({ key: `t-${t.id}`, node: <TransferRow transfer={t} /> }))),
+      { key: 'y', node: <Text style={styles.sectionLabel}>Connected Sessions ({sessions.length})</Text> },
+      ...(sessions.length === 0
+        ? [{ key: 'y-empty', node: <EmptyRow label="No active sessions." /> }]
+        : sessions.map((s) => ({ key: `s-${s.id}`, node: <SessionRow session={s} /> }))),
+      ...(watchers.length > 0
+        ? [
+            { key: 'z', node: <Text style={styles.sectionLabel}>Watch Folders ({watchers.length})</Text> },
+            ...watchers.map((w) => ({ key: `w-${w.path}`, node: <WatcherRow watcher={w} /> })),
+          ]
+        : []),
+    ],
+    [transfers, sessions, watchers]
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: { key: string; node: React.ReactElement } }) => item.node,
+    []
+  );
+  const keyExtractor = useCallback((item: { key: string }) => item.key, []);
+
   if (!connected) {
     return (
       <AppBackground blurred>
@@ -182,29 +215,15 @@ export function TransfersScreen() {
           <Text style={styles.title}>TRANSFERS</Text>
         </View>
 
-        <FlatList
+        <FlashList
           style={styles.list}
           contentContainerStyle={{ paddingBottom: spacing.xl }}
           refreshControl={
             <RefreshControl refreshing={refreshing || loading} onRefresh={onRefresh} tintColor={colors.accent} />
           }
-          data={[
-            { key: 'x', node: <Text style={styles.sectionLabel}>Recent Transfers ({transfers.length})</Text> },
-            ...(transfers.length === 0
-              ? [{ key: 'x-empty', node: <EmptyRow label="No transfers yet." /> }]
-              : transfers.map((t) => ({ key: `t-${t.id}`, node: <TransferRow transfer={t} /> }))),
-            { key: 'y', node: <Text style={styles.sectionLabel}>Connected Sessions ({sessions.length})</Text> },
-            ...(sessions.length === 0
-              ? [{ key: 'y-empty', node: <EmptyRow label="No active sessions." /> }]
-              : sessions.map((s) => ({ key: `s-${s.id}`, node: <SessionRow session={s} /> }))),
-            ...(watchers.length > 0
-              ? [
-                  { key: 'z', node: <Text style={styles.sectionLabel}>Watch Folders ({watchers.length})</Text> },
-                  ...watchers.map((w) => ({ key: `w-${w.path}`, node: <WatcherRow watcher={w} /> })),
-                ]
-              : []),
-          ]}
-          renderItem={({ item }) => item.node}
+          data={listData}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
         />
       </View>
     </AppBackground>

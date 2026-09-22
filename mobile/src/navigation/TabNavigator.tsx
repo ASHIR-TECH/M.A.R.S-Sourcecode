@@ -6,14 +6,7 @@ import { PagerTabView } from './PagerTabView';
 import { TabBarVisibilityProvider } from './TabBarVisibility';
 import { AppBackground } from '../components/AppBackground';
 import { ConnectionStatusBanner } from '../components/ConnectionStatusBanner';
-import { useRelayConnection } from '../relay/useRelayConnection';
-
-function RelayConnectionProvider({ children }: { children: React.ReactNode }) {
-  // Opens the WS connection to the paired desktop once authenticated. It also
-  // writes inbound state/chat messages into the stores (PHASE_6).
-  useRelayConnection();
-  return <>{children}</>;
-}
+import { RelayConnectionProvider } from '../relay/RelayConnectionContext';
 
 /**
  * Phase 4 tab shell. Fully config-driven from TAB_CONFIG: the bottom bar and

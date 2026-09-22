@@ -1,19 +1,28 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, StyleSheet, Animated, Easing, useWindowDimensions, Platform, KeyboardAvoidingView, Keyboard } from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
-import * as Haptics from 'expo-haptics';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  Animated,
+  Easing,
+  useWindowDimensions,
+  Platform,
+  KeyboardAvoidingView,
+  Keyboard,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import type { FlashListRef } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
 import { useChatSessionStore } from '../../store/useChatSessionStore';
-import { useRelayConnection } from '../../relay/useRelayConnection';
+import { useRelayConnectionApi } from '../../relay/RelayConnectionContext';
 import { ChatBubble } from '../../components/ChatBubble';
-import { AttachmentCard } from '../../components/AttachmentCard';
 import { TypingIndicator } from '../../components/TypingIndicator';
-import { ChatAttachment } from '../../types/chatMessage';
+import { ChatMessage } from '../../types/chatMessage';
+import { ChatComposer } from './ChatComposer';
 import { styles } from './ChatScreen.styles';
 import { spacing } from '../../theme/spacing';
 import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
-
-const SESSION_ID = 'default-session'; // multi-session support deferred
 
 /** A glowing amber light that sweeps left→right along a line, looping forever. */
 function AnimatedHeaderLine() {
@@ -58,17 +67,17 @@ function AnimatedHeaderLine() {
 }
 
 export function ChatScreen() {
-  const { messages, isAwaitingResponse, addUserMessage, markSent } = useChatSessionStore();
-  const { sendChatMessage } = useRelayConnection();
-  const [draft, setDraft] = useState('');
-  const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
+  const messages = useChatSessionStore((s) => s.messages);
+  const isAwaitingResponse = useChatSessionStore((s) => s.isAwaitingResponse);
+  const { sendChatMessage } = useRelayConnectionApi();
   const [keyboardH, setKeyboardH] = useState(0);
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<FlashListRef<ChatMessage>>(null);
+  const atBottomRef = useRef(true);
 
   // Standard chat behavior: when the keyboard opens the input bar rides on
   // top of it (container bottom padding shrinks) and the thread scrolls up so
   // the latest bubble stays visible above the input.
-  React.useEffect(() => {
+  useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
       setKeyboardH(e.endCoordinates.height);
       requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -80,41 +89,23 @@ export function ChatScreen() {
     };
   }, []);
 
-  const handleSend = () => {
-    if (!draft.trim() && !attachment) return;
+  // Only auto-follow new content while the user is parked at the bottom; if
+  // they scrolled up to read history, an incoming bubble must not yank them.
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    atBottomRef.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 80;
+  }, []);
 
-    // Optimistic append — the user's message renders instantly (sending → sent).
-    const text = draft.trim();
-    const message = addUserMessage(text, SESSION_ID, attachment ?? undefined);
-    markSent(message.id);
+  const handleContentSizeChange = useCallback(() => {
+    if (atBottomRef.current) listRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
-    // Routing (relay vs. quick-response fallback) is decided inside the hook,
-    // never here — PHASE_12 NFR-2.
-    void sendChatMessage(SESSION_ID, message.text);
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setDraft('');
-    setAttachment(null);
-  };
-
-  // File attach: pick a document from local storage and surface it as a chip.
-  const handleAttach = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (!result.canceled) {
-        const asset = result.assets[0];
-        if (asset) {
-          setAttachment({ name: asset.name, mimeType: asset.mimeType, size: asset.size ?? undefined, uri: asset.uri });
-        }
-      }
-    } catch {
-      // picker dismiss/cancel needs no handling
-    }
-  };
+  const keyExtractor = useCallback((m: ChatMessage) => m.id, []);
+  const renderMessage = useCallback(
+    ({ item }: { item: ChatMessage }) => <ChatBubble message={item} />,
+    []
+  );
+  const footer = isAwaitingResponse ? <TypingIndicator /> : null;
 
   return (
     <AppBackground>
@@ -130,44 +121,19 @@ export function ChatScreen() {
           <AnimatedHeaderLine />
         </View>
 
-        <FlatList
+        <FlashList
           ref={listRef}
           data={messages}
-          keyExtractor={(m) => m.id}
-          renderItem={({ item }) => <ChatBubble message={item} />}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          ListFooterComponent={isAwaitingResponse ? <TypingIndicator /> : null}
+          keyExtractor={keyExtractor}
+          renderItem={renderMessage}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onContentSizeChange={handleContentSizeChange}
+          ListFooterComponent={footer}
           contentContainerStyle={styles.thread}
         />
 
-        <View style={styles.inputWrap}>
-          {attachment && (
-            <AttachmentCard attachment={attachment} size="preview" onRemove={() => setAttachment(null)} />
-          )}
-          <View style={styles.inputBar}>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder="Ask Co-Pilot about node statuses…"
-              placeholderTextColor="#8A7A68"
-              style={[styles.input, Platform.OS === 'web' && ({ outlineStyle: 'none' } as object)]}
-              selectionColor="rgba(232,163,77,0.35)"
-              onSubmitEditing={handleSend}
-              multiline
-              blurOnSubmit={false}
-            />
-            <View style={styles.actions}>
-              {draft.trim().length > 0 && (
-                <Pressable onPress={handleAttach} style={styles.attachButton} accessibilityLabel="Attach file">
-                  <Text style={styles.attachIcon}>{'+'}</Text>
-                </Pressable>
-              )}
-              <Pressable onPress={handleSend} style={styles.sendButton} accessibilityLabel="Send message">
-                <Text style={styles.sendIcon}>{'➤'}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
+        <ChatComposer sendChatMessage={sendChatMessage} />
       </View>
       </KeyboardAvoidingView>
     </AppBackground>

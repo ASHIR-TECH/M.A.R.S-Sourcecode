@@ -13,7 +13,7 @@ interface DeviceCardProps {
   onPress?: (device: Device) => void;
 }
 
-export function DeviceCard({ device, onPress }: DeviceCardProps) {
+function DeviceCardBase({ device, onPress }: DeviceCardProps) {
   const nameFontSize = Math.max(14, 26 - device.name.length * 0.75);
   return (
     <Pressable
@@ -36,6 +36,8 @@ export function DeviceCard({ device, onPress }: DeviceCardProps) {
     </Pressable>
   );
 }
+
+export const DeviceCard = React.memo(DeviceCardBase);
 
 const styles = StyleSheet.create({
   card: {
