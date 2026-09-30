@@ -32,3 +32,27 @@ jobs:
 
       - name: Run tests
         run: npm test -- --ci
+
+  auth-server-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # node:sqlite and --env-file-if-exists both need a modern runtime.
+          node-version: 24
+          cache: npm
+          cache-dependency-path: auth-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit
+        run: npm audit --audit-level=high
+
+      - name: Run tests
+        run: npm test
