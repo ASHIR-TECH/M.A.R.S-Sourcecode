@@ -1,14 +1,3 @@
 {
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "Figma": {
-      "type": "local",
-      "command": ["npx", "-y", "figma-developer-mcp", "--stdio"],
-      "env": {
-        "FIGMA_API_KEY": "${FIGMA_TOKEN}"
-      },
-      "enabled": true,
-      "timeout": 15000
-    }
-  }
+  "$schema": "https://opencode.ai/config.json"
 }
