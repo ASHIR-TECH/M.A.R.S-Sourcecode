@@ -94,8 +94,8 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
           payment_options: 'card,mobilemoney,ussd,banktransfer',
           redirect_url: FLUTTERWAVE_REDIRECT_URL,
           customer: {
-            email: session?.email ?? 'donor@example.com',
-            name: session?.fullName ?? 'Anonymous Donor',
+            email: session?.user.email ?? 'donor@example.com',
+            name: session?.user.name ?? 'Anonymous Donor',
           },
         },
         controller
