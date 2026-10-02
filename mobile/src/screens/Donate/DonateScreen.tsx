@@ -9,6 +9,7 @@ import { verifyDonation } from '../../donation/donationApi';
 import { donationReducer, initialDonationState } from '../../donation/donationReducer';
 import { AmountChip } from '../../components/AmountChip';
 import { DonationSuccessView } from './DonationSuccessView';
+import { DONATIONS_ENABLED } from '../../config/featureFlags';
 import { colors } from '../../theme/colors';
 import { styles } from './DonateScreen.styles';
 
@@ -69,10 +70,17 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
   const finalAmount = customAmount ? parsedCustom : selectedAmount;
   const symbol = FLUTTERWAVE_SYMBOLS[currency];
 
+  // Three independent reasons checkout cannot open. Any one of them disables
+  // the button, so a partial setup can never reach a payment sheet.
+  const notEnabled = !DONATIONS_ENABLED;
   const notConfigured = !FLUTTERWAVE_PUBLIC_KEY;
+  const donationsUnavailable = notEnabled || notConfigured;
+  const unavailableReason = notEnabled
+    ? 'Donations are temporarily unavailable while payments are being set up. Nothing has been charged.'
+    : 'Donations are not configured yet — the developer has not added a Flutterwave public key.';
 
   const handleDonatePress = async () => {
-    if (!finalAmount || finalAmount <= 0 || notConfigured) return;
+    if (!finalAmount || finalAmount <= 0 || donationsUnavailable) return;
     if (state.status === 'checkout_open' || state.status === 'verifying') return;
 
     const reference = generateTxRef();
@@ -226,10 +234,11 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
             ))}
           </View>
 
-          {notConfigured && (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              Donations are not configured yet — the developer has not added a Flutterwave public key.
-            </Text>
+          {donationsUnavailable && (
+            <View style={styles.unavailableBanner} accessibilityRole="alert">
+              <Text style={styles.unavailableTitle}>Payments temporarily disabled</Text>
+              <Text style={styles.unavailableText}>{unavailableReason}</Text>
+            </View>
           )}
 
           {state.status === 'failed' && (
@@ -241,21 +250,26 @@ export function DonateScreen({ onClose }: DonateScreenProps) {
           <Pressable
             style={({ pressed }) => [
               styles.donateButton,
-              (!finalAmount || notConfigured || state.status === 'checkout_open' || state.status === 'verifying') &&
+              (!finalAmount || donationsUnavailable || state.status === 'checkout_open' || state.status === 'verifying') &&
                 styles.donateButtonDisabled,
               pressed && styles.donateButtonPressed,
             ]}
             onPress={handleDonatePress}
-            disabled={!finalAmount || notConfigured || state.status === 'checkout_open' || state.status === 'verifying'}
+            disabled={!finalAmount || donationsUnavailable || state.status === 'checkout_open' || state.status === 'verifying'}
             accessibilityRole="button"
-            accessibilityLabel={`Donate ${symbol}${finalAmount || 0}`}
+            accessibilityState={{ disabled: !finalAmount || donationsUnavailable }}
+            accessibilityLabel={
+              donationsUnavailable ? 'Donate, currently unavailable' : `Donate ${symbol}${finalAmount || 0}`
+            }
           >
             <Text style={styles.donateButtonText}>
               {state.status === 'verifying'
                 ? 'Verifying…'
                 : state.status === 'checkout_open'
                   ? 'Opening checkout…'
-                  : `Donate ${symbol}${finalAmount || 0}`}
+                  : donationsUnavailable
+                    ? 'Donations unavailable'
+                    : `Donate ${symbol}${finalAmount || 0}`}
             </Text>
           </Pressable>
         </ScrollView>
