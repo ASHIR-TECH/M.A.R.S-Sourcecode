@@ -1,10 +1,9 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { create } from 'zustand';
-import { authClient } from '../auth/authClient';
-import { appleAuthProvider } from '../auth/appleAuthProvider';
-import { githubAuthProvider } from '../auth/githubAuthProvider';
-import { googleAuthProvider } from '../auth/googleAuthProvider';
-import { sessionStorage } from '../auth/sessionStorage';
-import { AuthCancelledError, AuthProviderName, AuthSession, isSessionExpired, OAuthGrant } from '../auth/types';
+import { signInWithOAuthProvider } from '../auth/oauthSignIn';
+import { toAuthSession } from '../auth/sessionMapper';
+import { requireSupabase, isSupabaseConfigured } from '../auth/supabaseClient';
+import { AuthCancelledError, AuthProviderName, AuthSession } from '../auth/types';
 
 type AuthStatus = 'restoring' | 'idle' | 'loading' | 'authenticated' | 'error';
 
@@ -18,7 +17,7 @@ interface AuthState {
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   restoreSession: () => Promise<void>;
-  /** Returns a valid access token, refreshing it first if it has expired. */
+  /** Returns a valid access token, refreshed by Supabase if it has lapsed. */
   getAccessToken: () => Promise<string | null>;
 }
 
@@ -26,16 +25,39 @@ function errorMessage(err: unknown): string {
   return err instanceof Error && err.message ? err.message : 'Sign-in failed. Please try again.';
 }
 
+/**
+ * Keeps the store in step with Supabase without ever making an async Supabase
+ * call from inside the listener: supabase-js holds an internal lock while
+ * dispatching, so awaiting `getSession()` in there deadlocks the client. The
+ * callback only reads the session it was handed and sets state synchronously.
+ */
+function publish(set: (partial: Partial<AuthState>) => void, session: AuthSession | null) {
+  if (session) {
+    set({ status: 'authenticated', session, error: null, loadingProvider: null });
+  } else {
+    set({ status: 'idle', session: null, error: null, loadingProvider: null });
+  }
+}
+
 export const useAuthStore = create<AuthState>((set, get) => {
-  async function runSignIn(provider: AuthProviderName, collectGrant: () => Promise<OAuthGrant>) {
+  let unsubscribe: (() => void) | null = null;
+
+  function ensureSubscribed() {
+    if (unsubscribe || !isSupabaseConfigured()) return;
+    unsubscribe = requireSupabase()
+      .auth.onAuthStateChange((_event, session) => {
+        publish(set, session ? toAuthSession(session) : null);
+      }).data.subscription.unsubscribe;
+  }
+
+  async function runSignIn(provider: AuthProviderName, flow: () => Promise<void>) {
     set({ status: 'loading', loadingProvider: provider, error: null });
     try {
-      const grant = await collectGrant();
-      // The server verifies the provider credential; the app only ever holds
-      // the resulting app session.
-      const session = await authClient.signIn(grant);
-      await sessionStorage.save(session);
-      set({ status: 'authenticated', session, error: null, loadingProvider: null });
+      await flow();
+      // The SIGNED_IN event drives the transition to 'authenticated'; reading
+      // the session back covers providers that do not emit one.
+      const { data } = await requireSupabase().auth.getSession();
+      publish(set, data.session ? toAuthSession(data.session) : null);
     } catch (err) {
       if (err instanceof AuthCancelledError) {
         set({ status: 'idle', error: null, loadingProvider: null });
@@ -46,17 +68,29 @@ export const useAuthStore = create<AuthState>((set, get) => {
   }
 
   /**
-   * Ends the session locally. Swallows storage failures on purpose: this runs
-   * from error paths that must still resolve, and a keystore that refuses to
-   * delete is no reason to leave a stale session in memory.
+   * Apple keeps its native sign-in button (required by App Store review) and
+   * hands the resulting identity token straight to Supabase, so the account
+   * unifies with any other Apple-linked identity on the same project.
    */
-  async function dropSession() {
-    try {
-      await sessionStorage.clear();
-    } catch {
-      // ignore
+  async function appleFlow() {
+    const available = await AppleAuthentication.isAvailableAsync();
+    if (!available) throw new Error('Apple sign-in is not available on this device.');
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    if (!credential.identityToken) {
+      throw new Error('Apple did not return an identity token.');
     }
-    set({ status: 'idle', session: null, error: null, loadingProvider: null });
+
+    await requireSupabase().auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken,
+    });
   }
 
   return {
@@ -65,64 +99,79 @@ export const useAuthStore = create<AuthState>((set, get) => {
     error: null,
     loadingProvider: null,
 
-    signInWithGoogle: () => runSignIn('google', googleAuthProvider.signIn),
-    signInWithGithub: () => runSignIn('github', githubAuthProvider.signIn),
-    signInWithApple: () => runSignIn('apple', appleAuthProvider.signIn),
+    signInWithGoogle: () => runSignIn('google', () => signInWithOAuthProvider('google')),
+
+    signInWithGithub: () => runSignIn('github', () => signInWithOAuthProvider('github')),
+
+    signInWithApple: () => runSignIn('apple', appleFlow),
 
     signOut: async () => {
-      const current = get().session;
-      if (current) {
-        // Best effort: revoke server-side, but never trap the user on a
-        // network failure.
-        try {
-          await authClient.logout(current.refreshToken);
-        } catch {
-          // ignore
-        }
+      // Supabase revokes the refresh token server-side. Best effort: a network
+      // failure must not trap the user on a screen they cannot leave.
+      try {
+        await requireSupabase().auth.signOut();
+      } catch {
+        // ignore
       }
-      await dropSession();
+      set({ status: 'idle', session: null, error: null, loadingProvider: null });
     },
 
     /**
-     * A stored session is treated as a claim, not as proof. It is refreshed if
-     * the access token has lapsed, then confirmed against GET /auth/me, and
-     * only then promoted to "authenticated".
+     * Confirms a persisted session at startup.
      *
-     * This must never reject: the navigator waits on it, and an escaping
+     * Supabase restores from the keystore itself, so this just surfaces the
+     * result. It must never reject: the navigator waits on it, and an escaping
      * error would leave the app stuck on the splash screen forever.
      */
     restoreSession: async () => {
       try {
-        const stored = await sessionStorage.load();
-        if (!stored) {
+        if (!isSupabaseConfigured()) {
           set({ status: 'idle', session: null, error: null, loadingProvider: null });
           return;
         }
 
-        const session = isSessionExpired(stored) ? await authClient.refresh(stored.refreshToken) : stored;
-        const user = await authClient.me(session.accessToken);
-        const validated: AuthSession = { ...session, user };
+        ensureSubscribed();
 
-        if (validated !== stored) await sessionStorage.save(validated);
-        set({ status: 'authenticated', session: validated, error: null, loadingProvider: null });
+        const { data, error } = await requireSupabase().auth.getSession();
+
+        if (error) throw error;
+
+        if (!data.session) {
+          set({ status: 'idle', session: null, error: null, loadingProvider: null });
+          return;
+        }
+
+        // Never trust the stored session on its own: ask Supabase whether the
+        // user still exists and the token is still good.
+        const { data: fresh, error: userError } = await requireSupabase().auth.getUser();
+        if (userError) throw userError;
+
+        publish(set, toAuthSession({ ...data.session, user: fresh.user }));
       } catch {
-        await dropSession();
+        // An undecryptable or revoked session is not worth surfacing; the user
+        // simply signs in again.
+        set({ status: 'idle', session: null, error: null, loadingProvider: null });
       }
     },
 
     getAccessToken: async () => {
       const current = get().session;
       if (!current) return null;
-      if (!isSessionExpired(current)) return current.accessToken;
 
       try {
-        const refreshed = await authClient.refresh(current.refreshToken);
-        await sessionStorage.save(refreshed);
-        set({ session: refreshed, status: 'authenticated' });
-        return refreshed.accessToken;
+        // Supabase refreshes the token transparently when it is close to expiry.
+        const { data, error } = await requireSupabase().auth.getSession();
+        if (error) throw error;
+        if (!data.session) {
+          set({ status: 'idle', session: null, error: null, loadingProvider: null });
+          return null;
+        }
+        const next = toAuthSession(data.session);
+        set({ session: next });
+        return next.accessToken;
       } catch {
-        // The refresh token is spent or was revoked: end the session.
-        await dropSession();
+        // The refresh token was revoked or the account deleted: end the session.
+        set({ status: 'idle', session: null, error: null, loadingProvider: null });
         return null;
       }
     },
