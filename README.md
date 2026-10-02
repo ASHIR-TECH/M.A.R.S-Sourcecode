@@ -165,8 +165,13 @@ offline fallback last** — and the user is never left staring at a spinner.
   tone pills — polled from the desktop REST gateway.
 
 ### Accounts & Privacy
-- OAuth sign-in — **Google, GitHub**, session persisted in
-  SecureStore; sign-out leaves pairing untouched.
+- OAuth sign-in — **Google, GitHub, Apple**, handled by **Supabase Auth**. The
+  app sends the user to the provider in the system browser, Supabase exchanges
+  the authorization code on its own servers, and the provider token never
+  touches the device. The Supabase session is persisted in SecureStore (not
+  AsyncStorage, so the refresh token stays behind hardware-backed encryption),
+  re-validated against Supabase on launch, and sign-out revokes it server-side;
+  sign-out leaves pairing untouched.
 - Dedicated **Privacy & Security** screen: what data is collected, payment
   handling, retention, third-party services, and in-app legal documents.
 
@@ -188,7 +193,7 @@ offline fallback last** — and the user is never left staring at a spinner.
 | Framework | **Expo SDK 54** · **React Native 0.81** · React 19.1 · TypeScript (strict) |
 | Navigation | Custom tab navigator + `PagerTabView` (`src/navigation/`) |
 | State | **Zustand** stores (`src/store/`) |
-| Auth | `expo-auth-session` · Google / GitHub OAuth · `expo-apple-authentication` |
+| Auth | **Supabase Auth** (`@supabase/supabase-js`, PKCE) · `expo-auth-session` + `expo-web-browser` for the redirect · `expo-apple-authentication` |
 | Secure storage | `expo-secure-store` (session · pairing token · agent token) |
 | Camera | `expo-camera` `CameraView` with QR barcode scanning |
 | Realtime | Native `WebSocket` relay client with backoff |
@@ -219,7 +224,7 @@ offline fallback last** — and the user is never left staring at a spinner.
 │       │                    #   pairingStorage · types
 │       ├── relay/           # RelayClient (WS) · useRelayConnection ·
 │       │                    #   appContext · fallbackChatClient
-│       ├── auth/            # google/google/github/apple providers · sessionStorage
+│       ├── auth/            # Supabase client · OAuth redirect · SecureStore adapter · mapper
 │       ├── components/      # reusable UI primitives + icons
 │       ├── donation/        # Flutterwave reducer, tx-ref, verification
 │       ├── theme/           # colors · typography · spacing · glass

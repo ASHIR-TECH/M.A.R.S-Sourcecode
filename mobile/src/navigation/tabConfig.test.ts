@@ -1,14 +1,16 @@
-// SettingsNow-hosted ProfileScreen transitively imports the auth store chain,
-// whose provider modules run a module-level makeRedirectUri side effect that
-// fails under jest without an expo manifest — mock them (see SignInScreen.test).
-jest.mock('../auth/googleAuthProvider', () => ({
-  googleAuthProvider: { signIn: jest.fn() },
+// ProfileScreen transitively imports the auth store chain, which constructs a
+// real Supabase client and runs a module-level makeRedirectUri side effect that
+// fails under jest without an expo manifest — mock it (see SignInScreen.test).
+jest.mock('../auth/supabaseClient', () => ({
+  isSupabaseConfigured: () => false,
+  requireSupabase: () => {
+    throw new Error('Supabase is not configured in this test.');
+  },
 }));
-jest.mock('../auth/githubAuthProvider', () => ({
-  githubAuthProvider: { signIn: jest.fn() },
-}));
-jest.mock('../auth/sessionStorage', () => ({
-  sessionStorage: { save: jest.fn(), load: jest.fn(), clear: jest.fn() },
+jest.mock('../auth/oauthSignIn', () => ({
+  signInWithOAuthProvider: jest.fn(),
+  oauthRedirectUri: () => 'mars://auth',
+  completeOAuthFromUrl: jest.fn(),
 }));
 
 import { TAB_CONFIG } from './tabConfig';

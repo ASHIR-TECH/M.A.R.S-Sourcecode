@@ -57,17 +57,15 @@ function loadEnvFile(filePath) {
   return vars;
 }
 
-// Merged env: the app-level .env (EXPO_PUBLIC_GITHUB_CLIENT_ID, tunnel URL)
-// plus the relay-level .env (GITHUB_CLIENT_SECRET ...), relay values win.
+// Merged env: the app-level .env (tunnel URL) plus the relay-level .env
+// (donation + chat secrets), relay values win.
 const envVars = {
   ...loadEnvFile(path.resolve(__dirname, '..', '.env')),
   ...loadEnvFile(path.resolve(__dirname, '.env')),
   ...process.env,
 };
 
-const GITHUB_CLIENT_ID = envVars.EXPO_PUBLIC_GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = envVars.GITHUB_CLIENT_SECRET;
-const PUBLIC_URL = envVars.EXPO_PUBLIC_AUTH_RELAY_URL || envVars.RELAY_PUBLIC_URL || '';
+const PUBLIC_URL = envVars.RELAY_PUBLIC_URL || '';
 const PORT = Number(envVars.PORT || 3001);
 
 // Phase 11 — Flutterwave donations. The secret key and webhook hash must live
@@ -157,55 +155,14 @@ function utcDayKey() {
 }
 
 /**
- * POST /auth/github
- * Contract expected by the app (githubAuthProvider.ts):
- *   body    { code, redirectUri, codeVerifier }
- *   success { access_token }
- * The GitHub authorize step already happened in the OS browser and landed
- * the user back on mars://auth; this endpoint only swaps the code for a token.
+ * Authentication is not handled here.
+ *
+ * The relay used to expose POST /auth/github, which swapped an OAuth code for
+ * a live GitHub access token and handed it to the app. That is gone: it left a
+ * provider credential on the device and bypassed any real session handling.
+ * Sign-in now runs entirely through Supabase Auth, which exchanges the provider
+ * code on its own servers, so this relay never sees an identity.
  */
-app.post('/auth/github', rateLimit({ windowMs: 60_000, max: 30 }), async (req, res) => {
-  const { code, redirectUri, codeVerifier } = req.body || {};
-
-  if (!code || !redirectUri) {
-    return res.status(400).json({ error: 'Missing code or redirectUri' });
-  }
-
-  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-    return res
-      .status(500)
-      .json({ error: 'GitHub OAuth not configured on server (EXPO_PUBLIC_GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET)' });
-  }
-
-  try {
-    const response = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
-        code,
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.error) {
-      return res.status(401).json({ error: data.error_description || data.error });
-    }
-
-    // Never log the response body: it contains the GitHub access token.
-    res.json({ access_token: data.access_token });
-  } catch (err) {
-    console.error('[relay] exchange error:', err && err.message ? err.message : String(err));
-    res.status(500).json({ error: 'Token exchange failed' });
-  }
-});
 
 /**
  * POST /verify-transaction
@@ -440,7 +397,6 @@ app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 20 }), async (req,
 app.get('/health', (req, res) => {
   res.json({
     ok: true,
-    githubConfigured: !!(GITHUB_CLIENT_ID && GITHUB_CLIENT_SECRET),
     flutterwaveConfigured: !!FLUTTERWAVE_SECRET_KEY,
     fallbackChatConfigured: !!GROQ_API_KEY,
     publicUrl: PUBLIC_URL,
@@ -451,7 +407,6 @@ app.get('/', (req, res) => {
   res.json({
     name: 'M.A.R.S backend relay',
     health: '/health',
-    github: 'POST /auth/github',
     donations: {
       verify: 'POST /verify-transaction',
       webhook: 'POST /flutterwave-webhook',
@@ -460,24 +415,18 @@ app.get('/', (req, res) => {
     chat: {
       fallback: 'POST /fallback-chat',
     },
-    note: 'Google returns an id_token straight to the app, so Google does not need this relay.',
+    note: 'Sign-in is served by Supabase Auth, not by this relay.',
   });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  const localUrl = `http://10.0.2.2:${PORT}/auth/github`;
   console.log(`[relay] running on http://0.0.0.0:${PORT}`);
   console.log('');
-  console.log('[relay] pick ONE of these for EXPO_PUBLIC_AUTH_RELAY_URL in mobile/.env:');
-  console.log(`[relay]   local (Android emulator -> host): ${localUrl}`);
-  if (PUBLIC_URL) console.log(`[relay]   tunnel (cloudflared etc.):           ${PUBLIC_URL}`);
-  else console.log('[relay]   tunnel: none set - start cloudflared and pass its URL as RELAY_PUBLIC_URL or EXPO_PUBLIC_AUTH_RELAY_URL');
+  if (PUBLIC_URL) console.log(`[relay] public URL:  ${PUBLIC_URL}`);
+  else console.log('[relay] public URL:  none set - set RELAY_PUBLIC_URL if the app connects from a device');
   console.log('');
-  console.log(`[relay] GitHub client id configured:  ${!!GITHUB_CLIENT_ID}`);
-  console.log(`[relay] GitHub client secret:\t${GITHUB_CLIENT_SECRET ? 'configured' : 'MISSING (relay/.env)'}`);
   console.log(`[relay] Flutterwave secret key:\t${FLUTTERWAVE_SECRET_KEY ? 'configured' : 'MISSING (relay/.env)'}`);
   console.log(`[relay] Flutterwave webhook hash:\t${FLUTTERWAVE_WEBHOOK_SECRET_HASH ? 'configured' : 'MISSING (relay/.env)'}`);
   console.log(`[relay] Groq fallback key:\t${GROQ_API_KEY ? 'configured' : 'MISSING (relay/.env)'}`);
-  console.log(`[relay] edit mobile/.env, then ${''}reload the app (bundle re-inlines EXPO_PUBLIC_* vars)`);
   console.log(`[relay] self-check: curl http://localhost:${PORT}/health`);
 });

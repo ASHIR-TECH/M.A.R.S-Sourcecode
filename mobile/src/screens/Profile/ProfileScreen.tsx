@@ -51,14 +51,14 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Avatar
-          photoUrl={session?.photoUrl}
-          fallbackInitials={initialsFrom(session?.fullName, session?.email)}
+          photoUrl={session?.user.picture ?? undefined}
+          fallbackInitials={initialsFrom(session?.user.name ?? undefined, session?.user.email ?? undefined)}
           size={72}
         />
-        <Text style={styles.name}>{session?.fullName ?? 'Operator'}</Text>
-        <Text style={styles.email}>{session?.email ?? ''}</Text>
+        <Text style={styles.name}>{session?.user.name ?? 'Operator'}</Text>
+        <Text style={styles.email}>{session?.user.email ?? ''}</Text>
         <Text style={styles.provider}>
-          Signed in with {session?.provider === 'github' ? 'GitHub' : 'Google'}
+          Signed in with {session?.user.provider === 'github' ? 'GitHub' : 'Google'}
         </Text>
       </View>
 

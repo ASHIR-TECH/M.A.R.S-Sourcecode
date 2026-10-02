@@ -44,6 +44,16 @@ export const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   errorText: { color: '#E05A47', fontSize: 13 },
+  unavailableBanner: {
+    backgroundColor: 'rgba(215,128,30,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(215,128,30,0.35)',
+    borderRadius: 10,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  unavailableTitle: { color: colors.accent, fontSize: 13, fontWeight: '700' },
+  unavailableText: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   donateButton: {
     backgroundColor: colors.accent,
     borderRadius: 12,

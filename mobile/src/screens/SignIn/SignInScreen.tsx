@@ -2,20 +2,23 @@ import React from 'react';
 import { View, Text, Linking, Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { AppBackground } from '../../components/AppBackground';
-import { GoogleIcon } from '../../components/icons/GoogleIcon';
 import { GitHubIcon } from '../../components/icons/GitHubIcon';
 import { OAuthButton } from '../../components/buttons/OAuthButton';
+import { GoogleSignInButton } from '../../components/buttons/GoogleSignInButton';
 import { useAuthStore } from '../../store/useAuthStore';
 import { styles } from './SignInScreen.styles';
 
-const TERMS_URL = 'https://example.com/terms';
-const PRIVACY_URL = 'https://example.com/privacy';
+// Google's OAuth consent screen requires real, publicly reachable Terms and
+// Privacy Policy URLs on a verified domain. Point these at your own domain --
+// leaving the example.com placeholders here is a verification blocker, not a
+// cosmetic issue.
+const TERMS_URL = process.env.EXPO_PUBLIC_TERMS_URL ?? 'https://example.com/terms';
+const PRIVACY_URL = process.env.EXPO_PUBLIC_PRIVACY_URL ?? 'https://example.com/privacy';
 
 export function SignInScreen() {
   const { status, error, loadingProvider, signInWithGoogle, signInWithGithub, signInWithApple } = useAuthStore();
   const isLoading = status === 'loading';
-/* Line 21 is how you rotate the svg  */
-  /* This is where you change the mars SVG. kinda sucks that i dont know how to write a comment in a .tsx file. well python does thst to your head*/
+
   return (
     <AppBackground>
       <View style={styles.container}>
@@ -29,12 +32,13 @@ export function SignInScreen() {
           </Text>
 
           <View style={styles.actions}>
-            <OAuthButton
-            label="Continue with Google"
-            icon={<GoogleIcon size={26} />}
-            iconPosition="end"
-            onPress={signInWithGoogle}
-            loading={loadingProvider === 'google'}
+            {/* Official Google-branded button: white background, brand G,
+                reserved "Sign in with Google" wording. Required for brand
+                verification — do not restyle this to match the others. */}
+            <GoogleSignInButton
+              onPress={signInWithGoogle}
+              disabled={isLoading}
+              loading={loadingProvider === 'google'}
             />
 
             <OAuthButton

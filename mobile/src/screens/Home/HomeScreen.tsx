@@ -77,8 +77,8 @@ return (
         </View>
         <View style={styles.avatar}>
           <Avatar
-            photoUrl={session?.photoUrl}
-            fallbackInitials={initialsFrom(session?.fullName, session?.email)}
+            photoUrl={session?.user.picture ?? undefined}
+            fallbackInitials={initialsFrom(session?.user.name ?? undefined, session?.user.email ?? undefined)}
             size={36}
           />
         </View>
