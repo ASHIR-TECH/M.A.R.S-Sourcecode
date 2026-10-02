@@ -1,108 +1,126 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useAuthStore } from '../../store/useAuthStore';
-import { AuthCancelledError, AuthSession, AuthUser } from '../../auth/types';
+import { AuthCancelledError, AuthSession } from '../../auth/types';
+import { signInWithOAuthProvider } from '../../auth/oauthSignIn';
 
-jest.mock('../../auth/googleAuthProvider', () => ({
-  googleAuthProvider: { signIn: jest.fn() },
-}));
-jest.mock('../../auth/githubAuthProvider', () => ({
-  githubAuthProvider: { signIn: jest.fn() },
-}));
-jest.mock('../../auth/appleAuthProvider', () => ({
-  appleAuthProvider: { signIn: jest.fn() },
-}));
-jest.mock('../../auth/sessionStorage', () => ({
-  sessionStorage: { save: jest.fn(), load: jest.fn(), clear: jest.fn() },
-}));
-jest.mock('../../auth/authClient', () => ({
-  authClient: { signIn: jest.fn(), refresh: jest.fn(), logout: jest.fn(), me: jest.fn() },
+// The jest.fn()s are created inside their factories and pulled back out via the
+// mocked modules. Referencing a `const` from a hoisted jest.mock factory would
+// read it before initialisation, so the mocks would silently never apply.
+jest.mock('../../auth/oauthSignIn', () => ({ signInWithOAuthProvider: jest.fn() }));
+jest.mock('expo-apple-authentication', () => ({
+  isAvailableAsync: jest.fn(),
+  signInAsync: jest.fn(),
+  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
 }));
 
-import { authClient } from '../../auth/authClient';
-import { sessionStorage } from '../../auth/sessionStorage';
-import { githubAuthProvider } from '../../auth/githubAuthProvider';
-import { googleAuthProvider } from '../../auth/googleAuthProvider';
-
-const user: AuthUser = {
-  id: 'user-1',
-  provider: 'google',
-  email: 'ada@example.com',
-  emailVerified: true,
-  name: 'Ada',
-  picture: 'https://example.com/a.png',
+const mockSupabaseAuth = {
+  signOut: jest.fn(),
+  getSession: jest.fn(),
+  getUser: jest.fn(),
+  signInWithIdToken: jest.fn(),
 };
 
-function serverSession(overrides: Partial<AuthSession> = {}): AuthSession {
-  return {
-    user,
-    accessToken: 'access-token',
-    refreshToken: 'refresh-token',
-    expiresAt: Date.now() + 600_000,
-    ...overrides,
-  };
-}
+jest.mock('../../auth/supabaseClient', () => ({
+  isSupabaseConfigured: () => true,
+  requireSupabase: () => ({
+    auth: {
+      ...mockSupabaseAuth,
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: jest.fn() } } }),
+    },
+  }),
+}));
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const mockApple = require('expo-apple-authentication');
+const mockSignInWithOAuthProvider = signInWithOAuthProvider as jest.Mock;
+const mockSignOut = mockSupabaseAuth.signOut;
+const mockGetSession = mockSupabaseAuth.getSession;
+const mockGetUser = mockSupabaseAuth.getUser;
+const mockSignInWithIdToken = mockSupabaseAuth.signInWithIdToken;
+const mockIsAvailableAsync = mockApple.isAvailableAsync as jest.Mock;
+
+const user = {
+  id: 'user-1',
+  email: 'ada@example.com',
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+  app_metadata: { provider: 'google' },
+  user_metadata: { full_name: 'Ada', avatar_url: 'https://example.com/a.png' },
+  identities: [{ provider: 'google' }],
+};
+
+const upstreamSession = {
+  access_token: 'access-token',
+  refresh_token: 'refresh-token',
+  expires_at: Math.floor(Date.now() / 1000) + 900,
+  user,
+};
 
 beforeEach(() => {
   useAuthStore.setState({ status: 'idle', session: null, error: null, loadingProvider: null });
   jest.clearAllMocks();
-  (sessionStorage.load as jest.Mock).mockResolvedValue(null);
-  // clearAllMocks resets calls but not implementations, so restore defaults
-  // explicitly; otherwise one test's rejection leaks into the next.
-  (sessionStorage.save as jest.Mock).mockResolvedValue(undefined);
-  (sessionStorage.clear as jest.Mock).mockResolvedValue(undefined);
-  (authClient.signIn as jest.Mock).mockResolvedValue(serverSession());
-  (authClient.refresh as jest.Mock).mockResolvedValue(serverSession());
-  (authClient.logout as jest.Mock).mockResolvedValue(undefined);
-  (authClient.me as jest.Mock).mockResolvedValue(user);
+  mockGetSession.mockResolvedValue({ data: { session: upstreamSession }, error: null });
+  mockGetUser.mockResolvedValue({ data: { user }, error: null });
+  mockSignOut.mockResolvedValue({ error: null });
+  mockIsAvailableAsync.mockResolvedValue(true);
 });
 
 describe('sign-in', () => {
-  it('exchanges the provider grant for a server session', async () => {
-    (googleAuthProvider.signIn as jest.Mock).mockResolvedValue({
-      provider: 'google',
-      code: 'auth-code',
-      codeVerifier: 'verifier',
-      redirectUri: 'exp://127.0.0.1:8081/--/auth',
-      nonce: 'nonce-1',
-    });
-    const session = serverSession();
-    (authClient.signIn as jest.Mock).mockResolvedValue(session);
-
+  it('runs the Supabase OAuth flow for Google', async () => {
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.signInWithGoogle();
     });
 
-    expect(authClient.signIn).toHaveBeenCalledWith(
-      expect.objectContaining({ provider: 'google', code: 'auth-code', codeVerifier: 'verifier' })
-    );
+    expect(mockSignInWithOAuthProvider).toHaveBeenCalledWith('google');
     expect(result.current.status).toBe('authenticated');
-    expect(result.current.session?.user.provider).toBe('google');
     expect(result.current.loadingProvider).toBeNull();
   });
 
-  it('persists the app session rather than the provider credential', async () => {
-    (githubAuthProvider.signIn as jest.Mock).mockResolvedValue({
-      provider: 'github',
-      code: 'gh-code',
-      redirectUri: 'exp://127.0.0.1:8081/--/auth',
-    });
-    const session = serverSession({ user: { ...user, provider: 'github' } });
-    (authClient.signIn as jest.Mock).mockResolvedValue(session);
-
+  it('runs the Supabase OAuth flow for GitHub', async () => {
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.signInWithGithub();
     });
 
-    expect(sessionStorage.save).toHaveBeenCalledWith(session);
-    const persisted = JSON.stringify((sessionStorage.save as jest.Mock).mock.calls[0][0]);
-    expect(persisted).toContain('refresh-token');
-    expect(persisted).not.toContain('gh-code');
+    expect(mockSignInWithOAuthProvider).toHaveBeenCalledWith('github');
+    expect(result.current.status).toBe('authenticated');
+  });
+
+  it('never puts a provider credential in the app session', async () => {
+    const { result } = renderHook(() => useAuthStore());
+    await act(async () => {
+      await result.current.signInWithGoogle();
+    });
+
+    const projected = JSON.stringify(result.current.session);
+    // The app holds Supabase's session only. Google/GitHub tokens stay on
+    // Supabase's servers and are never persisted on the device.
+    expect(projected).toContain('access-token');
+    expect(projected).toContain('refresh-token');
+    expect(projected).not.toContain('id_token');
+    expect(projected).not.toContain('provider_token');
+  });
+
+  it('maps the upstream user onto the app shape', async () => {
+    const { result } = renderHook(() => useAuthStore());
+    await act(async () => {
+      await result.current.signInWithGoogle();
+    });
+
+    expect(result.current.session?.user).toEqual({
+      id: 'user-1',
+      provider: 'google',
+      email: 'ada@example.com',
+      emailVerified: true,
+      name: 'Ada',
+      picture: 'https://example.com/a.png',
+    });
+    // expires_at is seconds; the app works in milliseconds.
+    expect(result.current.session?.expiresAt).toBe(upstreamSession.expires_at * 1000);
   });
 
   it('resets to idle without an error when cancelled', async () => {
-    (googleAuthProvider.signIn as jest.Mock).mockRejectedValue(new AuthCancelledError());
+    mockSignInWithOAuthProvider.mockRejectedValue(new AuthCancelledError());
 
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
@@ -112,11 +130,10 @@ describe('sign-in', () => {
     expect(result.current.status).toBe('idle');
     expect(result.current.error).toBeNull();
     expect(result.current.loadingProvider).toBeNull();
-    expect(authClient.signIn).not.toHaveBeenCalled();
   });
 
   it('surfaces a genuine failure', async () => {
-    (googleAuthProvider.signIn as jest.Mock).mockRejectedValue(new Error('network down'));
+    mockSignInWithOAuthProvider.mockRejectedValue(new Error('network down'));
 
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
@@ -127,98 +144,63 @@ describe('sign-in', () => {
     expect(result.current.error).toBe('network down');
   });
 
-  it('surfaces a server rejection message', async () => {
-    (googleAuthProvider.signIn as jest.Mock).mockResolvedValue({ provider: 'google', code: 'x', redirectUri: 'y' });
-    const error = Object.assign(new Error('That redirect URI is not allowed for this server.'), {
-      name: 'AuthApiError',
-    });
-    (authClient.signIn as jest.Mock).mockRejectedValue(error);
+  it('surfaces a Supabase rejection message', async () => {
+    mockSignInWithOAuthProvider.mockRejectedValue(
+      Object.assign(new Error('redirect_uri_not_allowed'), { name: 'AuthApiError' })
+    );
 
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.signInWithGoogle();
     });
 
-    expect(result.current.error).toBe('That redirect URI is not allowed for this server.');
+    expect(result.current.error).toBe('redirect_uri_not_allowed');
   });
 });
 
 describe('restoreSession', () => {
   it('goes idle without touching the network when nothing is stored', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.restoreSession();
     });
 
     expect(result.current.status).toBe('idle');
-    expect(authClient.me).not.toHaveBeenCalled();
+    expect(mockGetUser).not.toHaveBeenCalled();
   });
 
-  it('confirms a stored session against the server before trusting it', async () => {
-    const stored = serverSession();
-    (sessionStorage.load as jest.Mock).mockResolvedValue(stored);
-    (authClient.me as jest.Mock).mockResolvedValue(user);
-
+  it('confirms a stored session against Supabase before trusting it', async () => {
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.restoreSession();
     });
 
-    expect(authClient.me).toHaveBeenCalledWith('access-token');
+    expect(mockGetUser).toHaveBeenCalled();
     expect(result.current.status).toBe('authenticated');
+    expect(result.current.session?.accessToken).toBe('access-token');
   });
 
-  it('refreshes first when the access token has expired', async () => {
-    const stored = serverSession({ expiresAt: Date.now() - 1_000 });
-    const refreshed = serverSession({ accessToken: 'fresh-access', refreshToken: 'fresh-refresh' });
-    (sessionStorage.load as jest.Mock).mockResolvedValue(stored);
-    (authClient.refresh as jest.Mock).mockResolvedValue(refreshed);
-    (authClient.me as jest.Mock).mockResolvedValue(user);
+  it('discards a stored session Supabase rejects', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: new Error('invalid JWT: unable to parse or verify signature'),
+    });
 
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.restoreSession();
     });
 
-    expect(authClient.refresh).toHaveBeenCalledWith('refresh-token');
-    expect(authClient.me).toHaveBeenCalledWith('fresh-access');
-    expect(result.current.session?.accessToken).toBe('fresh-access');
-    expect(sessionStorage.save).toHaveBeenCalled();
-  });
-
-  it('discards a stored session the server rejects', async () => {
-    (sessionStorage.load as jest.Mock).mockResolvedValue(serverSession());
-    (authClient.me as jest.Mock).mockRejectedValue(new Error('Your session is invalid or has expired.'));
-
-    const { result } = renderHook(() => useAuthStore());
-    await act(async () => {
-      await result.current.restoreSession();
-    });
-
-    expect(sessionStorage.clear).toHaveBeenCalled();
     expect(result.current.status).toBe('idle');
     expect(result.current.session).toBeNull();
   });
 
-  it('discards a stored session whose refresh token is dead', async () => {
-    (sessionStorage.load as jest.Mock).mockResolvedValue(serverSession({ expiresAt: Date.now() - 1_000 }));
-    (authClient.refresh as jest.Mock).mockRejectedValue(new Error('That session is no longer active.'));
-
-    const { result } = renderHook(() => useAuthStore());
-    await act(async () => {
-      await result.current.restoreSession();
-    });
-
-    expect(sessionStorage.clear).toHaveBeenCalled();
-    expect(result.current.status).toBe('idle');
-  });
-
   it('never rejects, so the app cannot get stuck on the splash screen', async () => {
-    // SecureStore itself can throw when the Android keystore key is
-    // invalidated; RootNavigator calls this with `void`, so a rejection here
-    // would leave status stuck at 'restoring' with no way out.
-    (sessionStorage.load as jest.Mock).mockRejectedValue(new Error('Could not decrypt'));
-    (sessionStorage.clear as jest.Mock).mockRejectedValue(new Error('KeyStore error'));
+    // RootNavigator calls this with `void`; a rejection would leave status
+    // stuck at 'restoring' with no way out.
+    mockGetSession.mockRejectedValue(new Error('SecureStore key invalidated'));
 
     const { result } = renderHook(() => useAuthStore());
     let rejected = false;
@@ -237,38 +219,45 @@ describe('restoreSession', () => {
 });
 
 describe('signOut', () => {
-  it('revokes the session on the server and clears local storage', async () => {
-    (authClient.logout as jest.Mock).mockResolvedValue(undefined);
-    useAuthStore.setState({ status: 'authenticated', session: serverSession() });
+  it('revokes the session on Supabase and clears local state', async () => {
+    useAuthStore.setState({
+      status: 'authenticated',
+      session: { user: user as unknown as AuthSession['user'], accessToken: 'a', refreshToken: 'r', expiresAt: Date.now() + 9e5 },
+    });
 
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.signOut();
     });
 
-    expect(authClient.logout).toHaveBeenCalledWith('refresh-token');
-    expect(sessionStorage.clear).toHaveBeenCalled();
+    expect(mockSignOut).toHaveBeenCalled();
     expect(result.current.session).toBeNull();
     expect(result.current.status).toBe('idle');
   });
 
-  it('still signs out locally when the server is unreachable', async () => {
-    (authClient.logout as jest.Mock).mockRejectedValue(new Error('Network request failed'));
-    useAuthStore.setState({ status: 'authenticated', session: serverSession() });
+  it('still signs out locally when the network is down', async () => {
+    mockSignOut.mockRejectedValue(new Error('Network request failed'));
+    useAuthStore.setState({
+      status: 'authenticated',
+      session: { user: user as unknown as AuthSession['user'], accessToken: 'a', refreshToken: 'r', expiresAt: Date.now() + 9e5 },
+    });
 
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
       await result.current.signOut();
     });
 
-    expect(sessionStorage.clear).toHaveBeenCalled();
     expect(result.current.session).toBeNull();
+    expect(result.current.status).toBe('idle');
   });
 });
 
 describe('getAccessToken', () => {
-  it('returns the existing token while it is still fresh', async () => {
-    useAuthStore.setState({ status: 'authenticated', session: serverSession() });
+  it('returns the token Supabase holds', async () => {
+    useAuthStore.setState({
+      status: 'authenticated',
+      session: { user: user as unknown as AuthSession['user'], accessToken: 'a', refreshToken: 'r', expiresAt: Date.now() + 9e5 },
+    });
 
     const { result } = renderHook(() => useAuthStore());
     let token: string | null = null;
@@ -277,40 +266,15 @@ describe('getAccessToken', () => {
     });
 
     expect(token).toBe('access-token');
-    expect(authClient.refresh).not.toHaveBeenCalled();
   });
 
-  it('rotates before handing out a token when the session has lapsed', async () => {
-    const refreshed = serverSession({ accessToken: 'fresh-access', refreshToken: 'fresh-refresh' });
-    (authClient.refresh as jest.Mock).mockResolvedValue(refreshed);
-    useAuthStore.setState({ status: 'authenticated', session: serverSession({ expiresAt: Date.now() - 1_000 }) });
-
-    const { result } = renderHook(() => useAuthStore());
-    let token: string | null = null;
-    await act(async () => {
-      token = await result.current.getAccessToken();
+  it('ends the session when Supabase has no session left', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+    useAuthStore.setState({
+      status: 'authenticated',
+      session: { user: user as unknown as AuthSession['user'], accessToken: 'a', refreshToken: 'r', expiresAt: Date.now() - 1000 },
     });
 
-    expect(token).toBe('fresh-access');
-    expect(sessionStorage.save).toHaveBeenCalledWith(refreshed);
-  });
-
-  it('ends the session when the refresh token is rejected', async () => {
-    (authClient.refresh as jest.Mock).mockRejectedValue(new Error('That session is not recognised.'));
-    useAuthStore.setState({ status: 'authenticated', session: serverSession({ expiresAt: Date.now() - 1_000 }) });
-
-    const { result } = renderHook(() => useAuthStore());
-    let token: string | null = null;
-    await act(async () => {
-      token = await result.current.getAccessToken();
-    });
-
-    expect(token).toBeNull();
-    expect(sessionStorage.clear).toHaveBeenCalled();
-    expect(result.current.status).toBe('idle');
-  });
-
-  it('returns null when there is no session at all', async () => {
     const { result } = renderHook(() => useAuthStore());
     let token: string | null = 'unset';
     await act(async () => {
@@ -318,5 +282,24 @@ describe('getAccessToken', () => {
     });
 
     expect(token).toBeNull();
+    expect(result.current.status).toBe('idle');
+    expect(result.current.session).toBeNull();
+  });
+
+  it('ends the session when the refresh token is rejected', async () => {
+    mockGetSession.mockRejectedValue(new Error('refresh_token_not_found'));
+    useAuthStore.setState({
+      status: 'authenticated',
+      session: { user: user as unknown as AuthSession['user'], accessToken: 'a', refreshToken: 'r', expiresAt: Date.now() - 1000 },
+    });
+
+    const { result } = renderHook(() => useAuthStore());
+    let token: string | null = 'unset';
+    await act(async () => {
+      token = await result.current.getAccessToken();
+    });
+
+    expect(token).toBeNull();
+    expect(result.current.status).toBe('idle');
   });
 });
