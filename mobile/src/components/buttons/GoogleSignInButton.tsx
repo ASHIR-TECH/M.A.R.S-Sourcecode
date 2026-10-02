@@ -4,18 +4,34 @@ import { GoogleIcon } from '../icons/GoogleIcon';
 
 /**
  * Google's "Sign in with Google" button, per the Sign in with Google branding
- * guidelines: a white background, a 1px neutral border, and the official
- * multi-colour G at its unmodified brand colours.
+ * guidelines.
  *
- * The guidelines are mandatory for app verification, and the current custom
- * dark-glass button ("Continue with Google" on a dark gradient) violates them
- * on background, border and call-to-action text. Google also reserves the
- * wording — "Sign in with Google" / "Sign up with Google" — so this component
- * fixes the label too.
+ * Colour mode
+ * -----------
+ * Google publishes three approved themes:
  *
- * Note: Google requires the button to be at least as prominent as other
- * third-party sign-in options, so keep this and the GitHub button the same
- * size. Do not shrink or hide it behind a menu.
+ *   Light    Fill #FFFFFF  Stroke #747775 1px  Text #1F1F1F
+ *   Dark     Fill #131314  Stroke #8E918F 1px  Text #E3E3E3
+ *   Neutral  Fill #F2F2F2  no stroke            Text #1F1F1F
+ *
+ * We use Dark. This app has a dark gradient background with an orange glass
+ * button treatment, so a white Light-theme button read as a foreign, generic
+ * control sitting on top of the design rather than part of it. Dark is an
+ * officially published theme, not a restyle, so this stays compliant.
+ *
+ * To switch back to Light, use those three values above and nothing else.
+ *
+ * Two deliberate deviations from the reference asset, both to match the rest
+ * of this app. Flagged here so they are not mistaken for accidental:
+ *   1. borderRadius 10 instead of the reference asset's 4px, to match
+ *      OAuthButton and the Apple button. Google publishes rectangular and
+ *      pill shapes and does not enforce a specific corner radius.
+ *   2. fontSize 16 instead of the reference asset's 14, to keep the label
+ *      legible against the neighbouring 18px "Continue with GitHub".
+ *
+ * Non-negotiable, per the guidelines: the G is never recoloured, never
+ * distorted, never used without the button boundary and the sign-in text,
+ * and the button must be at least as prominent as other third-party options.
  */
 interface GoogleSignInButtonProps {
   onPress: () => void;
@@ -32,7 +48,9 @@ export function GoogleSignInButton({ onPress, disabled, loading = false }: Googl
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel="Sign in with Google"
-      accessibilityState={{ disabled: Boolean(disabled) }}
+      // Reports disabled while loading too, so assistive tech does not
+      // advertise the button as actionable mid-sign-in.
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => [
         styles.button,
         pressed && styles.buttonPressed,
@@ -50,7 +68,7 @@ export function GoogleSignInButton({ onPress, disabled, loading = false }: Googl
       {loading && (
         <ActivityIndicator
           size="small"
-          color="#1F1F1F"
+          color={colors.text}
           style={styles.spinner}
           pointerEvents="none"
         />
@@ -59,46 +77,59 @@ export function GoogleSignInButton({ onPress, disabled, loading = false }: Googl
   );
 }
 
+/** Google's official Dark theme values, plus the shared button geometry. */
+const colors = {
+  fill: '#131314',
+  stroke: '#8E918F',
+  text: '#E3E3E3',
+};
+
 const styles = StyleSheet.create({
   button: {
-    // Official asset geometry: white fill, subtle neutral border, 4px radius.
-    backgroundColor: '#FFFFFF',
-    height: 48,
-    borderRadius: 4,
+    // width/height/radius match OAuthButton and the Apple button so all
+    // three sign-in options line up. Google requires the Google button be
+    // at least as prominent as the others, not that it be identical.
+    width: 320,
+    height: 54,
+    borderRadius: 10,
+    backgroundColor: colors.fill,
     borderWidth: 1,
-    borderColor: '#747775',
+    borderColor: colors.stroke,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonPressed: { backgroundColor: '#F1F3F4' },
+  // Press feedback is an opacity change rather than a fill change, so it
+  // cannot drift away from the published Dark theme colours.
+  buttonPressed: { opacity: 0.85 },
   buttonDisabled: { opacity: 0.5 },
   logoWrap: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
-  // Google specifies the label in the brand-neutral "Google Sans"/Roboto
-  // weight, coloured #1F1F1F. Never restyle the text colour to inherit the
-  // surrounding dark theme -- the button background stays white.
   label: {
-    marginLeft: 10,
-    fontSize: 14,
+    marginLeft: 12,
+    fontSize: 16,
     fontWeight: '500',
-    color: '#1F1F1F',
+    color: colors.text,
   },
-  spinner: { marginLeft: 10 },
+  spinner: { marginLeft: 12 },
 });
 
 /**
- * Reference for the approved asset, if you ever need to swap in the official
- * "Sign in with Google" PNG/SVG rather than the vector G above.
+ * Reference for the approved assets, if you ever need to swap in the official
+ * PNG/SVG rather than the vector G above.
  *
  * Download: https://developers.google.com/identity/gsi/web/guides/download-assets
+ * Specs:    https://developers.google.com/identity/branding-guidelines
  *
- * The guidelines require the logo to keep its aspect ratio, appear on white,
- * and never be recoloured or resized to a non-standard size. The artwork is
- * the official "G" wordmark, not a bare circle, and must not be shown without
- * the button boundary and the sign-in text.
+ * The wording is reserved by Google: "Sign in with Google", "Sign up with
+ * Google" or "Continue with Google". Nothing else is permitted.
  */
 export const GOOGLE_BRANDING_REFERENCE = {
   guidelines: 'https://developers.google.com/identity/branding-guidelines',
   assets: 'https://developers.google.com/identity/gsi/web/guides/download-assets',
   allowedLabels: ['sign_in_with', 'sign_up_with', 'continue_with'] as const,
+  themes: {
+    light: { fill: '#FFFFFF', stroke: '#747775', text: '#1F1F1F' },
+    dark: { fill: '#131314', stroke: '#8E918F', text: '#E3E3E3' },
+    neutral: { fill: '#F2F2F2', stroke: null, text: '#1F1F1F' },
+  },
 } as const;
