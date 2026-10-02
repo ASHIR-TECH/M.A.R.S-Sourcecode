@@ -21,17 +21,30 @@ import { GoogleIcon } from '../icons/GoogleIcon';
  *
  * To switch back to Light, use those three values above and nothing else.
  *
- * Two deliberate deviations from the reference asset, both to match the rest
- * of this app. Flagged here so they are not mistaken for accidental:
- *   1. borderRadius 10 instead of the reference asset's 4px, to match
- *      OAuthButton and the Apple button. Google publishes rectangular and
- *      pill shapes and does not enforce a specific corner radius.
- *   2. fontSize 16 instead of the reference asset's 14, to keep the label
- *      legible against the neighbouring 18px "Continue with GitHub".
+ * Size and padding
+ * ----------------
+ * Google's guidelines fix the internal padding rather than leaving it free:
+ *
+ *   Android & Web   12px before the G, 10px after the G, 12px after the text
+ *   iOS             16px before the G, 12px after the G, 16px after the text
+ *
+ * Overall size, by contrast, is explicitly open: "You can scale the button as
+ * needed for different devices and screen sizes, but you must preserve the
+ * aspect ratio so that the Google logo is not stretched."
+ *
+ * So SPEC below holds Google's exact Android metrics and SCALE multiplies all
+ * of them together. Resizing the button means changing SCALE and nothing
+ * else, which is what keeps the G from being stretched or the label from
+ * drifting out of position.
+ *
+ * One deliberate deviation: borderRadius 10 instead of the reference asset's
+ * 4px, to match OAuthButton and the Apple button. Google publishes rectangular
+ * and pill shapes and enforces no specific corner radius.
  *
  * Non-negotiable, per the guidelines: the G is never recoloured, never
- * distorted, never used without the button boundary and the sign-in text,
- * and the button must be at least as prominent as other third-party options.
+ * distorted, never used without the button boundary and the sign-in text, the
+ * wording stays one of the three reserved strings, and the button must be at
+ * least as prominent as other third-party options.
  */
 interface GoogleSignInButtonProps {
   onPress: () => void;
@@ -58,7 +71,7 @@ export function GoogleSignInButton({ onPress, disabled, loading = false }: Googl
       ]}
     >
       <View style={styles.logoWrap} pointerEvents="none">
-        <GoogleIcon size={20} />
+        <GoogleIcon size={metrics.logo} />
       </View>
       {/* The label stays put while loading. Swapping it for a bare spinner
           would drop the required call-to-action text mid-interaction. */}
@@ -77,6 +90,42 @@ export function GoogleSignInButton({ onPress, disabled, loading = false }: Googl
   );
 }
 
+/**
+ * Google's published Android reference metrics for this button. Every value
+ * below is multiplied by SCALE, so the button can be resized for a given
+ * screen without the G ever being stretched independently of it -- which is
+ * the one size rule Google actually enforces.
+ */
+const SPEC = {
+  height: 48,
+  logo: 20,
+  fontSize: 14,
+  lineHeight: 20,
+  paddingLeft: 12,
+  paddingAfterLogo: 10,
+  paddingRight: 12,
+} as const;
+
+/**
+ * Uniform scale factor. 1.125 = 54 / 48, i.e. the reference height scaled up
+ * to match this app's GitHub and Apple buttons.
+ *
+ * Change this single number to resize the whole button. Do not hand-edit the
+ * derived values below -- that is how a G ends up stretched or a label ends up
+ * off-centre, both of which Google flags during review.
+ */
+const SCALE = 1.125;
+
+const metrics = {
+  height: Math.round(SPEC.height * SCALE),
+  logo: Math.round(SPEC.logo * SCALE),
+  fontSize: Math.round(SPEC.fontSize * SCALE),
+  lineHeight: Math.round(SPEC.lineHeight * SCALE),
+  paddingLeft: Math.round(SPEC.paddingLeft * SCALE),
+  paddingAfterLogo: Math.round(SPEC.paddingAfterLogo * SCALE),
+  paddingRight: Math.round(SPEC.paddingRight * SCALE),
+};
+
 /** Google's official Dark theme values, plus the shared button geometry. */
 const colors = {
   fill: '#131314',
@@ -89,12 +138,18 @@ const styles = StyleSheet.create({
     // width/height/radius match OAuthButton and the Apple button so all
     // three sign-in options line up. Google requires the Google button be
     // at least as prominent as the others, not that it be identical.
+    //
+    // The width is fixed by this app's layout; Google's reference asset is
+    // content-sized. Spec padding is still applied as the content inset, so
+    // the logo never sits flush against the edge.
     width: 320,
-    height: 54,
+    height: metrics.height,
     borderRadius: 10,
     backgroundColor: colors.fill,
     borderWidth: 1,
     borderColor: colors.stroke,
+    paddingLeft: metrics.paddingLeft,
+    paddingRight: metrics.paddingRight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -103,14 +158,20 @@ const styles = StyleSheet.create({
   // cannot drift away from the published Dark theme colours.
   buttonPressed: { opacity: 0.85 },
   buttonDisabled: { opacity: 0.5 },
-  logoWrap: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  logoWrap: {
+    width: metrics.logo,
+    height: metrics.logo,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: {
-    marginLeft: 12,
-    fontSize: 16,
+    marginLeft: metrics.paddingAfterLogo,
+    fontSize: metrics.fontSize,
+    lineHeight: metrics.lineHeight,
     fontWeight: '500',
     color: colors.text,
   },
-  spinner: { marginLeft: 12 },
+  spinner: { marginLeft: metrics.paddingAfterLogo },
 });
 
 /**
