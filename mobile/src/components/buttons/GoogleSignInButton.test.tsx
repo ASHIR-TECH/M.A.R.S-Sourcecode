@@ -34,6 +34,27 @@ describe('GoogleSignInButton', () => {
     expect(flat).toContain('#8E918F');
   });
 
+  it('applies Google spec padding, scaled proportionally', () => {
+    const { UNSAFE_getByProps } = render(<GoogleSignInButton onPress={jest.fn()} />);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pressable: any = UNSAFE_getByProps({ accessibilityRole: 'button' });
+    const resolved = typeof pressable.props.style === 'function' ? pressable.props.style({ pressed: false }) : pressable.props.style;
+    const flat = JSON.stringify(resolved);
+
+    // Google fixes the Android insets at 12px edges and 10px after the logo.
+    // They scale by SCALE = 1.125 -> 14px edges, 11px after the logo.
+    // Asserted by value rather than by constant so the ratio is what is tested.
+    expect(flat).toContain('"paddingLeft":14');
+    expect(flat).toContain('"paddingRight":14');
+    expect(flat).toContain('"height":54');
+  });
+
+  it('spaces the label from the logo using the spec inset, scaled', () => {
+    const { getByText } = render(<GoogleSignInButton onPress={jest.fn()} />);
+    // 10px after the G, scaled by 1.125 -> 11px.
+    expect(JSON.stringify(getByText('Sign in with Google').props.style)).toContain('"marginLeft":11');
+  });
+
   it('matches the geometry of the GitHub and Apple buttons', () => {
     const { UNSAFE_getByProps } = render(<GoogleSignInButton onPress={jest.fn()} />);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
