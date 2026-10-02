@@ -1,6 +1,6 @@
 export type AuthProviderName = 'google' | 'github' | 'apple';
 
-/** The provider-agnostic identity our server vouches for. */
+/** The provider-agnostic identity Supabase vouches for. */
 export interface AuthUser {
   id: string;
   provider: AuthProviderName;
@@ -11,8 +11,12 @@ export interface AuthUser {
 }
 
 /**
- * An app-owned session. The provider's own credential is exchanged on the
- * server and never persisted on the device.
+ * An app-owned view of a Supabase session.
+ *
+ * Supabase persists and refreshes the real session itself (see
+ * supabaseClient.ts), so this is a read-only projection for the UI rather than
+ * something we write back. The provider's own credential is exchanged on
+ * Supabase's servers and never persisted on the device.
  */
 export interface AuthSession {
   user: AuthUser;
@@ -22,25 +26,7 @@ export interface AuthSession {
   expiresAt: number;
 }
 
-/**
- * Raw material obtained from a provider, before anything has been verified.
- * The server turns this into an {@link AuthSession}.
- */
-export type OAuthGrant =
-  | {
-      provider: 'google' | 'github';
-      code: string;
-      codeVerifier?: string;
-      redirectUri: string;
-      nonce?: string;
-    }
-  | { provider: 'apple'; idToken: string; nonce?: string; name?: string };
-
-export interface AuthProvider {
-  signIn(): Promise<OAuthGrant>;
-}
-
-/** Thrown when the user closes the OAuth flow themselves — not a real error. */
+/** Thrown when the user closes the OAuth flow themselves -- not a real error. */
 export class AuthCancelledError extends Error {
   constructor() {
     super('Authentication was cancelled by the user.');
