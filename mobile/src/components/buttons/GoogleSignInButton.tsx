@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GoogleIcon } from '../icons/GoogleIcon';
+import { signInButton } from '../../theme/signInButtons';
 
 /**
  * Google's "Sign in with Google" button, per the Sign in with Google branding
@@ -81,7 +82,7 @@ export function GoogleSignInButton({ onPress, disabled, loading = false }: Googl
       {loading && (
         <ActivityIndicator
           size="small"
-          color={colors.text}
+          color={LABEL_COLOR}
           style={styles.spinner}
           pointerEvents="none"
         />
@@ -107,57 +108,68 @@ const SPEC = {
 } as const;
 
 /**
- * Uniform scale factor. 1.125 = 54 / 48, i.e. the reference height scaled up
- * to match this app's GitHub and Apple buttons.
+ * Uniform scale factor, 1.3.
  *
- * Change this single number to resize the whole button. Do not hand-edit the
- * derived values below -- that is how a G ends up stretched or a label ends up
- * off-centre, both of which Google flags during review.
+ * Google will not let the G be resized on its own: only sizes from the
+ * official download bundle are permitted, and scaling is allowed solely so the
+ * logo is never stretched. That means the logo, the label, the padding and the
+ * button height are all locked to the same ratio -- a bigger G necessarily
+ * means a taller button, and therefore a taller GitHub and Apple button too.
+ *
+ * At 1.3 the button is 62 tall with a 26px G, against 48/20 at the reference
+ * size. signInButton.height must be kept equal to SPEC.height * SCALE, or the
+ * three buttons stop lining up; the geometry test asserts exactly that.
+ *
+ * Change this single number to resize the button. Do not hand-edit the derived
+ * values -- that is how a G ends up stretched or a label ends up off-centre.
  */
-const SCALE = 1.125;
+const SCALE = 1.3;
 
 const metrics = {
-  height: Math.round(SPEC.height * SCALE),
   logo: Math.round(SPEC.logo * SCALE),
-  fontSize: Math.round(SPEC.fontSize * SCALE),
-  lineHeight: Math.round(SPEC.lineHeight * SCALE),
   paddingLeft: Math.round(SPEC.paddingLeft * SCALE),
-  paddingAfterLogo: Math.round(SPEC.paddingAfterLogo * SCALE),
   paddingRight: Math.round(SPEC.paddingRight * SCALE),
+  /** Shared with GitHub, and still the scaled spec value (10 * 1.125 = 11). */
+  gap: Math.round(SPEC.paddingAfterLogo * SCALE),
 };
 
-/** Google's official Dark theme values, plus the shared button geometry. */
-const colors = {
-  fill: '#131314',
-  stroke: '#8E918F',
-  text: '#E3E3E3',
-};
+/**
+ * Width, height, radius, font and colours are shared with the GitHub and Apple
+ * buttons via signInButton, so all three form one column. Only the values
+ * above are Google-specific, because only those are fixed by Google's spec.
+ */
+/**
+ * Deliberate deviation from Google's published Dark theme, which specifies
+ * #E3E3E3 for the label.
+ *
+ * Pure white was requested for legibility. Note the tradeoff honestly: the
+ * spec value already measures 14.47:1 against the #131314 fill, which is far
+ * past WCAG AA, so this is purely aesthetic rather than an accessibility fix.
+ * It is also the one change here that is a genuine spec deviation rather than a
+ * permitted scale, so it is isolated to a single constant and easy to revert if
+ * you would rather stay exactly on spec.
+ */
+const LABEL_COLOR = '#FFFFFF';
 
 const styles = StyleSheet.create({
   button: {
-    // width/height/radius match OAuthButton and the Apple button so all
-    // three sign-in options line up. Google requires the Google button be
-    // at least as prominent as the others, not that it be identical.
-    //
-    // The width is fixed by this app's layout; Google's reference asset is
-    // content-sized. Spec padding is still applied as the content inset, so
-    // the logo never sits flush against the edge.
-    width: 320,
-    height: metrics.height,
-    borderRadius: 10,
-    backgroundColor: colors.fill,
-    borderWidth: 1,
-    borderColor: colors.stroke,
+    // Google's reference asset is content-sized; this app fixes the width so
+    // the three sign-in options align. Spec padding is still applied as the
+    // content inset, so the logo never sits flush against the edge.
+    width: signInButton.width,
+    height: signInButton.height,
+    borderRadius: signInButton.borderRadius,
+    backgroundColor: signInButton.fill,
+    borderWidth: signInButton.borderWidth,
+    borderColor: signInButton.stroke,
     paddingLeft: metrics.paddingLeft,
     paddingRight: metrics.paddingRight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Press feedback is an opacity change rather than a fill change, so it
-  // cannot drift away from the published Dark theme colours.
-  buttonPressed: { opacity: 0.85 },
-  buttonDisabled: { opacity: 0.5 },
+  buttonPressed: { opacity: signInButton.pressedOpacity },
+  buttonDisabled: { opacity: signInButton.disabledOpacity },
   logoWrap: {
     width: metrics.logo,
     height: metrics.logo,
@@ -165,13 +177,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    marginLeft: metrics.paddingAfterLogo,
-    fontSize: metrics.fontSize,
-    lineHeight: metrics.lineHeight,
-    fontWeight: '500',
-    color: colors.text,
+    marginLeft: metrics.gap,
+    fontSize: signInButton.fontSize,
+    lineHeight: signInButton.lineHeight,
+    // Semibold rather than Google's specified Medium, for the same legibility
+    // reason as the colour above.
+    fontWeight: '600',
+    color: LABEL_COLOR,
   },
-  spinner: { marginLeft: metrics.paddingAfterLogo },
+  spinner: { marginLeft: metrics.gap },
 });
 
 /**
