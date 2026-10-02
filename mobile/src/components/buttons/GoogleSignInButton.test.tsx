@@ -22,20 +22,35 @@ describe('GoogleSignInButton', () => {
     expect(getByLabelText('Sign in with Google')).toBeTruthy();
   });
 
-  it('keeps the white background and neutral border Google specifies', () => {
+  it('uses the official Dark theme fill and stroke', () => {
     const { UNSAFE_getByProps } = render(<GoogleSignInButton onPress={jest.fn()} />);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pressable: any = UNSAFE_getByProps({ accessibilityRole: 'button' });
     // Pressable takes a style callback, so resolve it to inspect the result.
     const resolved = typeof pressable.props.style === 'function' ? pressable.props.style({ pressed: false }) : pressable.props.style;
     const flat = JSON.stringify(resolved);
-    expect(flat).toContain('#FFFFFF');
-    expect(flat).toContain('#747775');
+    // Google's published Dark theme: Fill #131314, Stroke #8E918F.
+    expect(flat).toContain('#131314');
+    expect(flat).toContain('#8E918F');
   });
 
-  it('keeps the label in the brand-neutral dark grey, not theme text colour', () => {
+  it('matches the geometry of the GitHub and Apple buttons', () => {
+    const { UNSAFE_getByProps } = render(<GoogleSignInButton onPress={jest.fn()} />);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pressable: any = UNSAFE_getByProps({ accessibilityRole: 'button' });
+    const resolved = typeof pressable.props.style === 'function' ? pressable.props.style({ pressed: false }) : pressable.props.style;
+    const flat = JSON.stringify(resolved);
+    expect(flat).toContain('"width":320');
+    expect(flat).toContain('"height":54');
+    expect(flat).toContain('"borderRadius":10');
+  });
+
+  it('keeps the label in the Dark theme text colour, not the white Light theme', () => {
     const { getByText } = render(<GoogleSignInButton onPress={jest.fn()} />);
-    expect(JSON.stringify(getByText('Sign in with Google').props.style)).toContain('#1F1F1F');
+    const style = JSON.stringify(getByText('Sign in with Google').props.style);
+    expect(style).toContain('#E3E3E3');
+    // Guards against a silent revert to the Light theme colours.
+    expect(style).not.toContain('#1F1F1F');
   });
 
   it('calls onPress when enabled', () => {
