@@ -160,9 +160,8 @@ function utcDayKey() {
  * The relay used to expose POST /auth/github, which swapped an OAuth code for
  * a live GitHub access token and handed it to the app. That is gone: it left a
  * provider credential on the device and bypassed any real session handling.
- * Sign-in now runs through the dedicated identity service in /auth-server,
- * which exchanges the provider code server-side and issues its own short-lived
- * access token plus a rotating refresh token.
+ * Sign-in now runs entirely through Supabase Auth, which exchanges the provider
+ * code on its own servers, so this relay never sees an identity.
  */
 
 /**
@@ -416,7 +415,7 @@ app.get('/', (req, res) => {
     chat: {
       fallback: 'POST /fallback-chat',
     },
-    note: 'Sign-in is served by the separate identity service in /auth-server, not by this relay.',
+    note: 'Sign-in is served by Supabase Auth, not by this relay.',
   });
 });
 
