@@ -8,5 +8,3 @@ infra/updates-server/certs/*.key
 infra/updates-server/updates/
 
 # Identity service (users + refresh tokens live in here — never commit)
-auth-server/data/
-auth-server/node_modules/
