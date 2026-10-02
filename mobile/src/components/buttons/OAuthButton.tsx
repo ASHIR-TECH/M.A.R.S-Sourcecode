@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, ActivityIndicator, View, StyleSheet } from 'react-native';
 import { styles } from './OAuthButton.styles';
+import { signInButton } from '../../theme/signInButtons';
 
 interface OAuthButtonProps {
   label: string;
@@ -25,9 +26,8 @@ export function OAuthButton({ label, icon, onPress, loading, disabled, iconPosit
         (disabled || loading) && styles.buttonDisabled,
       ]}
     >
-      <View style={styles.topGloss} pointerEvents="none" />
       {loading ? (
-        <ActivityIndicator color="#F5EFE6" />
+        <ActivityIndicator color={signInButton.text} />
       ) : (
         <View style={styles.content}>
           {iconPosition === 'end' && icon}

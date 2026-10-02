@@ -173,4 +173,3 @@ Within each phase the order is deliberate — new modules land before the old on
 
 ---
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)

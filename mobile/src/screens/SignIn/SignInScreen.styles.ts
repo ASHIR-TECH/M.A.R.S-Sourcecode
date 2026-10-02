@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { signInButton } from '../../theme/signInButtons';
 /** line 16 is how to push the svg upwards */
 /** Line 34 is where you change the buttons and move them upwards */
 /** Line 28 is to reduce the space bewteen welcome and the text from mr potato head */
@@ -39,8 +40,10 @@ export const styles = StyleSheet.create({
     marginTop: 215,
   },
   appleButton: {
-    width: 320,
-    height: 54,
+    /** Shares signInButton.width so the third option lines up with the other
+        two instead of staying at the old fixed 320. */
+    width: signInButton.width,
+    height: signInButton.height,
     alignSelf: 'center',
   },
   errorText: {

@@ -1,45 +1,49 @@
 import { StyleSheet } from 'react-native';
-/** Line 25 is where to reduce the spacing bewteen the logo and the text after. im putiing comments in the wrong places again. */
+import { signInButton } from '../../theme/signInButtons';
+
+/**
+ * Shared sign-in button styling for the non-branded options (currently GitHub).
+ *
+ * This deliberately mirrors GoogleSignInButton rather than keeping a separate
+ * treatment: it uses the same dark palette, the same 1px neutral stroke, the
+ * same radius, the same height and the same label size, all sourced from
+ * signInButton so the two cannot drift apart again.
+ *
+ * Two things were removed relative to the previous version:
+ *
+ *   - The orange glass tint and the topGloss highlight. Glass reads as a
+ *     distinct component sitting next to a flat Google button, which was the
+ *     inconsistency this replaces.
+ *   - The drop shadow and Android elevation. Google's button has neither, and
+ *     keeping them made the pair look like two different design systems.
+ *
+ * For GitHub this is also closer to its own branding than the orange glass
+ * was: GitHub's sign-in button is dark with a light label, and the white
+ * GitHub mark sits correctly on the dark fill.
+ */
 export const styles = StyleSheet.create({
   button: {
-    backgroundColor: 'rgba(245, 139, 10, 0.14)', /**liquid glass orange tint */
-    borderRadius: 10,
-    paddingVertical: 20, /**this is for the height  */
-    paddingHorizontal: 110, /**this is to increase the signin button width */
+    width: signInButton.width,
+    height: signInButton.height,
+    borderRadius: signInButton.borderRadius,
+    backgroundColor: signInButton.fill,
+    borderWidth: signInButton.borderWidth,
+    borderColor: signInButton.stroke,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 6,
   },
-  topGloss: {
-    position: 'absolute',
-    top: '-14%',
-    left: 0,
-    right: 0,
-    height: '28%',
-    backgroundColor: 'rgba(255,255,255,0.10)',
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
+  buttonPressed: { opacity: signInButton.pressedOpacity },
+  buttonDisabled: { opacity: signInButton.disabledOpacity },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: signInButton.gap,
   },
   label: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 18,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowRadius: 4,
-    textShadowOffset: { width: 0, height: 1 },
+    color: signInButton.text,
+    fontWeight: '500',
+    fontSize: signInButton.fontSize,
+    lineHeight: signInButton.lineHeight,
   },
 });
