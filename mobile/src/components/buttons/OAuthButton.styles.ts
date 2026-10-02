@@ -4,8 +4,12 @@ export const styles = StyleSheet.create({
   button: {
     backgroundColor: 'rgba(245, 139, 10, 0.14)', /**liquid glass orange tint */
     borderRadius: 10,
-    paddingVertical: 20, /**this is for the height  */
-    paddingHorizontal: 110, /**this is to increase the signin button width */
+    /** Fixed geometry so this lines up exactly with GoogleSignInButton and the
+        Apple button. Previously content-sized via paddingHorizontal: 110, which
+        rendered ~400px wide against the 320px Apple button -- the three
+        sign-in options were visibly different widths on the same screen. */
+    width: 320,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
