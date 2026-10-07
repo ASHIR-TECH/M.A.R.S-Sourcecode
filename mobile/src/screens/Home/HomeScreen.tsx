@@ -22,6 +22,7 @@ import { ChatPreview } from '../../types/chat';
 import { HOME_DEVICE_CAP } from '../../constants';
 import { styles } from './HomeScreen.styles';
 import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
+import { AnnouncementCard } from '../../components/AnnouncementCard';
 
 interface HomeScreenProps {
   onDevicePress?: (device: Device) => void;
@@ -103,6 +104,7 @@ return (
 
       <View style={styles.chatSection}>
         <SectionHeader title="Recent Chats" />
+        <AnnouncementCard title="Announcements" message="System operational. Welcome aboard." />
         <View style={styles.chatListWrap}>
           <ScrollView
             ref={listRef}

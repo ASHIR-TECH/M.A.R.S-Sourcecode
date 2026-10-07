@@ -1,5 +1,6 @@
 import { getInstallId } from './deviceId';
 import type { AppChatContext } from './appContext';
+import { isAiLinkReady, sendAiMessage } from './aiClient';
 
 function backendUrl(): string {
   return process.env.EXPO_PUBLIC_BACKEND_URL ?? '';
@@ -18,6 +19,10 @@ export async function sendFallbackMessage(
   text: string,
   context?: AppChatContext
 ): Promise<string> {
+  if (isAiLinkReady()) {
+    return sendAiMessage(text, context);
+  }
+
   const baseUrl = backendUrl();
   if (!baseUrl) {
     throw new Error('Quick-response mode is not configured yet.');

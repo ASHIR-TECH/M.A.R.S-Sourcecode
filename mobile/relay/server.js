@@ -103,6 +103,10 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 });
 app.use(
@@ -122,6 +126,8 @@ function timingSafeEqualStr(a, b) {
   if (left.length !== right.length) return false;
   return crypto.timingSafeEqual(left, right);
 }
+
+const devicePresence = new Map(); // deviceId -> {lastSeen: ms, ip: string}
 
 /** Tiny in-memory per-IP + per-route limiter (no dependency). */
 const rateBuckets = new Map();
@@ -337,7 +343,7 @@ function buildFallbackMessages(text, context) {
  * The Groq key stays server-side, and the per-device daily cap is enforced
  * here (not client-side, which would be trivially bypassed) — PHASE_12 §8.
  */
-app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res) => {
+app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 15 }), async (req, res) => {
   const { deviceId, text, context } = req.body || {};
 
   if (!deviceId || typeof text !== 'string' || !text.trim()) {
@@ -394,6 +400,28 @@ app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 20 }), async (req,
 });
 
 /** GET /health - liveness + config report (no secrets). */
+
+/** POST /devices/presence - heartbeat from connected devices */
+app.post('/devices/presence', rateLimit({ windowMs: 10_000, max: 30 }), (req, res) => {
+  const { deviceId } = req.body || {};
+  if (!deviceId || typeof deviceId !== 'string') {
+    return res.status(400).json({ error: 'Missing deviceId' });
+  }
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim();
+  devicePresence.set(deviceId, { lastSeen: Date.now(), ip });
+  res.json({ ok: true });
+});
+
+/** GET /devices/presence - list connected device presence */
+app.get('/devices/presence', rateLimit({ windowMs: 10_000, max: 60 }), (req, res) => {
+  const now = Date.now();
+  const out = [];
+  for (const [deviceId, v] of devicePresence) {
+    out.push({ deviceId, lastSeen: v.lastSeen, ago: now - v.lastSeen });
+  }
+  res.json({ devices: out });
+});
+
 app.get('/health', (req, res) => {
   res.json({
     ok: true,
