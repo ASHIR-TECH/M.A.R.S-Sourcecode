@@ -11,7 +11,7 @@ import { useDeviceStore } from '../../store/useDeviceStore';
  * are no devices at all the scanner starts open so the first peer always gets
  * paired.
  */
-export function DevicesScreen() {
+export const DevicesScreen = React.memo(function DevicesScreen() {
   // No devices yet → come in with the scanner on immediately.
   const hasDevices = useDeviceStore((s) => s.devices.length > 0);
   const [scannerOpen, setScannerOpen] = useState(!hasDevices);
@@ -25,7 +25,7 @@ export function DevicesScreen() {
       <DeviceHubScreen onAddDevice={() => setScannerOpen(true)} onBack={() => {}} />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
