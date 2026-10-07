@@ -14,7 +14,16 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
   },
-  headerTitle: { color: colors.textPrimary, fontFamily: fonts.quantico, letterSpacing: 4, fontSize: 13 },
+  headerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: colors.textPrimary,
+    fontFamily: fonts.quantico,
+    letterSpacing: 4,
+    fontSize: 13,
+  },
   manualButton: {
     padding: spacing.sm,
   },
@@ -47,7 +56,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: spacing.xs,
   },
-  scanText: { color: colors.textPrimary, fontFamily: fonts.quantico, fontSize: 18 },
+  scanText: { color: colors.textPrimary, fontFamily: fonts.quantico, fontSize: 18, textAlign: 'center' },
   scanSubtitle: { color: '#C4B197', fontFamily: fonts.quantico, fontSize: 12, textAlign: 'center' },
   statusText: { color: colors.accent, fontFamily: fonts.quantico, fontSize: 13, marginTop: spacing.sm },
   errorText: {
@@ -56,5 +65,16 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: spacing.sm,
+  },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    minHeight: 110,
+    paddingTop: spacing.xl,
+    overflow: 'hidden',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(215, 128, 30, 0.5)',
   },
 });
