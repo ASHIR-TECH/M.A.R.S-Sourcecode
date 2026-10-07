@@ -343,7 +343,7 @@ function buildFallbackMessages(text, context) {
  * The Groq key stays server-side, and the per-device daily cap is enforced
  * here (not client-side, which would be trivially bypassed) — PHASE_12 §8.
  */
-app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res) => {
+app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 15 }), async (req, res) => {
   const { deviceId, text, context } = req.body || {};
 
   if (!deviceId || typeof text !== 'string' || !text.trim()) {
