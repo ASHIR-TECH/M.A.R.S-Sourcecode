@@ -25,9 +25,11 @@ const MOMENTUM = 0.18;
 interface PagerTabViewProps {
   index: number;
   onIndexChange: (index: number) => void;
+  /** Extra per-tab props handed to each screen by name (stable references). */
+  screenProps?: Record<string, object>;
 }
 
-export function PagerTabView({ index, onIndexChange }: PagerTabViewProps) {
+export function PagerTabView({ index, onIndexChange, screenProps }: PagerTabViewProps) {
   const { width } = useWindowDimensions();
   const translateX = useSharedValue(-index * width);
   const indexSV = useSharedValue(index);
@@ -92,7 +94,9 @@ export function PagerTabView({ index, onIndexChange }: PagerTabViewProps) {
         <Animated.View style={[styles.row, { width: width * TAB_CONFIG.length }, rowStyle]}>
           {TAB_CONFIG.map(({ name, component: Component }, i) => (
             <View key={name} style={[styles.page, { width }]}>
-              {visited.has(name) || Math.abs(i - index) <= 1 ? <Component /> : null}
+              {visited.has(name) || Math.abs(i - index) <= 1 ? (
+                <Component {...(screenProps?.[name] ?? {})} />
+              ) : null}
             </View>
           ))}
         </Animated.View>
