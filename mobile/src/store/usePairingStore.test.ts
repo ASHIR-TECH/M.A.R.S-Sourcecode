@@ -1,6 +1,7 @@
 import { pairingStorage } from '../pairing/pairingStorage';
 import { desktopStorage } from '../desktop/desktopStorage';
 import { usePairingStore } from './usePairingStore';
+import { useDeviceStore } from './useDeviceStore';
 import { PairingPayload } from '../pairing/types';
 
 jest.mock('../pairing/pairingStorage', () => ({
@@ -24,6 +25,7 @@ const basePayload: PairingPayload = {
 describe('usePairingStore', () => {
   beforeEach(() => {
     usePairingStore.setState({ pairedDesktop: null });
+    useDeviceStore.setState({ devices: [], pairedDevice: null, searchQuery: '' });
     jest.clearAllMocks();
   });
 
@@ -64,5 +66,38 @@ describe('usePairingStore', () => {
     await usePairingStore.getState().clearPairing();
 
     expect(desktopStorage.clear).toHaveBeenCalled();
+  });
+
+  it('shows the paired desktop in the device hub', async () => {
+    (pairingStorage.save as jest.Mock).mockResolvedValue(undefined);
+    (desktopStorage.save as jest.Mock).mockResolvedValue(undefined);
+
+    await usePairingStore.getState().setPairedDesktop(basePayload);
+
+    const devices = useDeviceStore.getState().devices;
+    expect(devices).toHaveLength(1);
+    expect(devices[0]).toMatchObject({ id: basePayload.desktopId, name: 'ZEUS-MAIN-PC' });
+  });
+
+  it('restores the paired desktop into the device hub after a restart', async () => {
+    (pairingStorage.load as jest.Mock).mockResolvedValue(basePayload);
+
+    await usePairingStore.getState().restorePairing();
+
+    expect(useDeviceStore.getState().devices).toHaveLength(1);
+    expect(useDeviceStore.getState().devices[0].id).toBe(basePayload.desktopId);
+  });
+
+  it('drops the paired desktop from the device hub when unpairing', async () => {
+    (pairingStorage.save as jest.Mock).mockResolvedValue(undefined);
+    (desktopStorage.save as jest.Mock).mockResolvedValue(undefined);
+    (pairingStorage.clear as jest.Mock).mockResolvedValue(undefined);
+    (desktopStorage.clear as jest.Mock).mockResolvedValue(undefined);
+
+    await usePairingStore.getState().setPairedDesktop(basePayload);
+    await usePairingStore.getState().clearPairing();
+
+    expect(useDeviceStore.getState().devices).toEqual([]);
+    expect(useDeviceStore.getState().pairedDevice).toBeNull();
   });
 });
