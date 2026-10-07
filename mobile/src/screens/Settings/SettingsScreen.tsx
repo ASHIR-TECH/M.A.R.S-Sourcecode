@@ -6,6 +6,6 @@ import { ProfileScreen } from '../Profile/ProfileScreen';
  * Settings surface is Phase 10 and will reuse ProfileScreen's primitives
  * (SettingsRow / SettingsSection).
  */
-export function SettingsScreen() {
+export const SettingsScreen = React.memo(function SettingsScreen() {
   return <ProfileScreen />;
-}
+});
