@@ -17,6 +17,21 @@ export const styles = StyleSheet.create({
   sectionLabel: { color: '#FFFFFF', fontFamily: fonts.quantico, fontSize: 12, marginBottom: spacing.sm, textTransform: 'uppercase' },
   grid: { gap: spacing.sm, paddingBottom: spacing.xxl },
   row: { gap: spacing.sm },
+  empty: { alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xxl },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontFamily: fonts.quantico,
+    fontSize: 13,
+    letterSpacing: 1,
+  },
+  emptyBody: {
+    color: '#FFFFFF',
+    fontFamily: fonts.montserrat,
+    fontSize: 13,
+    opacity: 0.7,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
+  },
   toast: {
     position: 'absolute',
     bottom: 140, /** raised so the tick confirmation floats higher above the tab bar */
