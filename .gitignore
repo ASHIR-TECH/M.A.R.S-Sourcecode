@@ -8,3 +8,6 @@ infra/updates-server/certs/*.key
 infra/updates-server/updates/
 
 # Identity service (users + refresh tokens live in here — never commit)
+
+# Supabase CLI local state (checks for newer releases)
+supabase/.temp/
