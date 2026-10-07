@@ -123,6 +123,8 @@ function timingSafeEqualStr(a, b) {
   return crypto.timingSafeEqual(left, right);
 }
 
+const devicePresence = new Map(); // deviceId -> {lastSeen: ms, ip: string}
+
 /** Tiny in-memory per-IP + per-route limiter (no dependency). */
 const rateBuckets = new Map();
 function rateLimit({ windowMs, max }) {
@@ -394,6 +396,28 @@ app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 20 }), async (req,
 });
 
 /** GET /health - liveness + config report (no secrets). */
+
+/** POST /devices/presence - heartbeat from connected devices */
+app.post('/devices/presence', rateLimit({ windowMs: 10_000, max: 30 }), (req, res) => {
+  const { deviceId } = req.body || {};
+  if (!deviceId || typeof deviceId !== 'string') {
+    return res.status(400).json({ error: 'Missing deviceId' });
+  }
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim();
+  devicePresence.set(deviceId, { lastSeen: Date.now(), ip });
+  res.json({ ok: true });
+});
+
+/** GET /devices/presence - list connected device presence */
+app.get('/devices/presence', rateLimit({ windowMs: 10_000, max: 60 }), (req, res) => {
+  const now = Date.now();
+  const out = [];
+  for (const [deviceId, v] of devicePresence) {
+    out.push({ deviceId, lastSeen: v.lastSeen, ago: now - v.lastSeen });
+  }
+  res.json({ devices: out });
+});
+
 app.get('/health', (req, res) => {
   res.json({
     ok: true,
