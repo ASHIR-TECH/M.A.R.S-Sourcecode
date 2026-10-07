@@ -36,7 +36,8 @@ export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: Animat
   // bottom half (old Android tabBarHideOnKeyboard behavior, extended to iOS).
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    const show = Keyboard.addListener('keyboardDidShow', () => {
+    const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const show = Keyboard.addListener(showName, () => {
       keyboardHidden.value = withTiming(1, { duration: 180 });
     });
     const hide = Keyboard.addListener('keyboardDidHide', () => {
