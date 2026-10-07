@@ -1,9 +1,14 @@
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useDeviceStore } from '../../store/useDeviceStore';
+import { mockDevices } from '../../data/mockDevices';
 
 describe('useDeviceStore.filteredDevices', () => {
   beforeEach(() => {
-    useDeviceStore.setState({ searchQuery: '' });
+    useDeviceStore.setState({ devices: mockDevices, searchQuery: '', pairedDevice: null });
+  });
+
+  afterEach(() => {
+    useDeviceStore.setState({ devices: [], searchQuery: '', pairedDevice: null });
   });
 
   it('returns all devices when search query is empty', () => {
