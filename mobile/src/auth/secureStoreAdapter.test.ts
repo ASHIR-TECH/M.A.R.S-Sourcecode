@@ -1,4 +1,4 @@
-import { secureStorageAdapter } from './secureStoreAdapter';
+import { secureStorageAdapter, SECURE_STORE_ENTRY_LIMIT } from './secureStoreAdapter';
 import * as SecureStore from 'expo-secure-store';
 
 jest.mock('expo-secure-store', () => ({
@@ -55,4 +55,21 @@ describe('secureStoreAdapter', () => {
     store.deleteItemAsync.mockRejectedValue(new Error('KeyStore error'));
     await expect(secureStorageAdapter.removeItem('k')).resolves.toBeUndefined();
   });
-});
+  it('stores a large session (over 2048 bytes) by chunking it', async () => {
+    const LargeSession = new Array(1000).fill('0').join('');
+    const big = JSON.stringify({ a: LargeSession, b: LargeSession, c: LargeSession, d: LargeSession });
+    expect(big.length).toBeGreaterThan(SECURE_STORE_ENTRY_LIMIT);
+    const storage: Record<string, string | null> = {};
+    store.setItemAsync.mockImplementation(async (key: any, value: any) => {
+      storage[key as string] = value as string;
+    });
+    store.getItemAsync.mockImplementation(async (key: any) => {
+      return storage[key as string] ?? null;
+    });
+    store.deleteItemAsync.mockImplementation(async (key: any) => {
+      delete storage[key as string];
+    });
+    await secureStorageAdapter.setItem('sb-session', big);
+    const read = await secureStorageAdapter.getItem('sb-session');
+    expect(read).toBe(big);
+  });});
