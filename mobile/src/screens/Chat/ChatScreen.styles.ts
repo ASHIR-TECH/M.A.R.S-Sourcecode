@@ -4,8 +4,11 @@ import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
+export const chatBottomInset = (keyboardOpen: boolean): number =>
+  keyboardOpen ? spacing.sm : tabBarMetrics.height + 24;
+
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, paddingBottom: tabBarMetrics.height + 24 },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
