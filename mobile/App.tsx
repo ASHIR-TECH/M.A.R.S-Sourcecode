@@ -6,6 +6,7 @@ import { SplashScreen } from './src/screens/Splash/SplashScreen';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { usePairingStore } from './src/store/usePairingStore';
 import { useDesktopStore } from './src/store/useDesktopStore';
+import { disposeAiClient, initAiClient } from './src/relay/aiClient';
 
 const styles = StyleSheet.create({
   root: {
@@ -23,6 +24,8 @@ export default function App() {
   useEffect(() => {
     void usePairingStore.getState().restorePairing();
     void useDesktopStore.getState().hydrate();
+    initAiClient();
+    return () => disposeAiClient();
   }, []);
 
   const handleSplashFinished = () => {
