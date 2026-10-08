@@ -1,10 +1,14 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import Animated, {
+  Easing,
+  interpolateColor,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withRepeat,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import { AppBackground } from '../../components/AppBackground';
@@ -53,7 +57,7 @@ export const HomeScreen = React.memo(function HomeScreen({
   const scrollHandler = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
     scrolling.value = 1;
-    scrolling.value = withDelay(700, withTiming(0, { duration: 180 }));
+    scrolling.value = withDelay(700, withTiming(0, { duration: 140 }));
   });
 
   const listRef = useRef<ScrollView>(null);
@@ -75,6 +79,35 @@ export const HomeScreen = React.memo(function HomeScreen({
     return {
       opacity: scrolling.value,
       transform: [{ translateY: progress * (viewportH - thumbHeight) }],
+    };
+  });
+
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (hasDevices) {
+      pulse.value = withTiming(0, { duration: 140 });
+    } else {
+      pulse.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    }
+  }, [hasDevices, pulse]);
+
+  const scanPulseStyle = useAnimatedStyle(() => {
+    const p = pulse.value;
+    return {
+      backgroundColor: interpolateColor(
+        p,
+        [0, 1],
+        ['rgba(11, 7, 4, 0.78)', 'rgba(232, 163, 77, 0.55)']
+      ),
+      borderColor: interpolateColor(p, [0, 1], ['rgba(255, 0, 0, 0.7)', '#7b6954']),
     };
   });
 
@@ -133,9 +166,6 @@ export const HomeScreen = React.memo(function HomeScreen({
               accessibilityLabel="Pair a device"
             >
               <Text style={styles.deviceGridMessageText}>No linked device</Text>
-              {onPairDevice && (
-                <Text style={styles.deviceGridMessageHint}>Tap to open the QR scanner</Text>
-              )}
             </Pressable>
           </View>
         )}
@@ -143,7 +173,27 @@ export const HomeScreen = React.memo(function HomeScreen({
 
       <View style={styles.chatSection}>
         <SectionHeader title="Recent Chats" />
-        <AnnouncementCard title="Announcements" message="System operational. Welcome aboard." />
+        <View style={styles.announcementRow}>
+          <View style={styles.announcementWrap}>
+            <AnnouncementCard
+              title="Announcements"
+              message="System operational. Welcome aboard."
+              style={styles.announcementCard}
+            />
+          </View>
+          {onPairDevice && (
+            <Animated.View style={[styles.scanButton, scanPulseStyle]}>
+              <Pressable
+                style={styles.scanButtonInner}
+                onPress={onPairDevice}
+                accessibilityRole="button"
+                accessibilityLabel="Open QR scanner"
+              >
+                <Text style={styles.scanButtonText}>SCAN</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+        </View>
         <View style={styles.chatListWrap}>
           <ScrollView
             ref={listRef}
