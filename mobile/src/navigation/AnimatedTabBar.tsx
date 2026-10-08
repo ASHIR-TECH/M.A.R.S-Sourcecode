@@ -29,7 +29,7 @@ export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: Animat
   const contentHidden = useSharedValue(0);
 
   useEffect(() => {
-    contentHidden.value = withTiming(hidden ? 1 : 0, { duration: 180 });
+    contentHidden.value = withTiming(hidden ? 1 : 0, { duration: 140 });
   }, [hidden, contentHidden]);
 
   // Hide the bar when the keyboard opens so the chat screen can use the full
@@ -38,10 +38,10 @@ export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: Animat
     if (Platform.OS === 'web') return;
     const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const show = Keyboard.addListener(showName, () => {
-      keyboardHidden.value = withTiming(1, { duration: 180 });
+      keyboardHidden.value = withTiming(1, { duration: 140 });
     });
     const hide = Keyboard.addListener('keyboardDidHide', () => {
-      keyboardHidden.value = withTiming(0, { duration: 180 });
+      keyboardHidden.value = withTiming(0, { duration: 140 });
     });
     return () => {
       show.remove();
@@ -83,6 +83,7 @@ export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: Animat
           <Pressable
             key={name}
             onPress={() => onTabPress(name)}
+            android_disableSound
             accessibilityRole="tab"
             accessibilityState={{ selected: focused }}
             accessibilityLabel={label}
