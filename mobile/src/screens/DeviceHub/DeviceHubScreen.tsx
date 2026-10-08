@@ -84,6 +84,14 @@ export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.grid}
           renderItem={renderNode}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>NO DEVICES YET</Text>
+              <Text style={styles.emptyBody}>
+                Pair a desktop with the + button and it will show up here.
+              </Text>
+            </View>
+          }
         />
       </View>
 

@@ -6,6 +6,17 @@ jest.mock('./deviceId', () => ({
   getInstallId: jest.fn().mockResolvedValue('test-device'),
 }));
 
+jest.mock('../auth/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      getSession: jest.fn(async () => ({
+        data: { session: { access_token: 'test-jwt' } },
+      })),
+    },
+  },
+  isSupabaseConfigured: jest.fn(() => true),
+}));
+
 jest.mock('./aiClient', () => ({
   isAiLinkReady: jest.fn(),
   sendAiMessage: jest.fn(),

@@ -1,5 +1,6 @@
 import React, { useReducer, useRef, useCallback, useEffect } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -7,8 +8,10 @@ import { parsePairingPayload, isPairingError } from '../../pairing/parsePairingP
 import { usePairingStore } from '../../store/usePairingStore';
 import { qrScannerReducer, initialScanState } from './qrScannerReducer';
 import { PermissionDeniedView } from './PermissionDeniedView';
+import { PermissionRequestView } from './PermissionRequestView';
 import { styles } from './QRScannerScreen.styles';
 import { spacing } from '../../theme/spacing';
+import { glass } from '../../theme/glass';
 import * as Haptics from 'expo-haptics';
 
 interface QRScannerScreenProps {
@@ -37,10 +40,6 @@ export function QRScannerScreen({ onPaired, onClose, onManualSetup }: QRScannerS
   }, [textPulse]);
 
   const textBlockStyle = useAnimatedStyle(() => ({ opacity: 0.6 + 0.4 * textPulse.value }));
-
-  useEffect(() => {
-    if (!permission) requestPermission();
-  }, [permission, requestPermission]);
 
   useEffect(() => {
     if (state.status === 'error') {
@@ -74,6 +73,9 @@ export function QRScannerScreen({ onPaired, onClose, onManualSetup }: QRScannerS
   );
 
   if (!permission) return null; // permission status still loading
+  if (permission.status === 'undetermined') {
+    return <PermissionRequestView onRequest={requestPermission} />;
+  }
   if (!permission.granted) return <PermissionDeniedView />;
 
   return (
@@ -112,6 +114,18 @@ export function QRScannerScreen({ onPaired, onClose, onManualSetup }: QRScannerS
               </Text>
             )}
           </Animated.View>
+
+          <View
+            style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}
+            pointerEvents="none"
+          >
+            <BlurView
+              intensity={glass.intensity}
+              tint={glass.tint}
+              experimentalBlurMethod="dimezisBlurView"
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
         </View>
       </CameraView>
     </View>

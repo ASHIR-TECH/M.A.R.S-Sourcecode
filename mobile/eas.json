@@ -17,10 +17,24 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://yiaknrtvtgtmbgzhdlru.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_6IxBQKWTJaEom0SXyM0agA_oeLroSY2",
+        "EXPO_PUBLIC_BACKEND_URL": "http://10.0.2.2:3001",
+        "EXPO_PUBLIC_DONATIONS_ENABLED": "false",
+        "EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY": "FLWPUBK_TEST-fff5e21b0f63d3d497fab91495d3a5d7-X"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://yiaknrtvtgtmbgzhdlru.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_6IxBQKWTJaEom0SXyM0agA_oeLroSY2",
+        "EXPO_PUBLIC_BACKEND_URL": "http://10.0.2.2:3001",
+        "EXPO_PUBLIC_DONATIONS_ENABLED": "false",
+        "EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY": "FLWPUBK_TEST-fff5e21b0f63d3d497fab91495d3a5d7-X"
+      }
     }
   },
   "submit": {

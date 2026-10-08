@@ -1,15 +1,16 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, StyleProp, ViewStyle } from 'react-native';
 import { colors } from '../theme/colors';
 
 interface AnnouncementCardProps {
   title?: string;
   message?: string;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function AnnouncementCard({ title = 'System Notice', message = 'All systems operational.' }: AnnouncementCardProps) {
+export function AnnouncementCard({ title = 'System Notice', message = 'All systems operational.', style }: AnnouncementCardProps) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, style]}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
     </View>

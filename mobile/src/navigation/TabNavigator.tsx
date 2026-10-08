@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TAB_CONFIG, TabName } from './tabConfig';
 import { AnimatedTabBar } from './AnimatedTabBar';
@@ -7,6 +7,8 @@ import { TabBarVisibilityProvider } from './TabBarVisibility';
 import { AppBackground } from '../components/AppBackground';
 import { ConnectionStatusBanner } from '../components/ConnectionStatusBanner';
 import { RelayConnectionProvider } from '../relay/RelayConnectionContext';
+
+const DEVICES_INDEX = TAB_CONFIG.findIndex((tab) => tab.name === 'Devices');
 
 /**
  * Phase 4 tab shell. Fully config-driven from TAB_CONFIG: the bottom bar and
@@ -23,6 +25,15 @@ export function TabNavigator() {
     if (next >= 0) setIndex(next);
   }, []);
 
+  const goToDevices = useCallback(() => selectTab('Devices'), [selectTab]);
+  const screenProps = useMemo(
+    () => ({
+      Home: { onPairDevice: goToDevices },
+      Devices: { isActive: index === DEVICES_INDEX },
+    }),
+    [goToDevices, index]
+  );
+
   return (
     <RelayConnectionProvider>
       <AppBackground>
@@ -30,7 +41,7 @@ export function TabNavigator() {
           <ConnectionStatusBanner />
           <TabBarVisibilityProvider setHidden={setTabBarHidden}>
             <View style={styles.flex}>
-              <PagerTabView index={index} onIndexChange={setIndex} />
+              <PagerTabView index={index} onIndexChange={setIndex} screenProps={screenProps} />
               <AnimatedTabBar activeIndex={index} onSelect={selectTab} hidden={tabBarHidden} />
             </View>
           </TabBarVisibilityProvider>

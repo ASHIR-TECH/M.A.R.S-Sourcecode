@@ -3,6 +3,20 @@ import { PairingPayload } from '../pairing/types';
 import { pairingStorage } from '../pairing/pairingStorage';
 import { deriveAgentConnection } from '../pairing/deriveAgentConnection';
 import { useDesktopStore } from './useDesktopStore';
+import { useDeviceStore } from './useDeviceStore';
+
+function pairedDeviceFrom(payload: PairingPayload) {
+  return {
+    id: payload.desktopId,
+    name: payload.desktopName,
+    os: 'Desktop',
+    status: 'online' as const,
+    lastSeen: 'Just Now',
+    cpu: 0,
+    ram: 0,
+    collectionId: 'paired',
+  };
+}
 
 interface PairingState {
   pairedDesktop: PairingPayload | null;
@@ -29,16 +43,22 @@ export const usePairingStore = create<PairingState>((set) => ({
     if (agent) {
       await useDesktopStore.getState().saveConnection(agent);
     }
+
+    useDeviceStore.getState().addPairedDevice(pairedDeviceFrom(payload));
   },
 
   clearPairing: async () => {
     await pairingStorage.clear();
     set({ pairedDesktop: null });
+    useDeviceStore.getState().removePairedDevice();
     await useDesktopStore.getState().clearConnection();
   },
 
   restorePairing: async () => {
     const stored = await pairingStorage.load();
-    if (stored) set({ pairedDesktop: stored });
+    if (stored) {
+      set({ pairedDesktop: stored });
+      useDeviceStore.getState().addPairedDevice(pairedDeviceFrom(stored));
+    }
   },
 }));

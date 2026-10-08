@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "MARS",
-    "slug": "mars-mobile",
+    "slug": "mars",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -32,7 +32,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -64,12 +68,13 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "de93ee69-8f27-4c55-a8d1-ab851751cfbb"
+        "projectId": "cbb39cdf-11ab-46db-b9d0-5acf3d15f186"
       }
     },
     "assetBundlePatterns": [
       "**/*"
     ],
-    "fonts": []
+    "fonts": [],
+    "owner": "contractorx"
   }
 }

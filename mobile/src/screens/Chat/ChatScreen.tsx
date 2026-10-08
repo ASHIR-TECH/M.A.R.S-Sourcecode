@@ -20,9 +20,7 @@ import { ChatBubble } from '../../components/ChatBubble';
 import { TypingIndicator } from '../../components/TypingIndicator';
 import { ChatMessage } from '../../types/chatMessage';
 import { ChatComposer } from './ChatComposer';
-import { styles } from './ChatScreen.styles';
-import { spacing } from '../../theme/spacing';
-import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
+import { styles, chatBottomInset } from './ChatScreen.styles';
 
 /** A glowing amber light that sweeps left→right along a line, looping forever. */
 function AnimatedHeaderLine() {
@@ -66,23 +64,23 @@ function AnimatedHeaderLine() {
   );
 }
 
-export function ChatScreen() {
+export const ChatScreen = React.memo(function ChatScreen() {
   const messages = useChatSessionStore((s) => s.messages);
   const isAwaitingResponse = useChatSessionStore((s) => s.isAwaitingResponse);
   const { sendChatMessage } = useRelayConnectionApi();
-  const [keyboardH, setKeyboardH] = useState(0);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const listRef = useRef<FlashListRef<ChatMessage>>(null);
   const atBottomRef = useRef(true);
 
-  // Standard chat behavior: when the keyboard opens the input bar rides on
-  // top of it (container bottom padding shrinks) and the thread scrolls up so
-  // the latest bubble stays visible above the input.
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardH(e.endCoordinates.height);
-      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const show = Keyboard.addListener(showName, (e) => {
+      setKeyboardOpen(true);
+      if (e.endCoordinates.height > 0) {
+        requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+      }
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardH(0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
     return () => {
       show.remove();
       hide.remove();
@@ -111,31 +109,32 @@ export function ChatScreen() {
     <AppBackground>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
-        <View style={[styles.container, { paddingBottom: keyboardH > 0 ? spacing.sm : tabBarMetrics.height + 24 }]}>
+        <View style={[styles.container, { paddingBottom: chatBottomInset(keyboardOpen) }]}>
         <View style={styles.header}>
           <Text style={styles.title}>CHAT</Text>
           <View style={styles.statusDot} />
           <AnimatedHeaderLine />
         </View>
 
-        <FlashList
-          ref={listRef}
-          data={messages}
-          keyExtractor={keyExtractor}
-          renderItem={renderMessage}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          onContentSizeChange={handleContentSizeChange}
-          ListFooterComponent={footer}
-          contentContainerStyle={styles.thread}
-        />
+          <FlashList
+            ref={listRef}
+            data={messages}
+            keyExtractor={keyExtractor}
+            renderItem={renderMessage}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            onContentSizeChange={handleContentSizeChange}
+            ListFooterComponent={footer}
+            contentContainerStyle={styles.thread}
+            showsVerticalScrollIndicator={false}
+          />
 
         <ChatComposer sendChatMessage={sendChatMessage} />
       </View>
       </KeyboardAvoidingView>
     </AppBackground>
   );
-}
+});
