@@ -4,6 +4,17 @@ jest.mock('./deviceId', () => ({
   getInstallId: jest.fn().mockResolvedValue('test-device'),
 }));
 
+jest.mock('../auth/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      getSession: jest.fn(async () => ({
+        data: { session: { access_token: 'test-jwt' } },
+      })),
+    },
+  },
+  isSupabaseConfigured: jest.fn(() => false),
+}));
+
 describe('sendFallbackMessage', () => {
   beforeEach(() => {
     process.env.EXPO_PUBLIC_BACKEND_URL = 'https://relay.test';
@@ -27,6 +38,8 @@ describe('sendFallbackMessage', () => {
       'https://relay.test/fallback-chat',
       expect.objectContaining({ method: 'POST' })
     );
+    const headers = (fetch as jest.Mock).mock.calls[0][1].headers;
+    expect(headers.Authorization).toBe('Bearer test-jwt');
   });
 
   it('forwards app-level context when provided', async () => {
