@@ -53,6 +53,43 @@ export const styles = StyleSheet.create({
   chatSection: {
     gap: spacing.sm,
   },
+  announcementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  announcementWrap: {
+    flex: 1,
+  },
+  announcementCard: {
+    marginBottom: 0,
+  },
+  scanButton: {
+    width: 86,
+    height: 44,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
+  scanButtonInner: {
+    flex: 1,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+  },
+  scanButtonText: {
+    color: '#FFFFFF',
+    fontFamily: fonts.quantico,
+    fontSize: 13,
+    letterSpacing: 3,
+  },
   chatListWrap: {
     flexDirection: 'row',
     height: 220,
@@ -118,12 +155,5 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(215, 128, 30, 0.45)',
-  },
-  deviceGridMessageHint: {
-    color: colors.accent,
-    fontFamily: fonts.montserrat,
-    fontSize: 12,
-    marginTop: spacing.xs,
-    textAlign: 'center',
   },
 });
