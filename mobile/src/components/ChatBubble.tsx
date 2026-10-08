@@ -32,7 +32,9 @@ function ChatBubbleBase({ message }: { message: ChatMessage }) {
           isUser ? styles.bubbleShapeRight : styles.bubbleShapeLeft,
         ]}
       >
-        <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
+        {!isUser && (
+          <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
+        )}
         {message.attachment && (
           <AttachmentCard attachment={message.attachment} size="bubble" />
         )}
@@ -50,15 +52,19 @@ function ChatBubbleBase({ message }: { message: ChatMessage }) {
           message.toolCalls?.map((call, index) => (
             <ToolCallStep key={call.id ?? `${call.name}-${index}`} call={call} />
           ))}
-        <Text style={[styles.timestamp, isUser && styles.timestampUser]}>{time}</Text>
-        {!isUser && (
-          <View style={styles.footer}>
-            <View style={styles.footerBadge}>
+        <View style={styles.footer}>
+          <View style={styles.footerLeft}>
+            <Text style={[styles.timestamp, isUser && styles.timestampUser]}>{time}</Text>
+            {!isUser && message.text.length > 0 && (
+              <CopyMessageButton text={message.text} />
+            )}
+          </View>
+          {!isUser && (
+            <View style={styles.footerRight}>
               <ProviderBadge label={message.providerLabel} viaFallback={message.viaFallback} />
             </View>
-            {message.text.length > 0 && <CopyMessageButton text={message.text} />}
-          </View>
-        )}
+          )}
+        </View>
       </View>
     </View>
   );
@@ -69,52 +75,54 @@ function ChatBubbleBase({ message }: { message: ChatMessage }) {
 export const ChatBubble = React.memo(ChatBubbleBase);
 
 const styles = StyleSheet.create({
-  row: { paddingHorizontal: spacing.md, marginVertical: spacing.sm, alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
+  row: { paddingHorizontal: spacing.md, marginVertical: spacing.xs + 2, alignItems: 'flex-end', flexDirection: 'row', gap: spacing.sm },
   rowUser: { alignItems: 'flex-end', flexDirection: 'row-reverse' },
   aiAvatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(232,163,77,0.15)',
+    backgroundColor: 'rgba(232,163,77,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4,
   },
   bubble: {
-    maxWidth: '82%',
-    padding: spacing.md + 1,
-    paddingBottom: spacing.sm + 8,
+    maxWidth: '84%',
+    paddingVertical: spacing.sm + 4,
+    paddingHorizontal: spacing.md + 2,
+    paddingBottom: spacing.sm + 2,
     overflow: 'hidden',
     flexShrink: 1,
   },
   // Asymmetric radii = speech-bubble feel; the near-zero corner sits where the
   // tail would be (top-right for user on the right, top-left for AI on the left).
   bubbleShapeRight: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 6,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 4,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
   bubbleShapeLeft: {
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
   bubbleAi: {
-    backgroundColor: 'rgba(232, 163, 77, 0.25)',
+    backgroundColor: 'rgba(20, 12, 6, 0.96)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(232, 163, 77, 0.7)',
+    borderColor: 'rgba(232, 163, 77, 0.5)',
   },
   bubbleUser: {
-    backgroundColor: 'rgba(37, 17, 1, 0.38)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(215, 128, 30, 0.7)',
+    backgroundColor: '#E8A34D',
+    borderWidth: 0,
   },
-  text: { color: colors.textPrimary, fontSize: 14, fontFamily: fonts.montserrat },
-  textOnGlass: { color: '#FFFFFF' },
-  textAi: { color: '#FFFFFF', fontWeight: 'bold' },
-  timestamp: { color: 'rgba(255,255,255,0.75)', fontSize: 10, marginTop: 10, marginHorizontal: spacing.xs, textAlign: 'right', fontFamily: fonts.montserrat },
-  timestampUser: { color: 'rgba(232,163,77,0.9)', marginTop: 10, marginHorizontal: spacing.xs, textAlign: 'right' },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  footerBadge: { flex: 1 },
+  text: { color: colors.textPrimary, fontSize: 14, fontFamily: fonts.montserrat, lineHeight: 20 },
+  textOnGlass: { color: '#000000', fontWeight: '600' },
+  textAi: { color: '#FFFFFF' },
+  timestamp: { color: '#FFFFFF', fontSize: 10, marginTop: 4, fontFamily: fonts.montserrat, opacity: 0.75 },
+  timestampUser: { color: '#000000', fontSize: 10, marginTop: 4, fontFamily: fonts.montserrat, opacity: 0.9 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: 2 },
+  footerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  footerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
 });
