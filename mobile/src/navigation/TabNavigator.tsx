@@ -8,6 +8,8 @@ import { AppBackground } from '../components/AppBackground';
 import { ConnectionStatusBanner } from '../components/ConnectionStatusBanner';
 import { RelayConnectionProvider } from '../relay/RelayConnectionContext';
 
+const DEVICES_INDEX = TAB_CONFIG.findIndex((tab) => tab.name === 'Devices');
+
 /**
  * Phase 4 tab shell. Fully config-driven from TAB_CONFIG: the bottom bar and
  * the drag-follow pager share the same route order, so reordering or adding a
@@ -24,7 +26,13 @@ export function TabNavigator() {
   }, []);
 
   const goToDevices = useCallback(() => selectTab('Devices'), [selectTab]);
-  const screenProps = useMemo(() => ({ Home: { onPairDevice: goToDevices } }), [goToDevices]);
+  const screenProps = useMemo(
+    () => ({
+      Home: { onPairDevice: goToDevices },
+      Devices: { isActive: index === DEVICES_INDEX },
+    }),
+    [goToDevices, index]
+  );
 
   return (
     <RelayConnectionProvider>
