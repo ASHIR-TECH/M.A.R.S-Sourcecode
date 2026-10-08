@@ -84,6 +84,12 @@ const FALLBACK_DAILY_LIMIT = Number(envVars.FALLBACK_DAILY_LIMIT || 50);
 const FALLBACK_SYSTEM_PROMPT = envVars.FALLBACK_SYSTEM_PROMPT;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+// Supabase project used to check the caller's session. The anon key is designed
+// to be public; only the user's signed-in JWT proves who is calling, and it is
+// verified below before /fallback-chat spends any quota.
+const SUPABASE_URL = envVars.SUPABASE_URL || envVars.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = envVars.SUPABASE_ANON_KEY || envVars.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+
 // Comma-separated browser origins allowed to call this relay. Native builds send
 // no Origin header and are always allowed; browsers must be listed explicitly.
 const CORS_ALLOWED_ORIGINS = (envVars.CORS_ALLOWED_ORIGINS || '')
@@ -96,9 +102,20 @@ const CORS_ALLOWED_ORIGINS = (envVars.CORS_ALLOWED_ORIGINS || '')
 const RELAY_ADMIN_TOKEN = envVars.RELAY_ADMIN_TOKEN;
 
 const app = express();
-// Behind a tunnel (cloudflared) the real client IP is in X-Forwarded-For, which
-// the rate limiter below relies on.
-app.set('trust proxy', 1);
+// The real client IP arrives in X-Forwarded-For (added by the tunnel in front
+// of us), but only when the request actually came from that tunnel. Honour
+// X-Forwarded-For only for a trusted proxy (loopback by default -- cloudflared's
+// local connector connects from 127.0.0.1; TRUSTED_PROXY_IPS overrides for a
+// remote proxy). Any other peer is treated as the client itself, so a direct
+// caller can no longer spoof its IP to dodge the rate limiter.
+const TRUSTED_PROXY_IPS = (envVars.TRUSTED_PROXY_IPS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+app.set('trust proxy', (ip) =>
+  ['127.0.0.1', '::1', '::ffff:127.0.0.1', ...TRUSTED_PROXY_IPS].includes(ip)
+);
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -158,6 +175,47 @@ const fallbackUsage = new Map();
 
 function utcDayKey() {
   return new Date().toISOString().slice(0, 10);
+}
+
+// Bound the in-memory maps so a long-running relay can't grow without limit.
+// confirmations is deliberately left alone: it is the permanent donation ledger,
+// not a cache, and only grows with real transactions.
+const PRESENCE_TTL_MS = 5 * 60_000; // a device is gone once it misses its heartbeat window
+function sweepExpiredState() {
+  const now = Date.now();
+  const today = utcDayKey();
+
+  for (const [deviceId, record] of devicePresence) {
+    if (now - record.lastSeen > PRESENCE_TTL_MS) devicePresence.delete(deviceId);
+  }
+  for (const [key, bucket] of rateBuckets) {
+    if (now > bucket.resetAt) rateBuckets.delete(key);
+  }
+  for (const [deviceId, usage] of fallbackUsage) {
+    if (usage.day !== today) fallbackUsage.delete(deviceId);
+  }
+}
+const sweepTimer = setInterval(sweepExpiredState, 60_000);
+sweepTimer.unref();
+
+/**
+ * Require a signed-in Supabase session so the chat proxy isn't an open door for
+ * anyone who finds the relay's public URL. Asks Supabase Auth to validate the
+ * presented JWT; the anon key merely proves the token was minted for this app.
+ */
+async function verifySupabaseSession(req) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
+  const header = req.headers.authorization;
+  const token = typeof header === 'string' ? header.replace(/^Bearer\s+/i, '').trim() : '';
+  if (!token) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -337,11 +395,13 @@ function buildFallbackMessages(text, context) {
 /**
  * POST /fallback-chat
  * Contract expected by the app (fallbackChatClient.ts):
- *   body    { deviceId, text, context? }
+ *   body    { deviceId, text, context? }  header  Authorization: Bearer <supabase jwt>
  *   success { reply, providerLabel }
  * Quick-response mode used when no desktop is paired/reachable (PHASE_12).
- * The Groq key stays server-side, and the per-device daily cap is enforced
- * here (not client-side, which would be trivially bypassed) — PHASE_12 §8.
+ * The Groq key stays server-side, the per-device daily cap is enforced
+ * here (not client-side, which would be trivially bypassed) — PHASE_12 §8,
+ * and the caller must present a valid Supabase session so the endpoint isn't
+ * open to anyone who discovers the public URL.
  */
 app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 15 }), async (req, res) => {
   const { deviceId, text, context } = req.body || {};
@@ -354,6 +414,10 @@ app.post('/fallback-chat', rateLimit({ windowMs: 60_000, max: 15 }), async (req,
     return res
       .status(500)
       .json({ error: 'Fallback chat not configured on server (GROQ_API_KEY)' });
+  }
+
+  if (!(await verifySupabaseSession(req))) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const day = utcDayKey();
@@ -407,7 +471,7 @@ app.post('/devices/presence', rateLimit({ windowMs: 10_000, max: 30 }), (req, re
   if (!deviceId || typeof deviceId !== 'string') {
     return res.status(400).json({ error: 'Missing deviceId' });
   }
-  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim();
+  const ip = (req.ip || req.socket.remoteAddress || '').toString();
   devicePresence.set(deviceId, { lastSeen: Date.now(), ip });
   res.json({ ok: true });
 });
@@ -427,6 +491,7 @@ app.get('/health', (req, res) => {
     ok: true,
     flutterwaveConfigured: !!FLUTTERWAVE_SECRET_KEY,
     fallbackChatConfigured: !!GROQ_API_KEY,
+    supabaseAuthenticatedChat: !!(SUPABASE_URL && SUPABASE_ANON_KEY),
     publicUrl: PUBLIC_URL,
   });
 });
