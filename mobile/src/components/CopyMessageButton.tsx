@@ -37,7 +37,7 @@ export function CopyMessageButton({ text }: CopyMessageButtonProps) {
       testID="copy-message-button"
       style={styles.button}
     >
-      <ClipboardIcon size={18} color={copied ? colors.accent : colors.textMuted} />
+      <ClipboardIcon size={16} color={copied ? '#E8A34D' : '#FFFFFF'} />
       {copied && <Text style={styles.copiedLabel}>Copied</Text>}
     </Pressable>
   );
@@ -48,8 +48,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
-    paddingVertical: 2,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(232, 163, 77, 0.16)',
   },
-  copiedLabel: { color: colors.accent, fontSize: 10, fontStyle: 'italic' },
+  copiedLabel: { color: '#E8A34D', fontSize: 10, fontWeight: '700' },
 });
