@@ -15,14 +15,13 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    flex: 1,
     textAlign: 'center',
     color: colors.textPrimary,
     fontFamily: fonts.quantico,
-    letterSpacing: 4,
-    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 2,
+    fontSize: 18,
   },
   manualButton: {
     padding: spacing.sm,
