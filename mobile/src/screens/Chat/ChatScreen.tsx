@@ -119,17 +119,18 @@ export const ChatScreen = React.memo(function ChatScreen() {
           <AnimatedHeaderLine />
         </View>
 
-        <FlashList
-          ref={listRef}
-          data={messages}
-          keyExtractor={keyExtractor}
-          renderItem={renderMessage}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          onContentSizeChange={handleContentSizeChange}
-          ListFooterComponent={footer}
-          contentContainerStyle={styles.thread}
-        />
+          <FlashList
+            ref={listRef}
+            data={messages}
+            keyExtractor={keyExtractor}
+            renderItem={renderMessage}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            onContentSizeChange={handleContentSizeChange}
+            ListFooterComponent={footer}
+            contentContainerStyle={styles.thread}
+            showsVerticalScrollIndicator={false}
+          />
 
         <ChatComposer sendChatMessage={sendChatMessage} />
       </View>
