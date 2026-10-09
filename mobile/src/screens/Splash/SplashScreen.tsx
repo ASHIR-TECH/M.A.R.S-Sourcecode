@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ImageBackground, Text, View } from 'react-native';
 import * as SplashScreenNative from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { AppBackground } from '../../components/AppBackground';
 import { useSplashTimer } from './useSplashTimer';
 import { styles } from './SplashScreen.styles';
 
@@ -18,6 +17,7 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onFinished }: SplashScreenProps) {
   const { isReadyToNavigate, markAssetsReady } = useSplashTimer();
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     'Audiowide-Regular': require('../../../assets/fonts/Audiowide-Regular.ttf'),
@@ -27,32 +27,42 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     'Montserrat-Regular': require('../../../assets/fonts/Montserrat-Regular.ttf'),
   });
 
+  const assetsReady = (fontsLoaded || fontError) && imageLoaded;
+
+  // The native splash is only a solid backdrop; as soon as our branded
+  // background is decoded, swap to the JS splash so the branding is actually
+  // visible for the rest of the minimum display duration.
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      markAssetsReady();
-    }
-  }, [fontsLoaded, fontError, markAssetsReady]);
+    if (!assetsReady) return;
+    markAssetsReady();
+    SplashScreenNative.hideAsync().catch(() => {
+      // no-op: nothing to reveal if the native splash already hid
+    });
+  }, [assetsReady, markAssetsReady]);
 
   useEffect(() => {
     if (isReadyToNavigate) {
-      SplashScreenNative.hideAsync().finally(onFinished);
+      onFinished();
     }
   }, [isReadyToNavigate, onFinished]);
 
-  // Keep native splash visible until fonts are loaded — render nothing
-  // rather than an unstyled fallback.
-  if (!fontsLoaded && !fontError) {
+  // Keep nothing visible until the branded background is ready — the native
+  // splash (solid dark) already covers the screen in the meantime.
+  if (!assetsReady) {
     return null;
   }
 
   return (
-    <AppBackground>
-      <View style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.title}>MARS</Text>
-        </View>
-        <Text style={styles.footer}>By ASHIR</Text>
+    <ImageBackground
+      source={require('../../../assets/images/splash-bg.jpg')}
+      style={styles.container}
+      resizeMode="cover"
+      onLoadEnd={() => setImageLoaded(true)}
+    >
+      <View style={styles.centerContent}>
+        <Text style={styles.title}>MARS</Text>
       </View>
-    </AppBackground>
+      <Text style={styles.footer}>By ASHIR</Text>
+    </ImageBackground>
   );
 }
