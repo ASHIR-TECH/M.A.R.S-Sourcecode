@@ -15,6 +15,7 @@ import {
   KeyboardController,
   useKeyboardAnimation,
 } from 'react-native-keyboard-controller';
+import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
@@ -75,11 +76,6 @@ export const ChatScreen = React.memo(function ChatScreen() {
   const listRef = useRef<FlashListRef<ChatMessage>>(null);
   const atBottomRef = useRef(true);
 
-  useEffect(() => {
-    KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_PAN);
-    return () => KeyboardController.setDefaultMode();
-  }, []);
-
   const { height: keyboardHeight, progress } = useKeyboardAnimation();
   const composerSpace = Animated.add(
     keyboardHeight,
@@ -87,6 +83,13 @@ export const ChatScreen = React.memo(function ChatScreen() {
       inputRange: [0, 1],
       outputRange: [chatBottomInset(false), chatBottomInset(true)],
     })
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_PAN);
+      return () => KeyboardController.setDefaultMode();
+    }, [])
   );
 
   useEffect(() => {
