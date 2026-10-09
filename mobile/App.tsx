@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SplashScreen } from './src/screens/Splash/SplashScreen';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { usePairingStore } from './src/store/usePairingStore';
@@ -48,6 +49,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
+        <KeyboardProvider>
         <View style={styles.root}>
           <Animated.View style={[StyleSheet.absoluteFill, { opacity: contentOpacity }]}>
             <RootNavigator />
@@ -58,6 +60,7 @@ export default function App() {
             </Animated.View>
           ) : null}
         </View>
+        </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

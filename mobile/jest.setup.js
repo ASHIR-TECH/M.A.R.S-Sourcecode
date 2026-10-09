@@ -34,3 +34,29 @@ jest.mock('expo-video', () => {
   const useVideoPlayer = () => ({ play: jest.fn(), pause: jest.fn(), loop: false });
   return { VideoView: MockVideoView, useVideoPlayer, createVideoPlayer: jest.fn() };
 });
+
+// react-native-keyboard-controller talks to a native TurboModule that is not
+// present under jest, so ChatScreen (imported by tabConfig) gets inert stubs.
+jest.mock('react-native-keyboard-controller', () => {
+  const React = require('react');
+  const { Animated, View } = require('react-native');
+  return {
+    KeyboardProvider: ({ children }) => React.createElement(View, null, children),
+    KeyboardController: {
+      setInputMode: jest.fn(),
+      setDefaultMode: jest.fn(),
+      dismiss: jest.fn(),
+      isVisible: jest.fn(() => false),
+    },
+    useKeyboardAnimation: () => ({
+      height: new Animated.Value(0),
+      progress: new Animated.Value(0),
+    }),
+    AndroidSoftInputModes: {
+      SOFT_INPUT_ADJUST_PAN: 32,
+      SOFT_INPUT_ADJUST_RESIZE: 16,
+      SOFT_INPUT_ADJUST_NOTHING: 48,
+      SOFT_INPUT_ADJUST_UNSPECIFIED: 0,
+    },
+  };
+});
