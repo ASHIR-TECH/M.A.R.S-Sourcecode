@@ -10,6 +10,9 @@ import { colors } from '../theme/colors';
 const ICON_COLOR_INACTIVE = 'rgba(232,163,77,0.8)';
 const LABEL_COLOR_INACTIVE = 'rgba(255,255,255,0.85)';
 
+/** Android system-nav height: ~48dp for 3-button nav, ~13-24dp for gesture. */
+const THREE_BUTTON_NAV_MIN = 32;
+
 interface AnimatedTabBarProps {
   activeIndex: number;
   onSelect: (name: TabName) => void;
@@ -60,16 +63,23 @@ export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: Animat
     [onSelect]
   );
 
+  // With 3-button system nav the whole bar lifts above the controls; gesture
+  // nav keeps sitting at 0 with the design's built-in bottom padding.
   const bottomPad =
     Platform.OS === 'ios'
       ? tabBarMetrics.paddingBottom
-      : Math.max(tabBarMetrics.paddingBottom, insets.bottom);
+      : Platform.OS === 'android' && insets.bottom >= THREE_BUTTON_NAV_MIN
+        ? tabBarMetrics.paddingBottom
+        : Math.max(tabBarMetrics.paddingBottom, insets.bottom);
+  const barBottom =
+    Platform.OS === 'android' && insets.bottom >= THREE_BUTTON_NAV_MIN ? insets.bottom : 0;
 
   return (
     <Animated.View
       style={[
         styles.bar,
         {
+          bottom: barBottom,
           height: tabBarMetrics.height,
           paddingTop: tabBarMetrics.paddingTop,
           paddingBottom: bottomPad,
