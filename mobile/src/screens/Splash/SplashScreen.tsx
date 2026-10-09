@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { ImageBackground, Text, View } from 'react-native';
 import * as SplashScreenNative from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -17,7 +17,6 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onFinished }: SplashScreenProps) {
   const { isReadyToNavigate, markAssetsReady } = useSplashTimer();
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     'Audiowide-Regular': require('../../../assets/fonts/Audiowide-Regular.ttf'),
@@ -27,18 +26,18 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     'Montserrat-Regular': require('../../../assets/fonts/Montserrat-Regular.ttf'),
   });
 
-  const assetsReady = (fontsLoaded || fontError) && imageLoaded;
+  const fontsReady = fontsLoaded || fontError;
 
-  // The native splash is only a solid backdrop; as soon as our branded
-  // background is decoded, swap to the JS splash so the branding is actually
-  // visible for the rest of the minimum display duration.
+  // The native splash is only a solid backdrop; swap to the branded JS splash
+  // as soon as the fonts are in hand so the branding is visible for the rest
+  // of the minimum display duration.
   useEffect(() => {
-    if (!assetsReady) return;
+    if (!fontsReady) return;
     markAssetsReady();
     SplashScreenNative.hideAsync().catch(() => {
       // no-op: nothing to reveal if the native splash already hid
     });
-  }, [assetsReady, markAssetsReady]);
+  }, [fontsReady, markAssetsReady]);
 
   useEffect(() => {
     if (isReadyToNavigate) {
@@ -46,23 +45,23 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     }
   }, [isReadyToNavigate, onFinished]);
 
-  // Keep nothing visible until the branded background is ready — the native
-  // splash (solid dark) already covers the screen in the meantime.
-  if (!assetsReady) {
-    return null;
-  }
-
+  // Always render — the absolutely-filled background guarantees the splash is
+  // never a blank frame, even before fonts or the image have finished loading.
   return (
-    <ImageBackground
-      source={require('../../../assets/images/splash-bg.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-      onLoadEnd={() => setImageLoaded(true)}
-    >
-      <View style={styles.centerContent}>
-        <Text style={styles.title}>MARS</Text>
-      </View>
-      <Text style={styles.footer}>By ASHIR</Text>
-    </ImageBackground>
+    <View style={styles.container}>
+      <ImageBackground
+        source={require('../../../assets/images/splash-bg-phone.jpg')}
+        style={styles.background}
+        resizeMode="cover"
+      />
+      {fontsReady ? (
+        <>
+          <View style={styles.centerContent}>
+            <Text style={styles.title}>MARS</Text>
+          </View>
+          <Text style={styles.footer}>By ASHIR</Text>
+        </>
+      ) : null}
+    </View>
   );
 }
