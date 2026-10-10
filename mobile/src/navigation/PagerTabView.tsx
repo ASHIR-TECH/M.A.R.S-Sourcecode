@@ -59,25 +59,41 @@ export function PagerTabView({ index, onIndexChange, screenProps }: PagerTabView
 
   // React reflects the settled page only; the shared value drives pixels.
   const settle = useCallback(
-    (target: number) => {
+    (raw: number) => {
+      // The wrapped Home (page N) is pixel-identical to the canonical page 0,
+      // so re-anchor onto 0 the moment a swipe lands there. That keeps the ring
+      // correct afterwards (Setting -> Home -> Chats stays one step per jump)
+      // instead of whipping left across Devices and Settings.
+      const onDup = raw === PAGES - 1;
+      const target = onDup ? 0 : raw;
       posRef.current = target;
       setPosState(target);
-      const logical = ((target % N) + N) % N;
+      if (onDup) posSV.value = 0;
+      const logical = ((raw % N) + N) % N;
       if (logical !== index) onIndexChange(logical);
     },
-    [index, onIndexChange]
+    [index, onIndexChange, posSV]
   );
 
   // Shortest-step animation whenever the index changes from outside the pager
   // (tab-bar taps, the Home SCAN button). A wrap lands pixel-identically.
   useEffect(() => {
     const prev = posRef.current;
-    const step = shortestStep((prev % N + N) % N, index);
-    const target = wrapPage(prev + step);
-    if (target !== prev) {
-      posRef.current = target;
-      setPosState(target);
-      posSV.value = withTiming(target, { duration: SETTLE_MS });
+    const step = shortestStep(prev % N, index);
+    const raw = wrapPage(prev + step);
+    if (raw === prev) return;
+    const onDup = raw === PAGES - 1;
+    posRef.current = onDup ? 0 : raw;
+    setPosState(onDup ? 0 : raw);
+    if (onDup) {
+      // Slide right onto the wrap copy (Settings -> Home), then hide the
+      // re-anchor: once the slide lands, snap back to canonical page 0.
+      posSV.value = withTiming(raw, { duration: SETTLE_MS }, (finished) => {
+        'worklet';
+        if (finished) posSV.value = 0;
+      });
+    } else {
+      posSV.value = withTiming(raw, { duration: SETTLE_MS });
     }
   }, [index, posSV]);
 

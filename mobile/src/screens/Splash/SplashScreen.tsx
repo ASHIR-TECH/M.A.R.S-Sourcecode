@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { ImageBackground, Text, View } from 'react-native';
 import * as SplashScreenNative from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { AppBackground } from '../../components/AppBackground';
 import { useSplashTimer } from './useSplashTimer';
 import { styles } from './SplashScreen.styles';
 
@@ -27,32 +26,42 @@ export function SplashScreen({ onFinished }: SplashScreenProps) {
     'Montserrat-Regular': require('../../../assets/fonts/Montserrat-Regular.ttf'),
   });
 
+  const fontsReady = fontsLoaded || fontError;
+
+  // The native splash is only a solid backdrop; swap to the branded JS splash
+  // as soon as the fonts are in hand so the branding is visible for the rest
+  // of the minimum display duration.
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      markAssetsReady();
-    }
-  }, [fontsLoaded, fontError, markAssetsReady]);
+    if (!fontsReady) return;
+    markAssetsReady();
+    SplashScreenNative.hideAsync().catch(() => {
+      // no-op: nothing to reveal if the native splash already hid
+    });
+  }, [fontsReady, markAssetsReady]);
 
   useEffect(() => {
     if (isReadyToNavigate) {
-      SplashScreenNative.hideAsync().finally(onFinished);
+      onFinished();
     }
   }, [isReadyToNavigate, onFinished]);
 
-  // Keep native splash visible until fonts are loaded — render nothing
-  // rather than an unstyled fallback.
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
-
+  // Always render — the absolutely-filled background guarantees the splash is
+  // never a blank frame, even before fonts or the image have finished loading.
   return (
-    <AppBackground>
-      <View style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.title}>MARS</Text>
-        </View>
-        <Text style={styles.footer}>By ASHIR</Text>
-      </View>
-    </AppBackground>
+    <View style={styles.container}>
+      <ImageBackground
+        source={require('../../../assets/images/splash-bg-phone.jpg')}
+        style={styles.background}
+        resizeMode="cover"
+      />
+      {fontsReady ? (
+        <>
+          <View style={styles.centerContent}>
+            <Text style={styles.title}>MARS</Text>
+          </View>
+          <Text style={styles.footer}>By ASHIR</Text>
+        </>
+      ) : null}
+    </View>
   );
 }

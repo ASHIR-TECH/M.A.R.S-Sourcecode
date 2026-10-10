@@ -16,7 +16,7 @@ type Channel =
 
 const CHANNELS: Channel[] = [
   { key: 'github', label: 'GitHub', sub: 'Open an issue / star the repo', Icon: GitHubIcon, url: 'https://github.com/ASHIR-TECH/M.A.R.S-Sourcecode' },
-  { key: 'x', label: 'X', sub: 'Pitch with the Dev', Icon: XIcon, url: 'https://x.com/Ashir_Official' },
+  { key: 'x', label: 'X', sub: 'Pitch with the Dev', Icon: XIcon, url: 'https://x.com/Con_tractorX' },
   { key: 'email', label: 'Email', sub: 'Support@Ashir.io', Icon: EmailIcon, url: 'mailto:ashir.support.mail@googlte.com?subject=MARS%20Support%20Ticket' },
   { key: 'whatsapp', label: 'WhatsApp', sub: 'Chat with the Dev', image: require('../../../assets/images/whatsapp.png'), url: 'https://wa.me/+2348158378585' },
   { key: 'donate', label: 'Donate', sub: 'Support the build', Icon: MarsLogo, action: 'donate' },
@@ -120,7 +120,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   card: {
-    width: 150,
+    flexBasis: '46%',
+    flexGrow: 1,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     borderWidth: 1,

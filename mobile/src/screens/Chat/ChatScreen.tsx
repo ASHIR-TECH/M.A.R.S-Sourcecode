@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,16 @@ import {
   Easing,
   useWindowDimensions,
   Platform,
-  KeyboardAvoidingView,
   Keyboard,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
+import {
+  AndroidSoftInputModes,
+  KeyboardController,
+  useKeyboardAnimation,
+} from 'react-native-keyboard-controller';
+import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
@@ -68,23 +73,33 @@ export const ChatScreen = React.memo(function ChatScreen() {
   const messages = useChatSessionStore((s) => s.messages);
   const isAwaitingResponse = useChatSessionStore((s) => s.isAwaitingResponse);
   const { sendChatMessage } = useRelayConnectionApi();
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const listRef = useRef<FlashListRef<ChatMessage>>(null);
   const atBottomRef = useRef(true);
+
+  const { height: keyboardHeight, progress } = useKeyboardAnimation();
+  const composerSpace = Animated.add(
+    keyboardHeight,
+    progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [chatBottomInset(false), chatBottomInset(true)],
+    })
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_PAN);
+      return () => KeyboardController.setDefaultMode();
+    }, [])
+  );
 
   useEffect(() => {
     const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const show = Keyboard.addListener(showName, (e) => {
-      setKeyboardOpen(true);
       if (e.endCoordinates.height > 0) {
         requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
       }
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
+    return () => show.remove();
   }, []);
 
   // Only auto-follow new content while the user is parked at the bottom; if
@@ -107,34 +122,28 @@ export const ChatScreen = React.memo(function ChatScreen() {
 
   return (
     <AppBackground>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
-      >
-        <View style={[styles.container, { paddingBottom: chatBottomInset(keyboardOpen) }]}>
+      <Animated.View style={[styles.container, { paddingBottom: composerSpace }]}>
         <View style={styles.header}>
           <Text style={styles.title}>CHAT</Text>
           <View style={styles.statusDot} />
           <AnimatedHeaderLine />
         </View>
 
-          <FlashList
-            ref={listRef}
-            data={messages}
-            keyExtractor={keyExtractor}
-            renderItem={renderMessage}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            onContentSizeChange={handleContentSizeChange}
-            ListFooterComponent={footer}
-            contentContainerStyle={styles.thread}
-            showsVerticalScrollIndicator={false}
-          />
+        <FlashList
+          ref={listRef}
+          data={messages}
+          keyExtractor={keyExtractor}
+          renderItem={renderMessage}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onContentSizeChange={handleContentSizeChange}
+          ListFooterComponent={footer}
+          contentContainerStyle={styles.thread}
+          showsVerticalScrollIndicator={false}
+        />
 
         <ChatComposer sendChatMessage={sendChatMessage} />
-      </View>
-      </KeyboardAvoidingView>
+      </Animated.View>
     </AppBackground>
   );
 });
