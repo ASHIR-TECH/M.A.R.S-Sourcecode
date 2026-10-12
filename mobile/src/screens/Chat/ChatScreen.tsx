@@ -90,7 +90,7 @@ export const ChatScreen = React.memo(function ChatScreen({ isFocused = false }: 
 
   useEffect(() => {
     if (isFocused) {
-      KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_RESIZE);
+      KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_PAN);
       return () => KeyboardController.setDefaultMode();
     }
   }, [isFocused]);
