@@ -78,11 +78,13 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
           blurOnSubmit={false}
         />
         <View style={styles.actions}>
-          <Pressable onPress={handleAttach} style={styles.attachButton} accessibilityLabel="Attach file">
-            <View style={styles.attachIconContainer}>
-              <Text style={styles.attachIcon}>{'+'}</Text>
-            </View>
-          </Pressable>
+          {draft.trim().length > 0 && (
+            <Pressable onPress={handleAttach} style={styles.attachButton} accessibilityLabel="Attach file">
+              <View style={styles.attachIconContainer}>
+                <Text style={styles.attachIcon}>{'+'}</Text>
+              </View>
+            </Pressable>
+          )}
           <Pressable onPress={handleSend} style={styles.sendButton} accessibilityLabel="Send message">
             <Text style={styles.sendIcon}>{'➤'}</Text>
           </Pressable>
