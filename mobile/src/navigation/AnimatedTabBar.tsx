@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect } from 'react';
-import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import { TAB_CONFIG, TabName } from './tabConfig';
 import { tabBarMetrics } from './TabNavigator.styles';
 import { colors } from '../theme/colors';
@@ -22,38 +23,26 @@ interface AnimatedTabBarProps {
 /**
  * Phase 4 custom bottom tab bar: same data-driven TAB_CONFIG as the pager.
  * The bar is divided into 4 equal cells; the active tab is indicated by the
- * full-accent icon and full-white label. The bar slides down when the keyboard
- * opens so the chat screen can use the full bottom half, and when a page asks
- * it to hide (e.g. while reading the Privacy & Security screen).
+ * full-accent icon and full-white label. The bar rides up with the keyboard
+ * (it stays visible while typing, so the chat composer clears it) and slides
+ * fully down only when a page asks it to hide (e.g. the Privacy & Security
+ * screen).
  */
 export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: AnimatedTabBarProps) {
   const insets = useSafeAreaInsets();
-  const keyboardHidden = useSharedValue(0);
   const contentHidden = useSharedValue(0);
+  // Keyboard height from the controller (edge-to-edge aware); the bar lifts by
+  // exactly this amount so it keeps sitting just above the keyboard.
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
 
   useEffect(() => {
     contentHidden.value = withTiming(hidden ? 1 : 0, { duration: 140 });
   }, [hidden, contentHidden]);
 
-  // Hide the bar when the keyboard opens so the chat screen can use the full
-  // bottom half (old Android tabBarHideOnKeyboard behavior, extended to iOS).
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const show = Keyboard.addListener(showName, () => {
-      keyboardHidden.value = withTiming(1, { duration: 140 });
-    });
-    const hide = Keyboard.addListener('keyboardDidHide', () => {
-      keyboardHidden.value = withTiming(0, { duration: 140 });
-    });
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, [keyboardHidden]);
-
   const hideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: 300 * Math.max(keyboardHidden.value, contentHidden.value) }],
+    transform: [
+      { translateY: 300 * contentHidden.value - keyboardHeight.value },
+    ],
   }));
 
   const onTabPress = useCallback(

@@ -10,11 +10,7 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
-import {
-  AndroidSoftInputModes,
-  KeyboardController,
-  useKeyboardAnimation,
-} from 'react-native-keyboard-controller';
+import { useKeyboardAnimation } from 'react-native-keyboard-controller';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
@@ -25,10 +21,6 @@ import { TypingIndicator } from '../../components/TypingIndicator';
 import { ChatMessage } from '../../types/chatMessage';
 import { ChatComposer } from './ChatComposer';
 import { styles, chatBottomInset } from './ChatScreen.styles';
-
-interface ChatScreenProps {
-  isFocused?: boolean;
-}
 
 /** A glowing amber light that sweeps left→right along a line, looping forever. */
 function AnimatedHeaderLine() {
@@ -72,28 +64,20 @@ function AnimatedHeaderLine() {
   );
 }
 
-export const ChatScreen = React.memo(function ChatScreen({ isFocused = false }: ChatScreenProps) {
+export const ChatScreen = React.memo(function ChatScreen() {
   const messages = useChatSessionStore((s) => s.messages);
   const isAwaitingResponse = useChatSessionStore((s) => s.isAwaitingResponse);
   const { sendChatMessage } = useRelayConnectionApi();
   const listRef = useRef<FlashListRef<ChatMessage>>(null);
   const atBottomRef = useRef(true);
 
-  const { height: keyboardHeight, progress } = useKeyboardAnimation();
-  const composerSpace = Animated.add(
-    keyboardHeight,
-    progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [chatBottomInset(false), chatBottomInset(true)],
-    })
-  );
-
-  useEffect(() => {
-    if (isFocused) {
-      KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_PAN);
-      return () => KeyboardController.setDefaultMode();
-    }
-  }, [isFocused]);
+  // The window is edge-to-edge, so Android's adjustResize leaves the content
+  // full-height behind the keyboard. react-native-keyboard-controller reports
+  // the keyboard height instead, and we lift the composer by exactly that much
+  // plus the space the (always-visible) tab bar needs, so the bar and the
+  // composer both ride above the keyboard with no double offset.
+  const { height: keyboardHeight } = useKeyboardAnimation();
+  const composerSpace = Animated.add(keyboardHeight, chatBottomInset);
 
   useEffect(() => {
     const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';

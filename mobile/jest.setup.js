@@ -40,6 +40,7 @@ jest.mock('expo-video', () => {
 jest.mock('react-native-keyboard-controller', () => {
   const React = require('react');
   const { Animated, View } = require('react-native');
+  const { useSharedValue } = require('react-native-reanimated');
   return {
     KeyboardProvider: ({ children }) => React.createElement(View, null, children),
     KeyboardController: {
@@ -51,6 +52,10 @@ jest.mock('react-native-keyboard-controller', () => {
     useKeyboardAnimation: () => ({
       height: new Animated.Value(0),
       progress: new Animated.Value(0),
+    }),
+    useReanimatedKeyboardAnimation: () => ({
+      height: useSharedValue(0),
+      progress: useSharedValue(0),
     }),
     AndroidSoftInputModes: {
       SOFT_INPUT_ADJUST_PAN: 32,

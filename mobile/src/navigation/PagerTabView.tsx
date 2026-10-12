@@ -138,9 +138,6 @@ export function PagerTabView({ index, onIndexChange, screenProps }: PagerTabView
               if (entry.name === 'Devices') {
                 copyProps = { ...copyProps, activePage: k === pos };
               }
-              if (entry.name === 'Chat') {
-                copyProps = { ...copyProps, isFocused: k === pos };
-              }
               return (
                 <View key={`${entry.name}-${k}`} style={[styles.page, { width }]}>
                   <ScreenComponent {...copyProps} />

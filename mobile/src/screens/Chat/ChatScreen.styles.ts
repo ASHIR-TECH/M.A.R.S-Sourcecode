@@ -4,8 +4,12 @@ import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
-export const chatBottomInset = (keyboardOpen: boolean): number =>
-  keyboardOpen ? spacing.sm : tabBarMetrics.height + 24;
+/**
+ * Vertical space the composer reserves below the thread. The tab bar now stays
+ * visible while typing, so the composer always clears it (the live keyboard
+ * height is added on top of this at runtime by ChatScreen).
+ */
+export const chatBottomInset = tabBarMetrics.height + 24;
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
