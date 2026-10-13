@@ -1,12 +1,13 @@
 import { chatBottomInset } from './ChatScreen.styles';
 import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
+import { spacing } from '../../theme/spacing';
 
 describe('chatBottomInset', () => {
-  it('clears the tab bar so the composer is never covered by the bar', () => {
-    expect(chatBottomInset).toBe(tabBarMetrics.height + 24);
+  it('clears the tab bar while the keyboard is closed', () => {
+    expect(chatBottomInset(false)).toBe(tabBarMetrics.height + spacing.xxl);
   });
 
-  it('leaves breathing room under the composer', () => {
-    expect(chatBottomInset).toBeGreaterThan(tabBarMetrics.height);
+  it('drops to zero so the composer sits flush on the keyboard', () => {
+    expect(chatBottomInset(true)).toBe(0);
   });
 });

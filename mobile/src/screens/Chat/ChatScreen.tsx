@@ -73,11 +73,18 @@ export const ChatScreen = React.memo(function ChatScreen() {
 
   // The window is edge-to-edge, so Android's adjustResize leaves the content
   // full-height behind the keyboard. react-native-keyboard-controller reports
-  // the keyboard height instead, and we lift the composer by exactly that much
-  // plus the space the (always-visible) tab bar needs, so the bar and the
-  // composer both ride above the keyboard with no double offset.
-  const { height: keyboardHeight } = useKeyboardAnimation();
-  const composerSpace = Animated.add(keyboardHeight, chatBottomInset);
+  // the live, device-measured keyboard height instead: the chat content shrinks
+  // by exactly that much, so the composer lands flush on the top edge of the
+  // keyboard (the tab bar is tucked away for the duration, so nothing sits in
+  // the gap).
+  const { height: keyboardHeight, progress } = useKeyboardAnimation();
+  const composerSpace = Animated.add(
+    keyboardHeight,
+    progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [chatBottomInset(false), chatBottomInset(true)],
+    })
+  );
 
   useEffect(() => {
     const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';

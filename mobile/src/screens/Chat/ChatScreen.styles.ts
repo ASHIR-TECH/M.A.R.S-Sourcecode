@@ -5,11 +5,13 @@ import { spacing } from '../../theme/spacing';
 import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 
 /**
- * Vertical space the composer reserves below the thread. The tab bar now stays
- * visible while typing, so the composer always clears it (the live keyboard
- * height is added on top of this at runtime by ChatScreen).
+ * Vertical space the composer reserves below the thread. While the keyboard is
+ * closed it clears the tab bar plus breathing room; while the keyboard is open
+ * it drops to zero so the composer sits flush on the keyboard. ChatScreen adds
+ * the live, device-measured keyboard height on top of this at runtime.
  */
-export const chatBottomInset = tabBarMetrics.height + 24;
+export const chatBottomInset = (keyboardOpen: boolean): number =>
+  keyboardOpen ? 0 : tabBarMetrics.height + spacing.xxl;
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
@@ -49,7 +51,9 @@ export const styles = StyleSheet.create({
   inputWrap: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
+    // Breathing room below the composer is folded into chatBottomInset so the
+    // open-keyboard state can be truly flush; keep this at zero.
+    paddingBottom: 0,
   },
   inputBar: {
     flexDirection: 'row',
