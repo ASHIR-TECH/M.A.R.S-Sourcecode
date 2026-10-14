@@ -134,15 +134,18 @@ export function PagerTabView({ index, onIndexChange, screenProps }: PagerTabView
             const entry = TAB_CONFIG[((k % N) + N) % N];
             const ScreenComponent = entry.component as React.ComponentType<any>;
             // Only the Devices screen consumes the visibility flag.
-            const copyProps =
-              entry.name === 'Devices'
-                ? { ...(screenProps?.[entry.name] ?? {}), activePage: k === pos }
-                : { ...(screenProps?.[entry.name] ?? {}) };
-            return (
-              <View key={`${entry.name}-${k}`} style={[styles.page, { width }]}>
-                <ScreenComponent {...copyProps} />
-              </View>
-            );
+              let copyProps = { ...(screenProps?.[entry.name] ?? {}) };
+              if (entry.name === 'Devices') {
+                copyProps = { ...copyProps, activePage: k === pos };
+              }
+              if (entry.name === 'Chat') {
+                copyProps = { ...copyProps, isFocused: k === pos };
+              }
+              return (
+                <View key={`${entry.name}-${k}`} style={[styles.page, { width }]}>
+                  <ScreenComponent {...copyProps} />
+                </View>
+              );
           })}
         </Animated.View>
       </View>

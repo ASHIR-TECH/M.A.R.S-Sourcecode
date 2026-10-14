@@ -15,7 +15,6 @@ import {
   KeyboardController,
   useKeyboardAnimation,
 } from 'react-native-keyboard-controller';
-import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
@@ -26,6 +25,10 @@ import { TypingIndicator } from '../../components/TypingIndicator';
 import { ChatMessage } from '../../types/chatMessage';
 import { ChatComposer } from './ChatComposer';
 import { styles, chatBottomInset } from './ChatScreen.styles';
+
+interface ChatScreenProps {
+  isFocused?: boolean;
+}
 
 /** A glowing amber light that sweeps left→right along a line, looping forever. */
 function AnimatedHeaderLine() {
@@ -69,7 +72,7 @@ function AnimatedHeaderLine() {
   );
 }
 
-export const ChatScreen = React.memo(function ChatScreen() {
+export const ChatScreen = React.memo(function ChatScreen({ isFocused = false }: ChatScreenProps) {
   const messages = useChatSessionStore((s) => s.messages);
   const isAwaitingResponse = useChatSessionStore((s) => s.isAwaitingResponse);
   const { sendChatMessage } = useRelayConnectionApi();
@@ -85,12 +88,12 @@ export const ChatScreen = React.memo(function ChatScreen() {
     })
   );
 
-  useFocusEffect(
-    useCallback(() => {
+  useEffect(() => {
+    if (isFocused) {
       KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_PAN);
       return () => KeyboardController.setDefaultMode();
-    }, [])
-  );
+    }
+  }, [isFocused]);
 
   useEffect(() => {
     const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
