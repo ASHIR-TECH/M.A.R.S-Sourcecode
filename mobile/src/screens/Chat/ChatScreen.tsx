@@ -10,7 +10,8 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
-import { useKeyboardAnimation } from 'react-native-keyboard-controller';
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
 import type { FlashListRef } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
@@ -72,19 +73,17 @@ export const ChatScreen = React.memo(function ChatScreen() {
   const atBottomRef = useRef(true);
 
   // The window is edge-to-edge, so Android's adjustResize leaves the content
-  // full-height behind the keyboard. react-native-keyboard-controller reports
-  // the live, device-measured keyboard height instead: the chat content shrinks
-  // by exactly that much, so the composer lands flush on the top edge of the
-  // keyboard (the tab bar is tucked away for the duration, so nothing sits in
-  // the gap).
-  const { height: keyboardHeight, progress } = useKeyboardAnimation();
-  const composerSpace = Animated.add(
-    keyboardHeight,
-    progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [chatBottomInset(false), chatBottomInset(true)],
-    })
-  );
+  // full-height behind the keyboard. react-native-keyboard-controller reports the
+  // live, device-measured keyboard height instead. Its `height` shared value is
+  // signed negative (it is pre-signed for `translateY`), so we flip it to get the
+  // positive bottom inset. The chat content box then shrinks by exactly that much
+  // so the composer lands flush on the top edge of the keyboard. The tab-bar
+  // clearance fades out over the same progress (and the bar tucks itself away),
+  // so nothing is left stranded in the gap.
+  const { height: keyboardHeight, progress } = useReanimatedKeyboardAnimation();
+  const containerStyle = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(-keyboardHeight.value, 0) + (1 - progress.value) * chatBottomInset,
+  }));
 
   useEffect(() => {
     const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -116,7 +115,7 @@ export const ChatScreen = React.memo(function ChatScreen() {
 
   return (
     <AppBackground>
-      <Animated.View style={[styles.container, { paddingBottom: composerSpace }]}>
+      <Reanimated.View style={[styles.container, containerStyle]}>
         <View style={styles.header}>
           <Text style={styles.title}>CHAT</Text>
           <View style={styles.statusDot} />
@@ -137,7 +136,7 @@ export const ChatScreen = React.memo(function ChatScreen() {
         />
 
         <ChatComposer sendChatMessage={sendChatMessage} />
-      </Animated.View>
+      </Reanimated.View>
     </AppBackground>
   );
 });

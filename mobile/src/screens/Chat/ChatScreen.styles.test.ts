@@ -3,11 +3,11 @@ import { tabBarMetrics } from '../../navigation/TabNavigator.styles';
 import { spacing } from '../../theme/spacing';
 
 describe('chatBottomInset', () => {
-  it('clears the tab bar while the keyboard is closed', () => {
-    expect(chatBottomInset(false)).toBe(tabBarMetrics.height + spacing.xxl);
+  it('clears the tab bar plus breathing room while the keyboard is closed', () => {
+    expect(chatBottomInset).toBe(tabBarMetrics.height + spacing.xxl);
   });
 
-  it('drops to zero so the composer sits flush on the keyboard', () => {
-    expect(chatBottomInset(true)).toBe(0);
+  it('is a positive clearance the keyboard height can be added on top of', () => {
+    expect(chatBottomInset).toBeGreaterThan(tabBarMetrics.height);
   });
 });
