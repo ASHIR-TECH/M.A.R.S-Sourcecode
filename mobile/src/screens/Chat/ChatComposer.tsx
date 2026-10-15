@@ -136,7 +136,7 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
           {draft.trim().length > 0 && (
             <Pressable onPress={handleAttach} style={styles.attachButton} accessibilityLabel="Attach file">
               <Image
-                source={require('../../assets/images/icon-link.png')}
+                source={require('../../../assets/images/icon-link.png')}
                 style={styles.attachIcon}
                 resizeMode="contain"
               />
