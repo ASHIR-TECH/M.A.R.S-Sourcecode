@@ -61,6 +61,11 @@ export const styles = StyleSheet.create({
   announcementWrap: {
     flex: 1,
   },
+  // With no announcement the SCAN pill keeps its old right-hand slot instead of
+  // the row collapsing and shifting the chat list up.
+  announcementRowSolo: {
+    justifyContent: 'flex-end',
+  },
   announcementCard: {
     marginBottom: 0,
   },

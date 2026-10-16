@@ -9,9 +9,14 @@
 - `useDesktopSystemStore` caches system snapshot.
 - Tests: deriveRelayUrl, systemClient, uploadFile, updatePairedDevice added/updated.
 
+## Home screen polish
+- Device grid back to the standard **4 slots** (`GRID_SLOTS = HOME_DEVICE_CAP`): one paired device + three placeholders.
+- "Connected Devices" badge denominator is now the slot count (4), not `devices.length`, so a single online device reads **1/4**, never 1/3.
+- The placeholder announcement ("System operational. Welcome aboard.") is gone — it pushed the whole page down for a fake message. `useAnnouncementStore` starts `null` and Home only renders `AnnouncementCard` when a real announcement is set; the SCAN pill keeps its right-hand slot in the meantime.
+
 ## Verification
 - Mobile: `tsc --noEmit` clean; `jest` 39 suites, 217 passed.
 - ADTP (gateway): 28 tests passed; endpoints `/system/info`, `/transfers/upload`, `WS /relay` work.
 
 ## Notes
-- No EAS build per instruction.
+- EAS preview build for these changes kicked off after commit (see PR for artifact URL).

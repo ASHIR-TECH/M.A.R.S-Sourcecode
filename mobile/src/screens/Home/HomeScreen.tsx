@@ -27,6 +27,7 @@ import { ChatPreview } from '../../types/chat';
 import { HOME_DEVICE_CAP } from '../../constants';
 import { styles } from './HomeScreen.styles';
 import { AnnouncementCard } from '../../components/AnnouncementCard';
+import { useAnnouncementStore } from '../../store/useAnnouncementStore';
 
 interface HomeScreenProps {
   onDevicePress?: (device: Device) => void;
@@ -35,11 +36,11 @@ interface HomeScreenProps {
 }
 
 /**
- * The device grid is always a fixed five slots: real devices first, then empty
- * placeholders holding the rest open. A single paired desktop therefore sits in
- * one box with four open, instead of the grid collapsing to a lone card.
+ * The grid keeps the standard four slots: real devices first, then empty
+ * placeholders filling the rest. A single paired desktop therefore sits in one
+ * box with three open, instead of the grid collapsing to a lone card.
  */
-const GRID_SLOTS = HOME_DEVICE_CAP + 1;
+const GRID_SLOTS = HOME_DEVICE_CAP;
 
 export const HomeScreen = React.memo(function HomeScreen({
   onDevicePress,
@@ -52,6 +53,8 @@ export const HomeScreen = React.memo(function HomeScreen({
   const filteredDevices = useDeviceStore((s) => s.filteredDevices);
   const chats = useChatStore((s) => s.chats);
   const session = useAuthStore((s) => s.session);
+  // No placeholder banner: the fake card only pushed the page down.
+  const announcement = useAnnouncementStore((s) => s.announcement);
 
   const [viewportH, setViewportH] = useState(0);
   const [contentH, setContentH] = useState(0);
@@ -145,7 +148,12 @@ export const HomeScreen = React.memo(function HomeScreen({
       />
 
       <View style={styles.section}>
-        <SectionHeader title="Connected Devices" badge={`${onlineCount}/${devices.length} ON`} />
+        {/* Denominator is the standard slot count (4), not devices.length, so one
+            online device reads 1/4 rather than 1/3 when fewer slots are filled. */}
+        <SectionHeader
+          title="Connected Devices"
+          badge={`${Math.min(onlineCount, HOME_DEVICE_CAP)}/${HOME_DEVICE_CAP} ON`}
+        />
         <View style={styles.deviceGrid}>
           {visibleDevices.map((item) => (
             <View key={item.id} style={styles.deviceGridItem}>
@@ -173,14 +181,16 @@ export const HomeScreen = React.memo(function HomeScreen({
 
       <View style={styles.chatSection}>
         <SectionHeader title="Recent Chats" />
-        <View style={styles.announcementRow}>
-          <View style={styles.announcementWrap}>
-            <AnnouncementCard
-              title="Announcements"
-              message="System operational. Welcome aboard."
-              style={styles.announcementCard}
-            />
-          </View>
+        <View style={[styles.announcementRow, !announcement && styles.announcementRowSolo]}>
+          {announcement && (
+            <View style={styles.announcementWrap}>
+              <AnnouncementCard
+                title={announcement.title}
+                message={announcement.message}
+                style={styles.announcementCard}
+              />
+            </View>
+          )}
           {onPairDevice && (
             <Animated.View style={[styles.scanButton, scanPulseStyle]}>
               <Pressable
