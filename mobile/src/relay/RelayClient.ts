@@ -14,6 +14,7 @@ export class RelayClient {
   private socket: WebSocket | null = null;
   private url: string;
   private pairingToken: string;
+  private desktopId?: string;
   private backoffMs = INITIAL_BACKOFF_MS;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private shouldReconnect = true;
@@ -21,9 +22,10 @@ export class RelayClient {
   private statusListeners = new Set<StatusListener>();
   private status: ConnectionStatus = 'disconnected';
 
-  constructor(url: string, pairingToken: string) {
+  constructor(url: string, pairingToken: string, desktopId?: string) {
     this.url = url;
     this.pairingToken = pairingToken;
+    this.desktopId = desktopId;
   }
 
   connect(): void {
@@ -37,7 +39,9 @@ export class RelayClient {
         type: 'command',
         nodeId: '__auth__',
         action: 'authenticate',
-        params: { token: this.pairingToken },
+        // The desktop id lets the gateway report this machine under the identity
+        // the phone paired with, so one desktop renders one grid card.
+        params: { token: this.pairingToken, ...(this.desktopId ? { desktopId: this.desktopId } : {}) },
       });
     };
 

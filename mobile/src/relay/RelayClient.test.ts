@@ -53,6 +53,24 @@ describe('RelayClient', () => {
     expect(sent.params.token).toBe('token123');
   });
 
+  it('includes the paired desktop id so the gateway can echo it back', () => {
+    const client = new RelayClient('ws://test', 'token123', 'a'.repeat(64));
+    client.connect();
+    mockSocket.triggerOpen();
+
+    const sent = JSON.parse(mockSocket.sentMessages[0]);
+    expect(sent.params.desktopId).toBe('a'.repeat(64));
+  });
+
+  it('omits desktopId when it was not provided', () => {
+    const client = new RelayClient('ws://test', 'token123');
+    client.connect();
+    mockSocket.triggerOpen();
+
+    const sent = JSON.parse(mockSocket.sentMessages[0]);
+    expect(sent.params).not.toHaveProperty('desktopId');
+  });
+
   it('transitions to connected on auth_ack', () => {
     const client = new RelayClient('ws://test', 'token123');
     const statuses: string[] = [];

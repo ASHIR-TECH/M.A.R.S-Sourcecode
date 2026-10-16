@@ -22,7 +22,7 @@ const PLACEHOLDER = 'Ask Co-Pilot about node statuses';
 const FOCUS_MS = 180;
 
 interface ChatComposerProps {
-  sendChatMessage: (sessionId: string, text: string) => Promise<void>;
+  sendChatMessage: (sessionId: string, text: string, attachment?: ChatAttachment) => Promise<void>;
 }
 
 /**
@@ -73,8 +73,9 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
     markSent(message.id);
 
     // Routing (relay vs. quick-response fallback) is decided inside the hook,
-    // never here — PHASE_12 NFR-2.
-    void sendChatMessage(SESSION_ID, message.text);
+    // never here — PHASE_12 NFR-2. The attachment's bytes are handed to the
+    // desktop inside that hook (REST upload) so the AI can act on the file.
+    void sendChatMessage(SESSION_ID, message.text, attachment ?? undefined);
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setDraft('');
@@ -133,7 +134,7 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
           )}
         </View>
         <View style={styles.actions}>
-          {draft.trim().length > 0 && (
+          {(focused || draft.trim().length > 0) && (
             <Pressable onPress={handleAttach} style={styles.attachButton} accessibilityLabel="Attach file">
               <Image
                 source={require('../../../assets/images/icon-link.png')}

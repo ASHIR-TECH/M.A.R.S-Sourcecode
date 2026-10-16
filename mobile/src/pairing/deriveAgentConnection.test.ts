@@ -1,4 +1,5 @@
 import { deriveAgentConnection } from './deriveAgentConnection';
+import { deriveRelayUrl } from './deriveAgentConnection';
 import { PairingPayload } from './types';
 
 const basePayload: PairingPayload = {
@@ -52,5 +53,31 @@ describe('deriveAgentConnection', () => {
 
   it('returns null for a malformed relay URL', () => {
     expect(deriveAgentConnection({ ...basePayload, relayUrl: 'not a url' })).toBeNull();
+  });
+});
+
+describe('deriveRelayUrl', () => {
+  it('dials the desktop gateway /relay instead of the public QoWT relay', () => {
+    const payload: PairingPayload = {
+      ...basePayload,
+      relayUrl: 'wss://relay.ashir.world:443/adtp',
+      agentApiUrl: 'http://192.168.0.3:40003',
+      agentApiToken: 'tok',
+    };
+    expect(deriveRelayUrl(payload)).toBe('ws://192.168.0.3:40003/relay');
+  });
+
+  it('uses wss when the agent API is https', () => {
+    const payload: PairingPayload = {
+      ...basePayload,
+      relayUrl: 'wss://relay.ashir.world:443/adtp',
+      agentApiUrl: 'https://station.example.com:9443',
+      agentApiToken: 'tok',
+    };
+    expect(deriveRelayUrl(payload)).toBe('wss://station.example.com:9443/relay');
+  });
+
+  it('falls back to the QR relayUrl when there is no agent URL', () => {
+    expect(deriveRelayUrl(basePayload)).toBe('ws://192.168.0.3:8080');
   });
 });

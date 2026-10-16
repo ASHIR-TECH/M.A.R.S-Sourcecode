@@ -96,4 +96,29 @@ describe('useDeviceStore', () => {
     expect(state.devices[0].name).toBe('Studio Rig 2');
     expect(state.pairedDevice?.name).toBe('Studio Rig 2');
   });
+
+  it('updates live telemetry on both the pinned copy and the grid card', () => {
+    useDeviceStore.getState().addPairedDevice(paired);
+    useDeviceStore.getState().updatePairedDevice({ cpu: 42, ram: 61, name: 'ZEUS' });
+
+    const state = useDeviceStore.getState();
+    expect(state.pairedDevice).toMatchObject({ cpu: 42, ram: 61, name: 'ZEUS' });
+    expect(state.devices[0]).toMatchObject({ cpu: 42, ram: 61, name: 'ZEUS' });
+  });
+
+  it('never blanks a good field with an undefined update', () => {
+    useDeviceStore.getState().addPairedDevice(paired);
+    useDeviceStore.getState().updatePairedDevice({ cpu: 42, name: undefined });
+
+    const state = useDeviceStore.getState();
+    expect(state.pairedDevice?.cpu).toBe(42);
+    // name was not provided, so the pinned name survives
+    expect(state.pairedDevice?.name).toBe('Studio Rig');
+  });
+
+  it('ignores telemetry updates when nothing is paired', () => {
+    useDeviceStore.getState().updatePairedDevice({ cpu: 10 });
+    expect(useDeviceStore.getState().pairedDevice).toBeNull();
+    expect(useDeviceStore.getState().devices).toEqual([]);
+  });
 });
