@@ -4,7 +4,7 @@ import { AgentMessageState, AgentStatus, AgentToolCall, DesktopConnection, ToolC
 const REQUEST_TIMEOUT_MS = 15000;
 const HEALTH_TIMEOUT_MS = 8000;
 
-function trimBase(baseUrl: string): string {
+export function trimBase(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, '');
 }
 

@@ -22,9 +22,9 @@ interface AnimatedTabBarProps {
 /**
  * Phase 4 custom bottom tab bar: same data-driven TAB_CONFIG as the pager.
  * The bar is divided into 4 equal cells; the active tab is indicated by the
- * full-accent icon and full-white label. The bar slides down when the keyboard
- * opens so the chat screen can use the full bottom half, and when a page asks
- * it to hide (e.g. while reading the Privacy & Security screen).
+ * full-accent icon and full-white label. The bar slides down out of the way
+ * while the keyboard is up (so the chat composer can sit flush on the keyboard)
+ * and while a page asks it to hide (e.g. the Privacy & Security screen).
  */
 export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: AnimatedTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -35,8 +35,8 @@ export function AnimatedTabBar({ activeIndex, onSelect, hidden = false }: Animat
     contentHidden.value = withTiming(hidden ? 1 : 0, { duration: 140 });
   }, [hidden, contentHidden]);
 
-  // Hide the bar when the keyboard opens so the chat screen can use the full
-  // bottom half (old Android tabBarHideOnKeyboard behavior, extended to iOS).
+  // Tuck the bar away while the keyboard is up, otherwise it would be stranded
+  // in the gap between the composer and the keyboard.
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const showName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';

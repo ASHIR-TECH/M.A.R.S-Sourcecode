@@ -3,6 +3,7 @@ export const fonts = {
   quantico: 'Quantico-Bold',
   offside: 'Offside-Regular',
   montserrat: 'Montserrat-Regular',
+  megrim: 'Megrim-Regular',
 } as const;
 
 export const typography = {

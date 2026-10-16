@@ -3,6 +3,8 @@ import { PairingPayload } from './types';
 
 const AGENT_PORT = 40003;
 const RELAY_PATTERN = /^(wss?):\/\/([^/:]+)/i;
+const HTTP_PATTERN = /^(https?):\/\/([^/]+)/i;
+const RELAY_PATH = '/relay';
 
 /**
  * Resolves the Phase 14 desktop-agent REST endpoint from a pairing payload.
@@ -28,4 +30,25 @@ export function deriveAgentConnection(payload: PairingPayload): DesktopConnectio
     token: payload.pairingToken,
     origin: 'qr',
   };
+}
+
+/**
+ * The WebSocket the app's RelayClient should dial.
+ *
+ * The QR's `relayUrl` is the public QoWT relay (`wss://relay.ashir.world/adtp`)
+ * — it forwards QUIC frames, not the MARS `authenticate`/`chat_message`
+ * protocol, so connecting to it loops forever. The desktop's own gateway
+ * serves `WS /relay` on the same host/port as `agentApiUrl`, which is what the
+ * phone should reach on the LAN. Only if the QR has no agent URL do we fall
+ * back to whatever it advertised.
+ */
+export function deriveRelayUrl(payload: PairingPayload): string {
+  if (payload.agentApiUrl) {
+    const match = HTTP_PATTERN.exec(payload.agentApiUrl.trim());
+    if (match) {
+      const scheme = match[1].toLowerCase() === 'https' ? 'wss' : 'ws';
+      return `${scheme}://${match[2]}${RELAY_PATH}`;
+    }
+  }
+  return payload.relayUrl;
 }

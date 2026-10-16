@@ -129,31 +129,26 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     maxWidth: 180,
   },
-  deviceGridMessage: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+  // Sits in normal flow below the grid — it used to be absolutely positioned
+  // over the whole grid, which smeared it across the placeholder cards.
+  pairPrompt: {
+    alignSelf: 'center',
+    marginTop: 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 12,
+    backgroundColor: 'rgba(11, 7, 4, 0.78)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(215, 128, 30, 0.45)',
   },
-  deviceGridMessagePressed: {
+  pairPromptPressed: {
     opacity: 0.7,
   },
-  deviceGridMessageText: {
+  pairPromptText: {
     color: '#FFFFFF',
     fontFamily: fonts.quantico,
     fontSize: 12,
     letterSpacing: 1,
     textAlign: 'center',
-    backgroundColor: 'rgba(11, 7, 4, 0.78)',
-    borderRadius: 12,
-    overflow: 'hidden',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(215, 128, 30, 0.45)',
   },
 });

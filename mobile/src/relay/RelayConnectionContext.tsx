@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useRelayConnection } from './useRelayConnection';
 import { OutboundMessage } from './types';
+import { ChatAttachment } from '../types/chatMessage';
 
 interface RelayConnectionApi {
   send: (message: OutboundMessage) => boolean;
-  sendChatMessage: (sessionId: string, text: string) => Promise<void>;
+  sendChatMessage: (sessionId: string, text: string, attachment?: ChatAttachment) => Promise<void>;
 }
 
 const RelayConnectionContext = createContext<RelayConnectionApi | null>(null);

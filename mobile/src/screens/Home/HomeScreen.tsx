@@ -34,7 +34,12 @@ interface HomeScreenProps {
   onPairDevice?: () => void;
 }
 
-const EMPTY_DEVICE_SLOTS = [1, 2, 3, 4];
+/**
+ * The device grid is always a fixed five slots: real devices first, then empty
+ * placeholders holding the rest open. A single paired desktop therefore sits in
+ * one box with four open, instead of the grid collapsing to a lone card.
+ */
+const GRID_SLOTS = HOME_DEVICE_CAP + 1;
 
 export const HomeScreen = React.memo(function HomeScreen({
   onDevicePress,
@@ -70,6 +75,7 @@ export const HomeScreen = React.memo(function HomeScreen({
   const onlineCount = useMemo(() => devices.filter((d) => d.status !== 'offline').length, [devices]);
 
   const hasDevices = devices.length > 0;
+  const emptySlotCount = Math.max(0, GRID_SLOTS - visibleDevices.length);
   const scrollbarShown = contentH > viewportH && viewportH > 0;
   const thumbHeight = scrollbarShown ? Math.max(32, (viewportH / contentH) * viewportH) : 0;
 
@@ -140,34 +146,28 @@ export const HomeScreen = React.memo(function HomeScreen({
 
       <View style={styles.section}>
         <SectionHeader title="Connected Devices" badge={`${onlineCount}/${devices.length} ON`} />
-        {hasDevices ? (
-          <View style={styles.deviceGrid}>
-            {visibleDevices.map((item) => (
-              <View key={item.id} style={styles.deviceGridItem}>
-                <DeviceCard device={item} onPress={onDevicePress} />
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.deviceGrid}>
-            {EMPTY_DEVICE_SLOTS.map((slot) => (
-              <View key={slot} style={styles.deviceGridItem}>
-                <EmptyDeviceCard />
-              </View>
-            ))}
-            <Pressable
-              style={({ pressed }) => [
-                styles.deviceGridMessage,
-                pressed && styles.deviceGridMessagePressed,
-              ]}
-              onPress={onPairDevice}
-              disabled={!onPairDevice}
-              accessibilityRole="button"
-              accessibilityLabel="Pair a device"
-            >
-              <Text style={styles.deviceGridMessageText}>No linked device</Text>
-            </Pressable>
-          </View>
+        <View style={styles.deviceGrid}>
+          {visibleDevices.map((item) => (
+            <View key={item.id} style={styles.deviceGridItem}>
+              <DeviceCard device={item} onPress={onDevicePress} />
+            </View>
+          ))}
+          {Array.from({ length: emptySlotCount }, (_, index) => (
+            <View key={`empty-slot-${index}`} style={styles.deviceGridItem}>
+              <EmptyDeviceCard />
+            </View>
+          ))}
+        </View>
+        {!hasDevices && (
+          <Pressable
+            style={({ pressed }) => [styles.pairPrompt, pressed && styles.pairPromptPressed]}
+            onPress={onPairDevice}
+            disabled={!onPairDevice}
+            accessibilityRole="button"
+            accessibilityLabel="Pair a device"
+          >
+            <Text style={styles.pairPromptText}>No linked device</Text>
+          </Pressable>
         )}
       </View>
 

@@ -11,6 +11,8 @@ interface DeviceState {
   removePairedDevice: () => void;
   hydrateFromRelay: (devices: Device[]) => void;
   renameDevice: (id: string, updates: { name?: string; os?: string }) => void;
+  /** Refresh the paired desktop's live fields (name/os/cpu/ram) from the API. */
+  updatePairedDevice: (updates: Partial<DeviceWithMetrics>) => void;
   removeDevice: (id: string) => void;
 }
 
@@ -57,6 +59,21 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
           ? { ...s.pairedDevice, ...updates }
           : s.pairedDevice,
     })),
+  updatePairedDevice: (updates) =>
+    set((s) => {
+      const paired = s.pairedDevice;
+      if (!paired) return s;
+      // Only fill fields the caller actually provided, so a partial telemetry
+      // refresh can never blank out a good value with `undefined`.
+      const provided = Object.fromEntries(
+        Object.entries(updates).filter(([, value]) => value !== undefined)
+      ) as Partial<DeviceWithMetrics>;
+      const next = { ...paired, ...provided };
+      return {
+        pairedDevice: next,
+        devices: s.devices.map((d) => (d.id === next.id ? { ...d, ...provided } : d)),
+      };
+    }),
   removeDevice: (id) =>
     set((s) => ({
       devices: s.devices.filter((d) => d.id !== id),
