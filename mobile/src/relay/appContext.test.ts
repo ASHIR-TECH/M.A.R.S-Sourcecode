@@ -66,15 +66,8 @@ describe('buildAppChatContext', () => {
     useDesktopSystemStore.getState().setInfo({
       hostname: 'ZEUS',
       os: 'Linux',
-      osVersion: '6.8.0',
-      arch: 'x86_64',
       cpuPercent: 17.5,
       ramPercent: 48,
-      ramTotal: 17_179_869_184,
-      uptimeSeconds: 7200,
-      primaryIp: '192.168.1.10',
-      agentActive: true,
-      agentModel: 'llama3',
     });
 
     const ctx = buildAppChatContext();
@@ -82,15 +75,8 @@ describe('buildAppChatContext', () => {
       id: 'DESK-1',
       name: 'ZEUS',
       os: 'Linux',
-      osVersion: '6.8.0',
-      arch: 'x86_64',
       cpuPercent: 17.5,
       ramPercent: 48,
-      ramTotalGb: 16.0,
-      uptimeHours: 2.0,
-      ip: '192.168.1.10',
-      agentActive: true,
-      agentModel: 'llama3',
     });
   });
 });
