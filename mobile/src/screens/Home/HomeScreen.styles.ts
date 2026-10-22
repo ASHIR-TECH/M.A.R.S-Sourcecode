@@ -130,9 +130,9 @@ export const styles = StyleSheet.create({
     columnGap: 12,
   },
   deviceGridItem: {
-    flexBasis: '45%',
-    flexGrow: 1,
-    maxWidth: 180,
+    flexBasis: '48%',
+    maxWidth: '48%',
+    flexShrink: 0,
   },
   // Sits in normal flow below the grid — it used to be absolutely positioned
   // over the whole grid, which smeared it across the placeholder cards.
