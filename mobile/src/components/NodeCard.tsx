@@ -15,6 +15,12 @@ interface NodeCardProps {
   onRemove: (node: DeviceWithMetrics) => void;
 }
 
+/** Show a short human-readable ID instead of the full libp2p peer ID. */
+function displayId(id: string): string {
+  if (id.startsWith('DEV-') || id.length <= 12) return id;
+  return `${id.slice(0, 8)}…`;
+}
+
 /** Rectangular glass card mirroring what's shown on Home (id, name, os,
  * status, lastSeen). No decorations inside; the edit button sits below the card.
  * The per-device "+" opens a small popup with Edit and Remove (delete that ONE
@@ -45,7 +51,7 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
       <View style={styles.card}>
         <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
         <View style={styles.topRow}>
-          <Text style={styles.id}>{node.id}</Text>
+          <Text style={styles.id}>{displayId(node.id)}</Text>
           <StatusPill status={node.status} />
         </View>
         <Text numberOfLines={1} style={[styles.name, { fontSize: nameFontSize }]}>{node.name}</Text>

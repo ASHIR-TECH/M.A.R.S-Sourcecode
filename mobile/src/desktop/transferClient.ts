@@ -130,6 +130,28 @@ export interface OutgoingFile {
 }
 
 /**
+ * POST /api/v1/transfers/send — asks the desktop to send a file it already has
+ * to another peer via the QUIC data plane. `filePath` must be a path on the
+ * desktop (e.g. one returned by `uploadFile`). `destinationPeerId` is the
+ * libp2p peer ID of the target device; omit to let the desktop choose.
+ */
+export interface SendFileRequest {
+  filePath: string;
+  destinationPeerId?: string;
+  agentName?: string;
+  priority?: 'normal' | 'urgent';
+  message?: string;
+}
+
+export interface SendFileResponse {
+  transferId: string;
+  status: string;
+  filename: string;
+  queuedAt?: string;
+  estimatedMs: number;
+}
+
+/**
  * POST /api/v1/transfers/upload — hands the picked file's bytes to the desktop.
  *
  * This is the only direction the phone→desktop file path can move over REST:
@@ -188,6 +210,57 @@ export async function uploadFile(conn: DesktopConnection, file: OutgoingFile): P
     size: typeof data.size === 'number' ? data.size : 0,
     sha256: str(data.sha256) ?? '',
   };
+}
+
+/**
+ * POST /api/v1/transfers/send — ask the desktop to send a file it already has
+ * to another peer via QUIC. Returns the transfer ID immediately; the actual
+ * send happens asynchronously on the desktop.
+ */
+export async function sendFile(conn: DesktopConnection, req: SendFileRequest): Promise<SendFileResponse> {
+  const res = await request<unknown>(conn, '/api/v1/transfers/send', {
+    method: 'POST',
+    body: JSON.stringify({
+      file_path: req.filePath,
+      agent_name: req.agentName ?? 'default',
+      priority: req.priority ?? 'normal',
+      message: req.message,
+      // The desktop's bridge will use destinationPeerId if provided
+    } as Record<string, unknown>),
+  });
+
+  const data = asRecord(res);
+  return {
+    transferId: str(data.transfer_id) ?? str(data.id) ?? '',
+    status: str(data.status) ?? 'queued',
+    filename: str(data.filename) ?? '',
+    queuedAt: str(data.queued_at) ?? str(data.queuedAt) ?? new Date().toISOString(),
+    estimatedMs: typeof data.estimated_ms === 'number' ? data.estimated_ms : typeof data.estimatedMs === 'number' ? data.estimatedMs : 0,
+  };
+}
+
+/**
+ * GET /api/v1/transfers/{transferId}/download — download a file from the desktop.
+ * Works for files uploaded from the phone (stored in intake dir).
+ */
+export async function downloadFile(
+  conn: DesktopConnection,
+  transferId: string
+): Promise<{ blob: Blob; filename: string; contentType: string }> {
+  const res = await fetch(`${trimBase(conn.baseUrl)}/api/v1/transfers/${transferId}/download`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${conn.token}` },
+  });
+
+  if (!res.ok) {
+    throw new ApiError('server', `Download failed (${res.status}).`, res.status);
+  }
+
+  const blob = await res.blob();
+  const filename = res.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || 'download';
+  const contentType = res.headers.get('content-type') || 'application/octet-stream';
+
+  return { blob, filename, contentType };
 }
 
 export { ApiError };

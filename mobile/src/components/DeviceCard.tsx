@@ -13,6 +13,14 @@ interface DeviceCardProps {
   onPress?: (device: Device) => void;
 }
 
+/** Show a short human-readable ID instead of the full libp2p peer ID. */
+function displayId(id: string): string {
+  // libp2p peer IDs are base58 (e.g. 12D3KooW...). Use first 8 chars + ellipsis.
+  // If it looks like a short DEV-XXX id, show as-is.
+  if (id.startsWith('DEV-') || id.length <= 12) return id;
+  return `${id.slice(0, 8)}…`;
+}
+
 function DeviceCardBase({ device, onPress }: DeviceCardProps) {
   const nameFontSize = Math.max(14, 26 - device.name.length * 0.75);
   return (
@@ -24,7 +32,7 @@ function DeviceCardBase({ device, onPress }: DeviceCardProps) {
     >
       <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
       <View style={styles.topRow}>
-        <Text style={styles.id}>{device.id}</Text>
+        <Text style={styles.id}>{displayId(device.id)}</Text>
         <StatusPill status={device.status} />
       </View>
       <Text style={[styles.name, { fontSize: nameFontSize }]}>{device.name}</Text>
