@@ -26,6 +26,11 @@ describe('normalizeSystemInfo', () => {
     expect(info.ramPercent).toBe(50);
   });
 
+  it('maps optional battery telemetry without assuming every desktop has one', () => {
+    const info = normalizeSystemInfo({ battery: { present: true, percent: '87.5', charging: true } });
+    expect(info).toMatchObject({ batteryPresent: true, batteryPercent: 87.5, batteryCharging: true });
+  });
+
   it('leaves absent metrics undefined rather than zero', () => {
     const info = normalizeSystemInfo({ hostname: 'X' });
     expect(info.hostname).toBe('X');

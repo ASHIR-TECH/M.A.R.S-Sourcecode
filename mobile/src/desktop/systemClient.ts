@@ -12,6 +12,9 @@ export interface DesktopSystemInfo {
   os?: string;
   cpuPercent?: number;
   ramPercent?: number;
+  batteryPercent?: number;
+  batteryCharging?: boolean;
+  batteryPresent?: boolean;
 }
 
 function num(value: unknown): number | undefined {
@@ -25,11 +28,20 @@ function num(value: unknown): number | undefined {
 
 export function normalizeSystemInfo(raw: unknown): DesktopSystemInfo {
   const r = asRecord(raw);
+  const battery = asRecord(r.battery);
   return {
     hostname: str(r.hostname),
     os: str(r.os),
     cpuPercent: num(r.cpu_percent) ?? num(r.cpuPercent),
     ramPercent: num(r.ram_percent) ?? num(r.ramPercent),
+    batteryPercent: num(battery.percent) ?? num(r.battery_percent) ?? num(r.batteryPercent),
+    batteryCharging:
+      typeof battery.charging === 'boolean'
+        ? battery.charging
+        : typeof r.battery_charging === 'boolean'
+          ? r.battery_charging
+          : undefined,
+    batteryPresent: typeof battery.present === 'boolean' ? battery.present : undefined,
   };
 }
 

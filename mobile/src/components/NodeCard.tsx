@@ -56,6 +56,11 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
         </View>
         <Text numberOfLines={1} style={[styles.name, { fontSize: nameFontSize }]}>{node.name}</Text>
         <Text style={styles.os}>{node.os}</Text>
+        {node.batteryPercent !== undefined && (
+          <Text style={styles.battery}>
+            {node.batteryCharging ? '⚡ ' : '▰ '}{node.batteryPercent}% battery
+          </Text>
+        )}
         <View style={styles.bottomRow}>
           <Text style={styles.metaLabel}>Active</Text>
           <Text style={styles.metaValue}>{node.lastSeen}</Text>
@@ -137,6 +142,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   os: { color: '#cd7b01', fontSize: 12 },
+  battery: { color: '#E9DCCB', fontSize: 11, marginTop: spacing.xs },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

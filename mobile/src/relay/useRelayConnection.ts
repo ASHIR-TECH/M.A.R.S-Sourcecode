@@ -123,6 +123,11 @@ export function useRelayConnection() {
           lastSeen: 'Just Now',
           cpu: info.cpuPercent !== undefined ? Math.round(info.cpuPercent) : undefined,
           ram: info.ramPercent !== undefined ? Math.round(info.ramPercent) : undefined,
+          batteryPercent:
+            info.batteryPresent !== false && info.batteryPercent !== undefined
+              ? Math.round(info.batteryPercent)
+              : undefined,
+          batteryCharging: info.batteryCharging,
         });
       } catch {
         // Leave the last snapshot in place; the relay/status banner already
