@@ -13,8 +13,15 @@ interface DeviceCardProps {
   onPress?: (device: Device) => void;
 }
 
+/** Show a short human-readable ID instead of the full libp2p peer ID. */
+function displayId(id: string): string {
+  // libp2p peer IDs are base58 (e.g. 12D3KooW...). Use first 8 chars + ellipsis.
+  // If it looks like a short DEV-XXX id, show as-is.
+  if (id.startsWith('DEV-') || id.length <= 12) return id;
+  return `${id.slice(0, 8)}…`;
+}
+
 function DeviceCardBase({ device, onPress }: DeviceCardProps) {
-  const nameFontSize = Math.max(14, 26 - device.name.length * 0.75);
   return (
     <Pressable
       onPress={() => onPress?.(device)}
@@ -24,10 +31,10 @@ function DeviceCardBase({ device, onPress }: DeviceCardProps) {
     >
       <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
       <View style={styles.topRow}>
-        <Text style={styles.id}>{device.id}</Text>
+        <Text style={styles.id}>{displayId(device.id)}</Text>
         <StatusPill status={device.status} />
       </View>
-      <Text style={[styles.name, { fontSize: nameFontSize }]}>{device.name}</Text>
+      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{device.name}</Text>
       <Text style={styles.os}>{device.os}</Text>
       <View style={styles.bottomRow}>
         <Text style={styles.metaLabel}>Active</Text>
@@ -44,29 +51,29 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37, 17, 1, 0.62)',
     borderRadius: glass.radius,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(215, 128, 30, 0.7)', /**this is for the border  */
+    borderColor: 'rgba(215, 128, 30, 0.7)',
     padding: spacing.md,
-    width: '100%',
     gap: 4,
     overflow: 'hidden',
+    minHeight: 110,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  id: { color: '#E9DCCB', fontSize: 11 }, /** this is for the DEV- number i presume*/
+  id: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
   name: {
-    color: '#FFFFFF', /**this is for the time, lie 2mins ago and 1day */
+    color: '#FFFFFF',
     fontFamily: fonts.offside,
-    marginTop: spacing.xs,
+    fontSize: 18,
   },
-  os: { color: '#cd7b01', fontSize: 12 } /** this is for the operating systems */,
+  os: { color: '#cd7b01', fontSize: 11 },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: spacing.sm,
   },
-  metaLabel: { color: '#E9DCCB', fontSize: 11 }, /**i dont know wtf this is for and i am not fucking touching the shit */
-  metaValue: { color: '#bdbdbc', fontSize: 11 },
+  metaLabel: { color: '#E9DCCB', fontSize: 10 },
+  metaValue: { color: '#bdbdbc', fontSize: 10 },
 });

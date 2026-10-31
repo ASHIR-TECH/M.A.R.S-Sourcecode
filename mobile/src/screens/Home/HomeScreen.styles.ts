@@ -61,6 +61,11 @@ export const styles = StyleSheet.create({
   announcementWrap: {
     flex: 1,
   },
+  // With no announcement the SCAN pill keeps its old right-hand slot instead of
+  // the row collapsing and shifting the chat list up.
+  announcementRowSolo: {
+    justifyContent: 'flex-end',
+  },
   announcementCard: {
     marginBottom: 0,
   },
@@ -125,9 +130,9 @@ export const styles = StyleSheet.create({
     columnGap: 12,
   },
   deviceGridItem: {
-    flexBasis: '45%',
-    flexGrow: 1,
-    maxWidth: 180,
+    flexBasis: '48%',
+    maxWidth: '48%',
+    flexShrink: 0,
   },
   // Sits in normal flow below the grid — it used to be absolutely positioned
   // over the whole grid, which smeared it across the placeholder cards.

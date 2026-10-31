@@ -17,4 +17,7 @@ export interface DeviceWithMetrics extends Device {
   cpu: number; // 0-100
   ram: number; // 0-100
   collectionId: string;
+  /** Portable-device battery state, omitted for desktops without a battery. */
+  batteryPercent?: number;
+  batteryCharging?: boolean;
 }

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "MARS",
-    "slug": "mars",
+    "slug": "ashir",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -79,12 +79,12 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "cbb39cdf-11ab-46db-b9d0-5acf3d15f186"
+        "projectId": "24eb31f9-2bf9-4fd9-bba0-bda568d1e080"
       }
     },
     "assetBundlePatterns": [
       "**/*"
     ],
-    "owner": "contractorx"
+    "owner": "ashir-techs-team"
   }
 }
