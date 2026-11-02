@@ -24,9 +24,13 @@ function delay(ms: number): Promise<void> {
 export async function runAgentChat(
   conn: DesktopConnection,
   text: string,
-  conversationId?: string
+  conversationId?: string,
+  attachments?: string[]
 ): Promise<AgentReply> {
-  const id = await sendAgentMessage(conn, text, conversationId);
+  const id =
+    attachments && attachments.length > 0
+      ? await sendAgentMessage(conn, text, conversationId, attachments)
+      : await sendAgentMessage(conn, text, conversationId);
   const deadline = Date.now() + MAX_WAIT_MS;
 
   while (Date.now() < deadline) {
