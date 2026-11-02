@@ -3,6 +3,7 @@ import { desktopStorage } from '../desktop/desktopStorage';
 import { usePairingStore } from './usePairingStore';
 import { useDeviceStore } from './useDeviceStore';
 import { PairingPayload } from '../pairing/types';
+import { fetchSystemInfo } from '../desktop/systemClient';
 
 jest.mock('../pairing/pairingStorage', () => ({
   pairingStorage: { save: jest.fn(), load: jest.fn(), clear: jest.fn() },
@@ -11,6 +12,9 @@ jest.mock('../pairing/pairingStorage', () => ({
 jest.mock('../desktop/desktopStorage', () => ({
   desktopStorage: { save: jest.fn(), load: jest.fn(), clear: jest.fn() },
 }));
+
+jest.mock('../desktop/systemClient', () => ({ fetchSystemInfo: jest.fn() }));
+jest.mock('../desktop/deviceClient', () => ({ registerDevice: jest.fn().mockResolvedValue({}) }));
 
 const basePayload: PairingPayload = {
   version: 1,
@@ -27,6 +31,7 @@ describe('usePairingStore', () => {
     usePairingStore.setState({ pairedDesktop: null });
     useDeviceStore.setState({ devices: [], pairedDevice: null, searchQuery: '' });
     jest.clearAllMocks();
+    (fetchSystemInfo as jest.Mock).mockResolvedValue({ hostname: 'ZEUS' });
   });
 
   it('auto-configures the desktop agent when the QR carries agent config', async () => {
@@ -77,6 +82,14 @@ describe('usePairingStore', () => {
     const devices = useDeviceStore.getState().devices;
     expect(devices).toHaveLength(1);
     expect(devices[0]).toMatchObject({ id: basePayload.desktopId, name: 'ZEUS-MAIN-PC' });
+  });
+
+  it('does not persist a local pair when ADTP rejects the gateway check', async () => {
+    (fetchSystemInfo as jest.Mock).mockRejectedValue(new Error('The desktop rejected the API token.'));
+
+    await expect(usePairingStore.getState().setPairedDesktop(basePayload)).rejects.toThrow('rejected');
+    expect(pairingStorage.save).not.toHaveBeenCalled();
+    expect(useDeviceStore.getState().devices).toEqual([]);
   });
 
   it('restores the paired desktop into the device hub after a restart', async () => {
