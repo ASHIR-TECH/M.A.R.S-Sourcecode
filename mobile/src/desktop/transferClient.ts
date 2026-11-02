@@ -1,5 +1,6 @@
 import { asRecord, request, str, trimBase } from './agentClient';
 import { ApiError } from './errors';
+import { getInstallId } from '../relay/deviceId';
 import { DesktopConnection, SessionRecord, TransferRecord, WatcherRecord } from './types';
 
 const UPLOAD_TIMEOUT_MS = 120000;
@@ -168,6 +169,8 @@ export async function uploadFile(conn: DesktopConnection, file: OutgoingFile): P
     name: file.name,
     type: file.mimeType ?? 'application/octet-stream',
   } as unknown as Blob);
+  // Lets the desktop link this upload to the paired phone in its audit log.
+  form.append('device_id', await getInstallId());
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
