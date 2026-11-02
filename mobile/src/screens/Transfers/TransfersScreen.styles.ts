@@ -8,6 +8,15 @@ export const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   back: { color: colors.textMuted, fontSize: 22, paddingRight: spacing.sm, fontFamily: fonts.montserrat },
   title: { flex: 1, color: colors.textPrimary, fontSize: 18, fontFamily: fonts.quantico, letterSpacing: 1 },
+  sendButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(232,163,77,0.5)',
+    backgroundColor: 'rgba(232,163,77,0.12)',
+  },
+  sendText: { color: colors.accent, fontSize: 12, fontWeight: '700' },
   sectionLabel: {
     color: colors.textMuted,
     fontSize: 12,
