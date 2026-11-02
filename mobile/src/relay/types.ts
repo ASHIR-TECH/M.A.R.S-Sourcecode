@@ -11,6 +11,8 @@ export interface OutboundChatMessage {
   type: 'chat_message';
   sessionId: string;
   text: string;
+  /** Absolute desktop paths the phone uploaded with this message. */
+  attachments?: string[];
 }
 
 export type OutboundMessage = OutboundCommandMessage | OutboundChatMessage;
