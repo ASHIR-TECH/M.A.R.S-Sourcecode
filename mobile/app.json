@@ -79,12 +79,12 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "24eb31f9-2bf9-4fd9-bba0-bda568d1e080"
+        "projectId": "23ae177c-bdd1-437b-8e9f-d08ce5788c5f"
       }
     },
     "assetBundlePatterns": [
       "**/*"
     ],
-    "owner": "ashir-techs-team"
+    "owner": "contractorx"
   }
 }
