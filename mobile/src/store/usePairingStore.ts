@@ -4,6 +4,8 @@ import { pairingStorage } from '../pairing/pairingStorage';
 import { deriveAgentConnection } from '../pairing/deriveAgentConnection';
 import { useDesktopStore } from './useDesktopStore';
 import { useDeviceStore } from './useDeviceStore';
+import { fetchSystemInfo } from '../desktop/systemClient';
+import { registerDevice } from '../desktop/deviceClient';
 
 function pairedDeviceFrom(payload: PairingPayload) {
   return {
@@ -33,16 +35,24 @@ export const usePairingStore = create<PairingState>((set) => ({
   pairedDesktop: null,
 
   setPairedDesktop: async (payload) => {
-    await pairingStorage.save(payload);
-    set({ pairedDesktop: payload });
-
-    // Scanning is the primary way to configure device control: the agent
-    // endpoint either comes from the QR outright or is derived from the
-    // relay URL + pairing token, so pairing is the single setup step.
+    // A QR is only a connection invitation. Do not show a locally saved
+    // "paired" device until the advertised gateway has accepted the exact
+    // credential from the QR; otherwise MARS looks connected while ADTP has
+    // rejected the socket and knows nothing about the phone.
     const agent = deriveAgentConnection(payload);
-    if (agent) {
-      await useDesktopStore.getState().saveConnection(agent);
+    if (!agent) {
+      throw new Error('This pairing code does not contain a reachable ADTP gateway.');
     }
+    // `/system/info` is authenticated (unlike readiness), so this verifies
+    // both LAN reachability and the QR bearer token before persisting state.
+    await fetchSystemInfo(agent);
+    // Pairing is two-sided: register this phone in the desktop's device
+    // registry so ADTP can list it, show its telemetry and send it files.
+    await registerDevice(agent);
+
+    await pairingStorage.save(payload);
+    await useDesktopStore.getState().saveConnection(agent);
+    set({ pairedDesktop: payload });
 
     useDeviceStore.getState().addPairedDevice(pairedDeviceFrom(payload));
   },
@@ -59,6 +69,15 @@ export const usePairingStore = create<PairingState>((set) => ({
     if (stored) {
       set({ pairedDesktop: stored });
       useDeviceStore.getState().addPairedDevice(pairedDeviceFrom(stored));
+      // Re-announce after a restart so the desktop keeps showing this phone.
+      const agent = deriveAgentConnection(stored);
+      if (agent) {
+        try {
+          await registerDevice(agent);
+        } catch {
+          // Offline start: heartbeat polling will register once reachable.
+        }
+      }
     }
   },
 }));
