@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RefreshControl, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, Text, View } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import { FlashList } from '@shopify/flash-list';
 import { AppBackground } from '../../components/AppBackground';
 import { useDesktopStore } from '../../store/useDesktopStore';
+import { useInboxStore } from '../../store/useInboxStore';
 import { useTransferStore } from '../../store/useTransferStore';
+import { uploadFile } from '../../desktop/transferClient';
+import { InboxFile } from '../../desktop/deviceClient';
 import { SessionRecord, TransferRecord, WatcherRecord } from '../../desktop/types';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
@@ -119,6 +123,38 @@ function WatcherRowBase({ watcher }: { watcher: WatcherRecord }) {
   );
 }
 
+function InboxRowBase({
+  file,
+  downloading,
+  onDownload,
+}: {
+  file: InboxFile;
+  downloading: boolean;
+  onDownload: (file: InboxFile) => void;
+}) {
+  const meta = ['from desktop', formatBytes(file.fileSize), formatTime(file.createdAt)]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <Pressable style={styles.row} onPress={() => onDownload(file)} disabled={downloading}>
+      <Text style={styles.rowGlyph}>↓</Text>
+      <View style={styles.rowBody}>
+        <Text style={styles.rowName} numberOfLines={1}>
+          {file.filename}
+        </Text>
+        <Text style={styles.rowMeta} numberOfLines={1}>
+          {meta}
+        </Text>
+      </View>
+      {downloading ? (
+        <ActivityIndicator color={colors.accent} />
+      ) : (
+        <Text style={styles.statusOkText}>Download</Text>
+      )}
+    </Pressable>
+  );
+}
+
 function EmptyRow({ label }: { label: string }) {
   return (
     <View style={styles.row}>
@@ -130,6 +166,7 @@ function EmptyRow({ label }: { label: string }) {
 const TransferRow = React.memo(TransferRowBase);
 const SessionRow = React.memo(SessionRowBase);
 const WatcherRow = React.memo(WatcherRowBase);
+const InboxRow = React.memo(InboxRowBase);
 
 /** Transfers tab (PHASE_14 §Transfers): polls the desktop's REST gateway for
  * recent transfers, active sessions and watchers. No transfer bytes ever touch
@@ -139,7 +176,15 @@ export function TransfersScreen() {
   const hydrated = useDesktopStore((s) => s.hydrated);
   const hydrate = useDesktopStore((s) => s.hydrate);
   const { transfers, sessions, watchers, loading, refresh, clear } = useTransferStore();
+  const {
+    files: inbox,
+    downloadingId,
+    refresh: refreshInbox,
+    download: downloadInbox,
+    clear: clearInbox,
+  } = useInboxStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [sending, setSending] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const connected = !!connection?.baseUrl && !!connection?.token;
 
@@ -150,27 +195,96 @@ export function TransfersScreen() {
   useEffect(() => {
     if (!connected) {
       clear();
+      clearInbox();
       if (pollRef.current) clearInterval(pollRef.current);
       return;
     }
     void refresh(connection);
-    pollRef.current = setInterval(() => void refresh(connection), POLL_INTERVAL_MS);
+    void refreshInbox(connection);
+    pollRef.current = setInterval(() => {
+      void refresh(connection);
+      void refreshInbox(connection, { silent: true });
+    }, POLL_INTERVAL_MS);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [connected, connection, refresh, clear]);
+  }, [connected, connection, refresh, refreshInbox, clear, clearInbox]);
 
   const onRefresh = useCallback(async () => {
     if (!connection) return;
     setRefreshing(true);
-    await refresh(connection);
+    await Promise.all([refresh(connection), refreshInbox(connection)]);
     setRefreshing(false);
+  }, [connection, refresh, refreshInbox]);
+
+  const onDownload = useCallback(
+    (file: InboxFile) => {
+      if (!connection) return;
+      void downloadInbox(connection, file)
+        .then(() => Alert.alert('Downloaded', `${file.filename} was saved on this device.`))
+        .catch((error) => {
+          Alert.alert(
+            'Download failed',
+            error instanceof Error ? error.message : 'Could not download the file.'
+          );
+        });
+    },
+    [connection, downloadInbox]
+  );
+
+  // Phone → desktop transfer outside chat: upload the picked file to the
+  // desktop intake directory and refresh the audit list.
+  const onSendFile = useCallback(async () => {
+    if (!connection) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      if (!asset) return;
+      setSending(true);
+      const uploaded = await uploadFile(connection, {
+        uri: asset.uri,
+        name: asset.name,
+        mimeType: asset.mimeType,
+      });
+      await refresh(connection);
+      Alert.alert('File sent', `${uploaded.filename} arrived on your desktop.`);
+    } catch (error) {
+      Alert.alert(
+        'Send failed',
+        error instanceof Error ? error.message : 'Could not send the file to your desktop.'
+      );
+    } finally {
+      setSending(false);
+    }
   }, [connection, refresh]);
 
   // Rebuilt only when the underlying records change, so the poll's periodic
   // store writes don't remount every row on unrelated renders.
   const listData: { key: string; node: React.ReactElement }[] = useMemo(
     () => [
+      { key: 'i', node: <Text style={styles.sectionLabel}>Inbox from Desktop ({inbox.length})</Text> },
+      ...(inbox.length === 0
+        ? [
+            {
+              key: 'i-empty',
+              node: <EmptyRow label="No files waiting. Send one from ADTP → Settings → Paired Phones." />,
+            },
+          ]
+        : inbox.map((file) => ({
+            key: `i-${file.id}`,
+            node: (
+              <InboxRow
+                file={file}
+                downloading={downloadingId === file.id}
+                onDownload={onDownload}
+              />
+            ),
+          }))),
       { key: 'x', node: <Text style={styles.sectionLabel}>Recent Transfers ({transfers.length})</Text> },
       ...(transfers.length === 0
         ? [{ key: 'x-empty', node: <EmptyRow label="No transfers yet." /> }]
@@ -186,7 +300,7 @@ export function TransfersScreen() {
           ]
         : []),
     ],
-    [transfers, sessions, watchers]
+    [transfers, sessions, watchers, inbox, downloadingId, onDownload]
   );
 
   const renderItem = useCallback(
@@ -213,6 +327,13 @@ export function TransfersScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>TRANSFERS</Text>
+          <Pressable style={styles.sendButton} onPress={onSendFile} disabled={sending}>
+            {sending ? (
+              <ActivityIndicator color={colors.accent} />
+            ) : (
+              <Text style={styles.sendText}>+ Send</Text>
+            )}
+          </Pressable>
         </View>
 
         <FlashList

@@ -64,10 +64,23 @@ export function QRScannerScreen({ onPaired, onClose, onManualSetup }: QRScannerS
         return;
       }
 
-      await setPairedDesktop(parsed);
-      dispatch({ type: 'VALIDATION_SUCCEEDED' });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      onPaired();
+      try {
+        await setPairedDesktop(parsed);
+        dispatch({ type: 'VALIDATION_SUCCEEDED' });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        onPaired();
+      } catch (error) {
+        dispatch({
+          type: 'VALIDATION_FAILED',
+          error: {
+            reason: 'connection_failed',
+            message:
+              error instanceof Error && error.message
+                ? `Could not connect to ADTP: ${error.message}`
+                : 'Could not connect to ADTP. Confirm the desktop gateway is running and both devices are on the same network.',
+          },
+        });
+      }
     },
     [onPaired, setPairedDesktop]
   );

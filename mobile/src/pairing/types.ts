@@ -14,7 +14,12 @@ export interface PairingPayload {
   agentApiToken?: string;
 }
 
-export type PairingErrorReason = 'malformed' | 'invalid_schema' | 'expired' | 'unsupported_version';
+export type PairingErrorReason =
+  | 'malformed'
+  | 'invalid_schema'
+  | 'expired'
+  | 'unsupported_version'
+  | 'connection_failed';
 
 export interface PairingError {
   reason: PairingErrorReason;

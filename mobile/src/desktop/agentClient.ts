@@ -93,7 +93,8 @@ export async function getAgentStatus(conn: DesktopConnection): Promise<AgentStat
 export async function sendAgentMessage(
   conn: DesktopConnection,
   text: string,
-  conversationId?: string
+  conversationId?: string,
+  attachments?: string[]
 ): Promise<string> {
   const data = asRecord(
     await request<unknown>(conn, '/api/v1/agent/message', {
@@ -101,6 +102,7 @@ export async function sendAgentMessage(
       body: JSON.stringify({
         message: text,
         ...(conversationId ? { conversation_id: conversationId } : {}),
+        ...(attachments && attachments.length > 0 ? { attachments } : {}),
       }),
     })
   );

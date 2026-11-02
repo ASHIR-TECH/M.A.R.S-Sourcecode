@@ -4,6 +4,7 @@ import { sendFallbackMessage } from './fallbackChatClient';
 import { buildAppChatContext } from './appContext';
 import { runAgentChat } from '../desktop/agentChat';
 import { fetchSystemInfo } from '../desktop/systemClient';
+import { ensureRegistered } from '../desktop/deviceClient';
 import { uploadFile } from '../desktop/transferClient';
 import { ApiError } from '../desktop/errors';
 import { AgentToolCall, TransferReference } from '../desktop/types';
@@ -15,6 +16,7 @@ import { useChatSessionStore } from '../store/useChatSessionStore';
 import { useConnectionStore } from '../store/useConnectionStore';
 import { useDesktopStore } from '../store/useDesktopStore';
 import { useDesktopSystemStore } from '../store/useDesktopSystemStore';
+import { useInboxStore } from '../store/useInboxStore';
 import { ChatAttachment } from '../types/chatMessage';
 import { OutboundMessage } from './types';
 
@@ -103,6 +105,7 @@ export function useRelayConnection() {
   useEffect(() => {
     if (!pairedDesktop) {
       useDesktopSystemStore.getState().clear();
+      useInboxStore.getState().clear();
       return;
     }
 
@@ -111,6 +114,10 @@ export function useRelayConnection() {
     const poll = async () => {
       const desktop = useDesktopStore.getState();
       if (!desktop.connection || !desktop.isConfigured()) return;
+      // Keep this phone visible on the desktop (and register it after an
+      // offline start), then pull anything the desktop staged for us.
+      void ensureRegistered(desktop.connection).catch(() => {});
+      void useInboxStore.getState().refresh(desktop.connection, { silent: true });
       try {
         const info = await fetchSystemInfo(desktop.connection);
         if (cancelled) return;
@@ -193,10 +200,12 @@ export function useRelayConnection() {
     async (sessionId: string, text: string, attachment?: ChatAttachment): Promise<void> => {
       const timestamp = () => new Date().toISOString();
       let outgoing = text;
+      const attachmentPaths: string[] = [];
 
       if (attachment) {
         const { path, error } = await deliverAttachment(attachment);
         if (path) {
+          attachmentPaths.push(path);
           outgoing = text
             ? `${text}\n\n[Attached file delivered to this desktop at: ${path}]`
             : `[Attached file delivered to this desktop at: ${path}]`;
@@ -218,7 +227,7 @@ export function useRelayConnection() {
       const desktop = useDesktopStore.getState();
       if (desktop.connection && desktop.isConfigured()) {
         try {
-          const reply = await runAgentChat(desktop.connection, outgoing, sessionId);
+          const reply = await runAgentChat(desktop.connection, outgoing, sessionId, attachmentPaths);
           const at = timestamp();
           const replyText = reply.text || 'Done.';
           useChatSessionStore.getState().addAiMessage(sessionId, replyText, at, {
@@ -240,7 +249,13 @@ export function useRelayConnection() {
       const isDesktopReachable = useConnectionStore.getState().status === 'connected';
 
       if (isDesktopReachable) {
-        const sent = clientRef.current?.send({ type: 'chat_message', sessionId, text: outgoing }) ?? false;
+        const sent =
+          clientRef.current?.send({
+            type: 'chat_message',
+            sessionId,
+            text: outgoing,
+            ...(attachmentPaths.length > 0 ? { attachments: attachmentPaths } : {}),
+          }) ?? false;
         if (sent) return; // response arrives async via the onMessage handler above
       }
 

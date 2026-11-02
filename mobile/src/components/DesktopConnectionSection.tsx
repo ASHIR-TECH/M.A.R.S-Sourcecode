@@ -4,6 +4,7 @@ import { SettingsSection } from './SettingsSection';
 import { SettingsRow } from './SettingsRow';
 import { useDesktopStore } from '../store/useDesktopStore';
 import { checkReady } from '../desktop/agentClient';
+import { registerDevice } from '../desktop/deviceClient';
 import { ApiError } from '../desktop/errors';
 import { QRScannerScreen } from '../screens/QRScanner/QRScannerScreen';
 import { colors } from '../theme/colors';
@@ -66,6 +67,8 @@ export function DesktopConnectionSection() {
       return;
     }
     await saveConnection({ baseUrl: url.trim(), token: token.trim(), origin: 'manual' });
+    // Manual pairing is still two-sided: announce this phone so ADTP lists it.
+    await registerDevice({ baseUrl: url.trim(), token: token.trim() }).catch(() => {});
     setOpen(false);
   };
 
