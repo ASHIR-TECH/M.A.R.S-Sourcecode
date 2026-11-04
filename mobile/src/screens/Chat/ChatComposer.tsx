@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useChatSessionStore } from '../../store/useChatSessionStore';
 import { AttachmentCard } from '../../components/AttachmentCard';
+import { mimeTypeForName } from '../../desktop/mime';
 import { ChatAttachment } from '../../types/chatMessage';
 import { styles } from './ChatScreen.styles';
 
@@ -93,7 +94,12 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
       if (!result.canceled) {
         const asset = result.assets[0];
         if (asset) {
-          setAttachment({ name: asset.name, mimeType: asset.mimeType, size: asset.size ?? undefined, uri: asset.uri });
+          setAttachment({
+            name: asset.name,
+            mimeType: mimeTypeForName(asset.name, asset.mimeType),
+            size: asset.size ?? undefined,
+            uri: asset.uri,
+          });
         }
       }
     } catch {
