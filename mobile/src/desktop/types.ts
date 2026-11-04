@@ -87,4 +87,10 @@ export interface TransferReference {
   peerName?: string;
   sizeBytes?: number;
   result?: string;
+  /** Desktop-staged inbox id; present for AI files sent to this phone. */
+  deviceFileId?: string;
+  /** Paired phone the file was staged for (defaults to this install). */
+  deviceId?: string;
+  /** MIME reported by the desktop, used by the download tile. */
+  mimeType?: string;
 }
