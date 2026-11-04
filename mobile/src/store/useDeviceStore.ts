@@ -46,10 +46,21 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   hydrateFromRelay: (devices) =>
     set((s) => {
       const paired = s.pairedDevice;
-      if (paired && !devices.some((d) => d.id === paired.id)) {
-        return { devices: [paired, ...devices] };
-      }
-      return { devices };
+      if (!paired) return { devices };
+      // The relay's state_update only carries identity + presence. Merge it
+      // into the pinned card instead of replacing it, otherwise the polled
+      // CPU/RAM/battery telemetry would disappear every few seconds.
+      let mergedPaired = paired;
+      const merged = devices.map((device) => {
+        if (device.id !== paired.id) return device;
+        mergedPaired = { ...paired, ...device };
+        return mergedPaired;
+      });
+      const hasPaired = merged.some((device) => device.id === paired.id);
+      return {
+        devices: hasPaired ? merged : [mergedPaired, ...merged],
+        pairedDevice: mergedPaired,
+      };
     }),
   renameDevice: (id, updates) =>
     set((s) => ({
