@@ -57,7 +57,7 @@ export async function request<T>(
       controller.signal.aborted ? 'timeout' : 'network',
       controller.signal.aborted
         ? 'The desktop took too long to respond.'
-        : 'Could not reach your desktop. Check the URL and that it is online.'
+        : `Could not reach your desktop at ${trimBase(conn.baseUrl)}. Check the URL, that the ADTP listener is running, and that both devices are on the same network.`
     );
   } finally {
     clearTimeout(timer);
