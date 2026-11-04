@@ -1,13 +1,19 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RelayClient } from './RelayClient';
 import { sendFallbackMessage } from './fallbackChatClient';
 import { buildAppChatContext } from './appContext';
 import { runAgentChat } from '../desktop/agentChat';
 import { fetchSystemInfo } from '../desktop/systemClient';
-import { ensureRegistered } from '../desktop/deviceClient';
+import {
+  DeviceMessage,
+  ensureRegistered,
+  listMessages,
+  markMessageDelivered,
+} from '../desktop/deviceClient';
+import { getInstallId } from './deviceId';
 import { uploadFile } from '../desktop/transferClient';
+import { mimeTypeForName } from '../desktop/mime';
 import { ApiError } from '../desktop/errors';
-import { AgentToolCall, TransferReference } from '../desktop/types';
 import { deriveRelayUrl } from '../pairing/deriveAgentConnection';
 import { usePairingStore } from '../store/usePairingStore';
 import { useDeviceStore } from '../store/useDeviceStore';
@@ -19,32 +25,11 @@ import { useDesktopSystemStore } from '../store/useDesktopSystemStore';
 import { useInboxStore } from '../store/useInboxStore';
 import { ChatAttachment } from '../types/chatMessage';
 import { OutboundMessage } from './types';
+import { transfersFromToolCalls } from './transfers';
 
 const SYSTEM_POLL_MS = 20000;
-
-function basename(path: string): string {
-  const cleaned = path.replace(/\\/g, '/');
-  return cleaned.slice(cleaned.lastIndexOf('/') + 1) || cleaned;
-}
-
-/** Lifts completed send/receive tool calls into file tiles for the reply bubble. */
-function transfersFromToolCalls(toolCalls: AgentToolCall[] | undefined): TransferReference[] {
-  if (!toolCalls) return [];
-  return toolCalls
-    .filter((tc) => tc.name === 'send_file' || tc.name === 'receive_file')
-    .filter((tc) => tc.status === 'completed')
-    .map((tc) => {
-      const params = tc.params ?? {};
-      const filePath = String(params.file_path ?? params.file ?? params.path ?? '');
-      return {
-        fileName: basename(filePath) || 'file',
-        direction: tc.name === 'send_file' ? 'outgoing' : 'incoming',
-        peerName: String(params.peer_id ?? params.peer ?? '').trim() || undefined,
-        sizeBytes: typeof params.size_bytes === 'number' ? params.size_bytes : undefined,
-        result: tc.result,
-      };
-    });
-}
+/** Single-threaded v1 chat; matches ChatComposer's SESSION_ID. */
+const CHAT_SESSION_ID = 'default-session';
 
 export function useRelayConnection() {
   const pairedDesktop = usePairingStore((s) => s.pairedDesktop);
@@ -52,9 +37,43 @@ export function useRelayConnection() {
   const appendChatResponse = useChatStore((s) => s.appendChatResponse);
   const setConnectionStatus = useConnectionStore((s) => s.setStatus);
   const clientRef = useRef<RelayClient | null>(null);
+  const [installId, setInstallId] = useState<string>();
+  const seenDeviceMessages = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!pairedDesktop) return;
+    let alive = true;
+    getInstallId()
+      .then((id) => {
+        if (alive) setInstallId(id);
+      })
+      .catch(() => {
+        // Registration/presence degrades, but the socket still works with the
+        // desktop id alone.
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /** Append a desktop-originated message exactly once, then ack it. */
+  const deliverDeviceMessage = useCallback(async (message: DeviceMessage) => {
+    if (seenDeviceMessages.current.has(message.id)) return;
+    seenDeviceMessages.current.add(message.id);
+
+    const timestamp = message.createdAt || new Date().toISOString();
+    useChatSessionStore
+      .getState()
+      .addIncomingMessage(CHAT_SESSION_ID, message.text, timestamp, { providerLabel: 'Desktop' });
+    useChatStore.getState().appendChatResponse(CHAT_SESSION_ID, message.text, timestamp);
+
+    const desktop = useDesktopStore.getState();
+    if (desktop.connection) {
+      void markMessageDelivered(desktop.connection, message.id).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!pairedDesktop || !installId) return;
 
     // The QR's relayUrl is the public QoWT relay (QUIC frames), not a MARS
     // message bus, so dial the desktop's own gateway /relay instead. Falling
@@ -62,7 +81,8 @@ export function useRelayConnection() {
     const client = new RelayClient(
       deriveRelayUrl(pairedDesktop),
       pairedDesktop.pairingToken,
-      pairedDesktop.desktopId
+      pairedDesktop.desktopId,
+      installId
     );
     clientRef.current = client;
 
@@ -71,20 +91,36 @@ export function useRelayConnection() {
         case 'state_update':
           hydrateDevices(message.devices);
           break;
-        case 'chat_response':
+        case 'chat_response': {
           // Update both Home's preview row and the full AI-chat thread from the
           // same inbound event (PHASE_9 wiring note). providerLabel is pure
           // display data (PHASE_12 NFR-1) — never branched on.
           appendChatResponse(message.sessionId, message.text, message.timestamp);
+          const toolCalls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
           useChatSessionStore.getState().addAiMessage(
             message.sessionId,
             message.text,
             message.timestamp,
-            message.providerLabel ? { providerLabel: message.providerLabel } : undefined
+            {
+              ...(message.providerLabel ? { providerLabel: message.providerLabel } : {}),
+              ...(toolCalls.length > 0
+                ? { toolCalls, transfers: transfersFromToolCalls(toolCalls) }
+                : {}),
+            }
           );
           break;
+        }
+        case 'device_message':
+          void deliverDeviceMessage({
+            id: message.message.id,
+            deviceId: message.message.device_id,
+            text: message.message.text,
+            createdAt: message.message.created_at,
+            deliveredAt: message.message.delivered_at ?? null,
+          });
+          break;
         default:
-          break; // auth_ack / auth_rejected are handled inside RelayClient itself
+          break; // auth_ack / auth_rejected / ping / pong
       }
     });
 
@@ -98,7 +134,14 @@ export function useRelayConnection() {
       client.disconnect();
       clientRef.current = null;
     };
-  }, [pairedDesktop, hydrateDevices, appendChatResponse, setConnectionStatus]);
+  }, [
+    pairedDesktop,
+    installId,
+    hydrateDevices,
+    appendChatResponse,
+    setConnectionStatus,
+    deliverDeviceMessage,
+  ]);
 
   // Poll the desktop's host telemetry while paired: it feeds the Home card's
   // CPU/RAM, the AI app-context, and doubles as a REST reachability check.
@@ -114,12 +157,26 @@ export function useRelayConnection() {
     const poll = async () => {
       const desktop = useDesktopStore.getState();
       if (!desktop.connection || !desktop.isConfigured()) return;
+      const connection = desktop.connection;
       // Keep this phone visible on the desktop (and register it after an
       // offline start), then pull anything the desktop staged for us.
-      void ensureRegistered(desktop.connection).catch(() => {});
-      void useInboxStore.getState().refresh(desktop.connection, { silent: true });
+      void ensureRegistered(connection).catch(() => {});
+      void useInboxStore.getState().refresh(connection, { silent: true });
+      void (async () => {
+        try {
+          const messages = await listMessages(connection);
+          if (cancelled) return;
+          for (const message of messages) {
+            // Delivery is idempotent; this also catches messages sent while
+            // the app was closed and the live relay socket was down.
+            await deliverDeviceMessage(message);
+          }
+        } catch {
+          // Offline/401 is already surfaced by the system poll below.
+        }
+      })();
       try {
-        const info = await fetchSystemInfo(desktop.connection);
+        const info = await fetchSystemInfo(connection);
         if (cancelled) return;
         useDesktopSystemStore.getState().setInfo(info);
         // Fold the live identity + metrics onto the paired device card.
@@ -148,7 +205,7 @@ export function useRelayConnection() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [pairedDesktop]);
+  }, [pairedDesktop, deliverDeviceMessage]);
 
   // Stable identity: both close over the ref + module-level `getState()` reads,
   // so consumers can safely depend on them without re-running effects.
@@ -174,7 +231,7 @@ export function useRelayConnection() {
         const uploaded = await uploadFile(desktop.connection, {
           uri: attachment.uri,
           name: attachment.name,
-          mimeType: attachment.mimeType,
+          mimeType: mimeTypeForName(attachment.name, attachment.mimeType),
         });
         return { path: uploaded.path };
       } catch (error) {

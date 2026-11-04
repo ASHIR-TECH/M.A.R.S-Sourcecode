@@ -71,6 +71,21 @@ describe('useDeviceStore', () => {
     expect(useDeviceStore.getState().devices.map((d) => d.id)).toEqual(['DESK-1', 'DEV-001']);
   });
 
+  it('keeps polled telemetry when the relay reports the paired desktop', () => {
+    useDeviceStore.getState().addPairedDevice(paired);
+    useDeviceStore.getState().updatePairedDevice({ cpu: 42, ram: 61, batteryPercent: 88 });
+    useDeviceStore.getState().hydrateFromRelay([
+      { id: 'DESK-1', name: 'ZEUS', os: 'Linux', status: 'online', lastSeen: 'Just Now' },
+    ]);
+
+    const card = useDeviceStore.getState().devices[0] as DeviceWithMetrics;
+    expect(card.name).toBe('ZEUS');
+    expect(card.cpu).toBe(42);
+    expect(card.ram).toBe(61);
+    expect(card.batteryPercent).toBe(88);
+    expect(useDeviceStore.getState().pairedDevice?.cpu).toBe(42);
+  });
+
   it('removes the paired desktop and unpins it', () => {
     useDeviceStore.getState().addPairedDevice(paired);
     useDeviceStore.getState().removeDevice('DESK-1');

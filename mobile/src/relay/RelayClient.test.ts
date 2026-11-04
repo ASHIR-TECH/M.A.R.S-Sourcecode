@@ -71,6 +71,28 @@ describe('RelayClient', () => {
     expect(sent.params).not.toHaveProperty('desktopId');
   });
 
+  it('includes the install id so the gateway can mark this phone online', () => {
+    const client = new RelayClient('ws://test', 'token123', undefined, 'phone-1');
+    client.connect();
+    mockSocket.triggerOpen();
+
+    const sent = JSON.parse(mockSocket.sentMessages[0]);
+    expect(sent.params.deviceId).toBe('phone-1');
+  });
+
+  it('answers a gateway ping with pong', () => {
+    const client = new RelayClient('ws://test', 'token123');
+    client.connect();
+    mockSocket.triggerOpen();
+    mockSocket.triggerMessage({ type: 'auth_ack' });
+    mockSocket.triggerMessage({ type: 'ping' });
+
+    const pong = mockSocket.sentMessages
+      .map((raw) => JSON.parse(raw))
+      .find((message) => message.type === 'pong');
+    expect(pong).toEqual({ type: 'pong' });
+  });
+
   it('transitions to connected on auth_ack', () => {
     const client = new RelayClient('ws://test', 'token123');
     const statuses: string[] = [];

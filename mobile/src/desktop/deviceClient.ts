@@ -46,6 +46,14 @@ export interface InboxFile {
   createdAt: string;
 }
 
+export interface DeviceMessage {
+  id: string;
+  deviceId: string;
+  text: string;
+  createdAt: string;
+  deliveredAt?: string | null;
+}
+
 function num(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
@@ -156,6 +164,49 @@ export async function listInbox(conn: DesktopConnection): Promise<InboxFile[]> {
       } satisfies InboxFile;
     })
     .filter((file): file is InboxFile => file !== null);
+}
+
+/** GET /api/v1/devices/{id}/messages — durable desktop → phone messages. */
+export async function listMessages(conn: DesktopConnection): Promise<DeviceMessage[]> {
+  const deviceId = await getInstallId();
+  const raw = asRecord(
+    await request<unknown>(
+      conn,
+      `/api/v1/devices/${encodeURIComponent(deviceId)}/messages`,
+      { method: 'GET' },
+      TIMEOUT_MS
+    )
+  );
+  const messages = Array.isArray(raw.messages) ? raw.messages : [];
+  return messages
+    .map((entry): DeviceMessage | null => {
+      const r = asRecord(entry);
+      const id = str(r.id);
+      const text = str(r.text);
+      if (!id || !text) return null;
+      return {
+        id,
+        deviceId: str(r.device_id) ?? deviceId,
+        text,
+        createdAt: str(r.created_at) ?? new Date().toISOString(),
+        deliveredAt: typeof r.delivered_at === 'string' ? r.delivered_at : null,
+      };
+    })
+    .filter((message): message is DeviceMessage => message !== null);
+}
+
+/** POST /api/v1/devices/{id}/messages/{message_id}/delivered */
+export async function markMessageDelivered(
+  conn: DesktopConnection,
+  messageId: string
+): Promise<void> {
+  const deviceId = await getInstallId();
+  await request<unknown>(
+    conn,
+    `/api/v1/devices/${encodeURIComponent(deviceId)}/messages/${encodeURIComponent(messageId)}/delivered`,
+    { method: 'POST' },
+    TIMEOUT_MS
+  );
 }
 
 function normalizeDevice(
