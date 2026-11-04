@@ -1,4 +1,5 @@
 import { Device } from '../types/device';
+import { AgentToolCall } from '../desktop/types';
 
 export interface OutboundCommandMessage {
   type: 'command';
@@ -15,7 +16,11 @@ export interface OutboundChatMessage {
   attachments?: string[];
 }
 
-export type OutboundMessage = OutboundCommandMessage | OutboundChatMessage;
+export type OutboundMessage =
+  | OutboundCommandMessage
+  | OutboundChatMessage
+  | { type: 'ping' }
+  | { type: 'pong' };
 
 export interface InboundStateUpdate {
   type: 'state_update';
@@ -33,6 +38,12 @@ export interface InboundChatResponse {
    * (PHASE_12 NFR-1); omit it and the UI simply shows no label.
    */
   providerLabel?: string;
+  /**
+   * Tool invocations the desktop agent performed while answering. Files sent
+   * to this phone carry their inbox id, so the reply can render a download
+   * tile instead of only text.
+   */
+  toolCalls?: AgentToolCall[];
 }
 
 export interface InboundAuthAck {
@@ -44,11 +55,30 @@ export interface InboundAuthRejected {
   reason: string;
 }
 
+/** Desktop → phone text pushed over the live relay (durable REST fallback). */
+export interface InboundDeviceMessage {
+  type: 'device_message';
+  message: {
+    id: string;
+    device_id: string;
+    text: string;
+    created_at: string;
+    delivered_at?: string | null;
+  };
+}
+
+export interface InboundControl {
+  type: 'ping' | 'pong';
+  timestamp?: string;
+}
+
 export type InboundMessage =
   | InboundStateUpdate
   | InboundChatResponse
   | InboundAuthAck
-  | InboundAuthRejected;
+  | InboundAuthRejected
+  | InboundDeviceMessage
+  | InboundControl;
 
 export type ConnectionStatus =
   | 'connecting'
