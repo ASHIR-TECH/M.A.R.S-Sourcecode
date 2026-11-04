@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Device } from '../types/device';
+import { Device, DeviceWithMetrics } from '../types/device';
 import { StatusPill } from './StatusPill';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -22,6 +22,13 @@ function displayId(id: string): string {
 }
 
 function DeviceCardBase({ device, onPress }: DeviceCardProps) {
+  // Paired desktops carry polled telemetry; relay-only peers do not.
+  const metrics = device as Partial<DeviceWithMetrics>;
+  const hasMetrics =
+    metrics.cpu !== undefined ||
+    metrics.ram !== undefined ||
+    metrics.batteryPercent !== undefined;
+
   return (
     <Pressable
       onPress={() => onPress?.(device)}
@@ -35,11 +42,27 @@ function DeviceCardBase({ device, onPress }: DeviceCardProps) {
         <StatusPill status={device.status} />
       </View>
       <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{device.name}</Text>
-      <Text style={styles.os}>{device.os}</Text>
-      <View style={styles.bottomRow}>
-        <Text style={styles.metaLabel}>Active</Text>
-        <Text style={styles.metaValue}>{device.lastSeen}</Text>
-      </View>
+      <Text style={styles.os} numberOfLines={1} ellipsizeMode="tail">{device.os}</Text>
+      {hasMetrics ? (
+        <View style={styles.metricsRow}>
+          {metrics.cpu !== undefined && (
+            <Text style={styles.metric}>CPU {Math.round(metrics.cpu)}%</Text>
+          )}
+          {metrics.ram !== undefined && (
+            <Text style={styles.metric}>RAM {Math.round(metrics.ram)}%</Text>
+          )}
+          {metrics.batteryPercent !== undefined && (
+            <Text style={styles.metric}>
+              BAT {Math.round(metrics.batteryPercent)}%{metrics.batteryCharging ? ' ⚡' : ''}
+            </Text>
+          )}
+        </View>
+      ) : (
+        <View style={styles.bottomRow}>
+          <Text style={styles.metaLabel}>Active</Text>
+          <Text style={styles.metaValue}>{device.lastSeen}</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -69,6 +92,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   os: { color: '#cd7b01', fontSize: 11 },
+  metricsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  metric: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
