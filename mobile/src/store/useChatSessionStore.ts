@@ -23,6 +23,12 @@ interface ChatSessionState {
   addUserMessage: (text: string, sessionId: string, attachment?: ChatAttachment) => ChatMessage;
   markSent: (id: string) => void;
   addAiMessage: (sessionId: string, text: string, timestamp: string, meta?: AiMessageMeta) => ChatMessage;
+  /**
+   * Append a message that arrived from the desktop (not a reply to a prompt).
+   * Unlike addAiMessage it must not clear `isAwaitingResponse`: the desktop can
+   * send notes while another turn is still running.
+   */
+  addIncomingMessage: (sessionId: string, text: string, timestamp: string, meta?: AiMessageMeta) => ChatMessage;
   /** Flags the newest message for a session as a quick-response fallback (PHASE_12 §6.4). */
   markLastMessageAsFallback: (sessionId: string) => void;
   /** Attaches a desktop adapter label to a specific AI message for display only. */
@@ -66,6 +72,20 @@ export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
       ...meta,
     };
     set({ messages: [...get().messages, message], isAwaitingResponse: false });
+    return message;
+  },
+
+  addIncomingMessage: (sessionId, text, timestamp, meta) => {
+    const message: ChatMessage = {
+      id: nextId('ai'),
+      sessionId,
+      sender: 'ai',
+      text,
+      timestamp,
+      typing: true,
+      ...meta,
+    };
+    set({ messages: [...get().messages, message] });
     return message;
   },
 
