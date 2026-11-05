@@ -3,7 +3,7 @@ import { PairingPayload } from './types';
 
 const AGENT_PORT = 40003;
 const RELAY_PATTERN = /^(wss?):\/\/([^/:]+)/i;
-const HTTP_PATTERN = /^(https?):\/\/([^/]+)/i;
+const HTTP_PATTERN = /^(https?):\/\/([^/:]+)(?::(\d+))?/i;
 const RELAY_PATH = '/relay';
 
 /**
@@ -47,7 +47,12 @@ export function deriveRelayUrl(payload: PairingPayload): string {
     const match = HTTP_PATTERN.exec(payload.agentApiUrl.trim());
     if (match) {
       const scheme = match[1].toLowerCase() === 'https' ? 'wss' : 'ws';
-      return `${scheme}://${match[2]}${RELAY_PATH}`;
+      const host = match[2];
+      // Preserve the port the gateway is actually bound to (it may be an
+      // ephemeral port the desktop picked because 40003 was taken). Without
+      // this the WebSocket would dial the default ws/wss port and fail.
+      const port = match[3] ?? String(AGENT_PORT);
+      return `${scheme}://${host}:${port}${RELAY_PATH}`;
     }
   }
   return payload.relayUrl;
