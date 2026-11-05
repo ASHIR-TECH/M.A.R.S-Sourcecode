@@ -252,6 +252,10 @@ export function useRelayConnection() {
    * When the user attached a file, its bytes are uploaded to the desktop first
    * and the returned desktop path is appended to the text, so the desktop agent
    * can open, move or re-send the file it just received.
+   *
+   * Device context is prepended to agent messages so the desktop AI knows which
+   * devices are available (name, id, status, cpu, ram, battery) and can target
+   * them with send_file_to_device — just like a human user would.
    */
   const sendChatMessage = useCallback(
     async (sessionId: string, text: string, attachment?: ChatAttachment): Promise<void> => {
@@ -279,12 +283,31 @@ export function useRelayConnection() {
         }
       }
 
+      // Build device context so the desktop AI knows about available devices
+      // and can target them (e.g. send_file_to_device) like a human user.
+      const devices = useDeviceStore.getState().devices;
+      const deviceList = devices
+        .map((d) => {
+          const metrics = d as Partial<import('../types/device').DeviceWithMetrics>;
+          const parts = [d.name, `id=${d.id}`, `status=${d.status}`];
+          if (metrics.cpu !== undefined) parts.push(`cpu=${metrics.cpu}%`);
+          if (metrics.ram !== undefined) parts.push(`ram=${metrics.ram}%`);
+          if (metrics.batteryPercent !== undefined)
+            parts.push(`battery=${metrics.batteryPercent}%${metrics.batteryCharging ? ' ⚡' : ''}`);
+          return parts.join(' | ');
+        })
+        .join('\n  - ');
+
+      const deviceContext = devices.length > 0
+        ? `\n\n[Connected devices:\n  - ${deviceList}\n]`
+        : '';
+
       // Preferred path: the desktop's embedded agent over REST (PHASE_14). It owns
       // the tool loop, so this is what can actually command other devices.
       const desktop = useDesktopStore.getState();
       if (desktop.connection && desktop.isConfigured()) {
         try {
-          const reply = await runAgentChat(desktop.connection, outgoing, sessionId, attachmentPaths);
+          const reply = await runAgentChat(desktop.connection, outgoing + deviceContext, sessionId, attachmentPaths);
           const at = timestamp();
           const replyText = reply.text || 'Done.';
           useChatSessionStore.getState().addAiMessage(sessionId, replyText, at, {
