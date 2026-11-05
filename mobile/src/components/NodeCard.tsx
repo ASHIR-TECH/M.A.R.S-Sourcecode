@@ -21,13 +21,20 @@ function displayId(id: string): string {
   return `${id.slice(0, 8)}…`;
 }
 
-/** Rectangular glass card mirroring what's shown on Home (id, name, os,
- * status, lastSeen). No decorations inside; the edit button sits below the card.
+/** Responsive name font: short names are big, longer names get progressively smaller. */
+function nameFontSize(name: string): number {
+  const len = name.length;
+  if (len <= 6) return 22;
+  if (len <= 10) return 18;
+  if (len <= 14) return 15;
+  return 12;
+}
+
+/** Rectangular glass card showing id, name, os, status, cpu, ram, battery.
  * The per-device "+" opens a small popup with Edit and Remove (delete that ONE
  * device only, followed by a haptic). */
 function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
-  // Longer names get a smaller font so they always fit on one line.
-  const nameFontSize = Math.max(12, Math.min(20, 26 - node.name.length * 0.75));
+  const nameFont = nameFontSize(node.name);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
@@ -54,13 +61,21 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
           <Text style={styles.id}>{displayId(node.id)}</Text>
           <StatusPill status={node.status} />
         </View>
-        <Text numberOfLines={1} style={[styles.name, { fontSize: nameFontSize }]}>{node.name}</Text>
+        {/* Device name — big, responsive (longer names get smaller) */}
+        <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.name, { fontSize: nameFont }]}>
+          {node.name}
+        </Text>
+        {/* OS directly under the name */}
         <Text style={styles.os}>{node.os}</Text>
-        {node.batteryPercent !== undefined && (
-          <Text style={styles.battery}>
-            {node.batteryCharging ? '⚡ ' : '▰ '}{node.batteryPercent}% battery
-          </Text>
-        )}
+        <View style={styles.metricsRow}>
+          <Text style={styles.metric}>CPU: {Math.round(node.cpu)}%</Text>
+          <Text style={styles.metric}>Ram: {Math.round(node.ram)}%</Text>
+          {node.batteryPercent !== undefined && (
+            <Text style={styles.battery}>
+              {Math.round(node.batteryPercent)}%{node.batteryCharging ? '  ⚡' : ''}
+            </Text>
+          )}
+        </View>
         <View style={styles.bottomRow}>
           <Text style={styles.metaLabel}>Active</Text>
           <Text style={styles.metaValue}>{node.lastSeen}</Text>
@@ -128,28 +143,36 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 4,
     overflow: 'hidden',
+    minHeight: 160,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  id: { color: '#E9DCCB', fontSize: 11 },
+  id: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
   name: {
     color: '#FFFFFF',
     fontFamily: fonts.offside,
-    fontSize: 14,
+    fontSize: 18,
     marginTop: spacing.xs,
   },
-  os: { color: '#cd7b01', fontSize: 12 },
-  battery: { color: '#E9DCCB', fontSize: 11, marginTop: spacing.xs },
+  os: { color: '#cd7b01', fontSize: 12, marginTop: 2 },
+  metricsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  metric: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
+  battery: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: spacing.sm,
   },
-  metaLabel: { color: '#E9DCCB', fontSize: 11 },
-  metaValue: { color: '#bdbdbc', fontSize: 11 },
+  metaLabel: { color: '#E9DCCB', fontSize: 10 },
+  metaValue: { color: '#bdbdbc', fontSize: 10 },
   editButton: {
     alignSelf: 'flex-end',
     marginTop: spacing.xs,

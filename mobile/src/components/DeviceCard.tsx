@@ -21,6 +21,15 @@ function displayId(id: string): string {
   return `${id.slice(0, 8)}…`;
 }
 
+/** Responsive name font: short names are big, longer names get progressively smaller. */
+function nameFontSize(name: string): number {
+  const len = name.length;
+  if (len <= 6) return 24;
+  if (len <= 10) return 20;
+  if (len <= 14) return 17;
+  return 14;
+}
+
 function DeviceCardBase({ device, onPress }: DeviceCardProps) {
   // Paired desktops carry polled telemetry; relay-only peers do not.
   const metrics = device as Partial<DeviceWithMetrics>;
@@ -41,19 +50,23 @@ function DeviceCardBase({ device, onPress }: DeviceCardProps) {
         <Text style={styles.id}>{displayId(device.id)}</Text>
         <StatusPill status={device.status} />
       </View>
-      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{device.name}</Text>
-      <Text style={styles.os} numberOfLines={1} ellipsizeMode="tail">{device.os}</Text>
+      {/* Device name — big, responsive (longer names get smaller) */}
+      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.name, { fontSize: nameFontSize(device.name) }]}>
+        {device.name}
+      </Text>
+      {/* OS directly under the name */}
+      <Text style={styles.os}>{device.os}</Text>
       {hasMetrics ? (
         <View style={styles.metricsRow}>
           {metrics.cpu !== undefined && (
-            <Text style={styles.metric}>CPU {Math.round(metrics.cpu)}%</Text>
+            <Text style={styles.metric}>CPU: {Math.round(metrics.cpu)}%</Text>
           )}
           {metrics.ram !== undefined && (
-            <Text style={styles.metric}>RAM {Math.round(metrics.ram)}%</Text>
+            <Text style={styles.metric}>Ram: {Math.round(metrics.ram)}%</Text>
           )}
           {metrics.batteryPercent !== undefined && (
-            <Text style={styles.metric}>
-              BAT {Math.round(metrics.batteryPercent)}%{metrics.batteryCharging ? ' ⚡' : ''}
+            <Text style={styles.battery}>
+              {Math.round(metrics.batteryPercent)}%{metrics.batteryCharging ? '  ⚡' : ''}
             </Text>
           )}
         </View>
@@ -78,7 +91,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 4,
     overflow: 'hidden',
-    minHeight: 110,
+    minHeight: 140,
   },
   topRow: {
     flexDirection: 'row',
@@ -89,16 +102,17 @@ const styles = StyleSheet.create({
   name: {
     color: '#FFFFFF',
     fontFamily: fonts.offside,
-    fontSize: 18,
+    fontSize: 20,
   },
-  os: { color: '#cd7b01', fontSize: 11 },
+  os: { color: '#cd7b01', fontSize: 12, marginTop: 2 },
   metricsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     columnGap: spacing.sm,
     marginTop: spacing.sm,
   },
-  metric: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
+  metric: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
+  battery: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
