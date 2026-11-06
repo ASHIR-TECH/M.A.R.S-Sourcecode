@@ -4,6 +4,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { DeviceWithMetrics } from '../types/device';
 import { StatusPill } from './StatusPill';
+import { displayDeviceName } from '../utils/deviceName';
 import { fonts } from '../theme/typography';
 import { glass } from '../theme/glass';
 import { spacing } from '../theme/spacing';
@@ -15,12 +16,6 @@ interface NodeCardProps {
   onRemove: (node: DeviceWithMetrics) => void;
 }
 
-/** Show a short human-readable ID instead of the full libp2p peer ID. */
-function displayId(id: string): string {
-  if (id.startsWith('DEV-') || id.length <= 12) return id;
-  return `${id.slice(0, 8)}…`;
-}
-
 /** Responsive name font: short names are big, longer names get progressively smaller. */
 function nameFontSize(name: string): number {
   const len = name.length;
@@ -30,11 +25,13 @@ function nameFontSize(name: string): number {
   return 12;
 }
 
-/** Rectangular glass card showing id, name, os, status, cpu, ram, battery.
- * The per-device "+" opens a small popup with Edit and Remove (delete that ONE
- * device only, followed by a haptic). */
+/** Rectangular glass card showing name, os, status, cpu, ram, battery.
+ * The per-device "+" opens a detail sheet with live metrics plus Edit and
+ * Remove (delete that ONE device only, followed by a haptic). */
 function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
-  const nameFont = nameFontSize(node.name);
+  const name = displayDeviceName(node.name);
+  const kind = node.collectionId === 'paired' ? 'PAIRED' : 'PEER';
+  const nameFont = nameFontSize(name);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
@@ -58,22 +55,28 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
       <View style={styles.card}>
         <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
         <View style={styles.topRow}>
-          <Text style={styles.id}>{displayId(node.id)}</Text>
+          <Text style={styles.kind}>{kind}</Text>
           <StatusPill status={node.status} />
         </View>
         {/* Device name — big, responsive (longer names get smaller) */}
         <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.name, { fontSize: nameFont }]}>
-          {node.name}
+          {name}
         </Text>
         {/* OS directly under the name */}
         <Text style={styles.os}>{node.os}</Text>
         <View style={styles.metricsRow}>
-          <Text style={styles.metric}>CPU: {Math.round(node.cpu)}%</Text>
-          <Text style={styles.metric}>Ram: {Math.round(node.ram)}%</Text>
+          <View style={styles.metricChip}>
+            <Text style={styles.metric}>CPU: {Math.round(node.cpu)}%</Text>
+          </View>
+          <View style={styles.metricChip}>
+            <Text style={styles.metric}>Ram: {Math.round(node.ram)}%</Text>
+          </View>
           {node.batteryPercent !== undefined && (
-            <Text style={styles.battery}>
-              {Math.round(node.batteryPercent)}%{node.batteryCharging ? '  ⚡' : ''}
-            </Text>
+            <View style={styles.metricChip}>
+              <Text style={styles.battery}>
+                {Math.round(node.batteryPercent)}%{node.batteryCharging ? ' ⚡' : ''}
+              </Text>
+            </View>
           )}
         </View>
         <View style={styles.bottomRow}>
@@ -96,8 +99,41 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
         <Modal transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
           <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
             <Pressable style={styles.sheet}>
-              <Text style={styles.sheetTitle}>{node.name}</Text>
-              <Text style={styles.sheetSubtitle}>{node.id}</Text>
+              <View style={styles.sheetHead}>
+                <View style={styles.sheetAvatar}>
+                  <Text style={styles.sheetAvatarText}>{name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.sheetHeadText}>
+                  <Text style={styles.sheetTitle} numberOfLines={1}>{name}</Text>
+                  <Text style={styles.sheetSubtitle} numberOfLines={1}>
+                    {node.os} · {node.status}
+                  </Text>
+                </View>
+                <View style={styles.sheetHeadStatus}>
+                  <StatusPill status={node.status} />
+                </View>
+              </View>
+
+              <View style={styles.sheetMetrics}>
+                <View style={styles.sheetMetric}>
+                  <Text style={styles.sheetMetricLabel}>CPU</Text>
+                  <Text style={styles.sheetMetricValue}>{Math.round(node.cpu)}%</Text>
+                </View>
+                <View style={styles.sheetMetric}>
+                  <Text style={styles.sheetMetricLabel}>RAM</Text>
+                  <Text style={styles.sheetMetricValue}>{Math.round(node.ram)}%</Text>
+                </View>
+                {node.batteryPercent !== undefined && (
+                  <View style={styles.sheetMetric}>
+                    <Text style={styles.sheetMetricLabel}>BATTERY</Text>
+                    <Text style={styles.sheetMetricValue}>
+                      {Math.round(node.batteryPercent)}%{node.batteryCharging ? ' ⚡' : ''}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.sheetSeen}>Last seen {node.lastSeen}</Text>
 
               <Pressable
                 onPress={() => {
@@ -106,16 +142,16 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
                 }}
                 style={styles.sheetRow}
                 accessibilityRole="button"
-                accessibilityLabel={`Edit ${node.name}`}
+                accessibilityLabel={`Rename ${name}`}
               >
-                <Text style={styles.sheetRowText}>Edit Device</Text>
+                <Text style={styles.sheetRowText}>Rename Device</Text>
               </Pressable>
 
               <Pressable
                 onPress={handleRemovePress}
                 style={[styles.sheetRow, styles.sheetRowDanger, confirmRemove && styles.sheetRowArmed]}
                 accessibilityRole="button"
-                accessibilityLabel={`Remove ${node.name}`}
+                accessibilityLabel={`Remove ${name}`}
               >
                 <Text style={styles.sheetRemoveText}>
                   {confirmRemove ? 'Confirm Remove' : 'Remove Device'}
@@ -151,6 +187,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   id: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
+  kind: {
+    color: '#cd7b01',
+    fontSize: 9,
+    fontFamily: fonts.quantico,
+    letterSpacing: 1.2,
+  },
   name: {
     color: '#FFFFFF',
     fontFamily: fonts.offside,
@@ -161,11 +203,19 @@ const styles = StyleSheet.create({
   metricsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    columnGap: spacing.sm,
+    gap: 6,
     marginTop: spacing.sm,
   },
-  metric: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
-  battery: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
+  metricChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  metric: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
+  battery: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -193,15 +243,65 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: '100%',
-    maxWidth: 300,
+    maxWidth: 320,
     backgroundColor: '#1A0F08',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(215, 128, 30, 0.7)',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: spacing.lg,
   },
-  sheetTitle: { color: '#FFFFFF', fontFamily: fonts.offside, fontSize: 16 },
-  sheetSubtitle: { color: colors.textMuted, fontSize: 11, marginTop: 2, marginBottom: spacing.md },
+  sheetHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sheetAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(232,163,77,0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(232,163,77,0.5)',
+  },
+  sheetAvatarText: { color: '#FFFFFF', fontFamily: fonts.offside, fontSize: 16 },
+  sheetHeadText: { flex: 1, minWidth: 0 },
+  sheetHeadStatus: { marginLeft: 'auto' },
+  sheetTitle: { color: '#FFFFFF', fontFamily: fonts.offside, fontSize: 17 },
+  sheetSubtitle: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  sheetMetrics: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: spacing.md,
+  },
+  sheetMetric: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.09)',
+    alignItems: 'center',
+  },
+  sheetMetricLabel: {
+    color: '#cd7b01',
+    fontSize: 8,
+    letterSpacing: 1,
+    fontFamily: fonts.quantico,
+  },
+  sheetMetricValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: fonts.quantico,
+    marginTop: 2,
+  },
+  sheetSeen: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
   sheetRow: {
     borderRadius: 10,
     paddingVertical: spacing.md,
