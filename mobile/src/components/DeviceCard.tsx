@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Device, DeviceWithMetrics } from '../types/device';
 import { StatusPill } from './StatusPill';
-import { colors } from '../theme/colors';
+import { displayDeviceName } from '../utils/deviceName';
 import { fonts } from '../theme/typography';
 import { glass } from '../theme/glass';
 import { spacing } from '../theme/spacing';
@@ -11,14 +11,6 @@ import { spacing } from '../theme/spacing';
 interface DeviceCardProps {
   device: Device;
   onPress?: (device: Device) => void;
-}
-
-/** Show a short human-readable ID instead of the full libp2p peer ID. */
-function displayId(id: string): string {
-  // libp2p peer IDs are base58 (e.g. 12D3KooW...). Use first 8 chars + ellipsis.
-  // If it looks like a short DEV-XXX id, show as-is.
-  if (id.startsWith('DEV-') || id.length <= 12) return id;
-  return `${id.slice(0, 8)}…`;
 }
 
 /** Responsive name font: short names are big, longer names get progressively smaller. */
@@ -37,37 +29,45 @@ function DeviceCardBase({ device, onPress }: DeviceCardProps) {
     metrics.cpu !== undefined ||
     metrics.ram !== undefined ||
     metrics.batteryPercent !== undefined;
+  const name = displayDeviceName(device.name);
+  const kind = metrics.collectionId === 'paired' ? 'PAIRED' : 'PEER';
 
   return (
     <Pressable
       onPress={() => onPress?.(device)}
       style={styles.card}
       accessibilityRole="button"
-      accessibilityLabel={`${device.name}, ${device.status}`}
+      accessibilityLabel={`${name}, ${device.status}`}
     >
       <BlurView intensity={glass.intensity} tint={glass.tint} experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
       <View style={styles.topRow}>
-        <Text style={styles.id}>{displayId(device.id)}</Text>
+        <Text style={styles.kind}>{kind}</Text>
         <StatusPill status={device.status} />
       </View>
       {/* Device name — big, responsive (longer names get smaller) */}
-      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.name, { fontSize: nameFontSize(device.name) }]}>
-        {device.name}
+      <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.name, { fontSize: nameFontSize(name) }]}>
+        {name}
       </Text>
       {/* OS directly under the name */}
       <Text style={styles.os}>{device.os}</Text>
       {hasMetrics ? (
         <View style={styles.metricsRow}>
           {metrics.cpu !== undefined && (
-            <Text style={styles.metric}>CPU: {Math.round(metrics.cpu)}%</Text>
+            <View style={styles.metricChip}>
+              <Text style={styles.metric}>CPU: {Math.round(metrics.cpu)}%</Text>
+            </View>
           )}
           {metrics.ram !== undefined && (
-            <Text style={styles.metric}>Ram: {Math.round(metrics.ram)}%</Text>
+            <View style={styles.metricChip}>
+              <Text style={styles.metric}>Ram: {Math.round(metrics.ram)}%</Text>
+            </View>
           )}
           {metrics.batteryPercent !== undefined && (
-            <Text style={styles.battery}>
-              {Math.round(metrics.batteryPercent)}%{metrics.batteryCharging ? '  ⚡' : ''}
-            </Text>
+            <View style={styles.metricChip}>
+              <Text style={styles.battery}>
+                {Math.round(metrics.batteryPercent)}%{metrics.batteryCharging ? ' ⚡' : ''}
+              </Text>
+            </View>
           )}
         </View>
       ) : (
@@ -99,6 +99,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   id: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
+  kind: {
+    color: '#cd7b01',
+    fontSize: 9,
+    fontFamily: fonts.quantico,
+    letterSpacing: 1.2,
+  },
   name: {
     color: '#FFFFFF',
     fontFamily: fonts.offside,
@@ -108,11 +114,19 @@ const styles = StyleSheet.create({
   metricsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    columnGap: spacing.sm,
+    gap: 6,
     marginTop: spacing.sm,
   },
-  metric: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
-  battery: { color: '#E9DCCB', fontSize: 11, fontFamily: fonts.quantico },
+  metricChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  metric: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
+  battery: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
