@@ -54,6 +54,8 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       const merged = devices.map((device) => {
         if (device.id !== paired.id) return device;
         mergedPaired = { ...paired, ...device };
+        // A user rename outranks the hostname the relay advertises.
+        if (paired.nameLocked) mergedPaired.name = paired.name;
         return mergedPaired;
       });
       const hasPaired = merged.some((device) => device.id === paired.id);
@@ -63,13 +65,18 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       };
     }),
   renameDevice: (id, updates) =>
-    set((s) => ({
-      devices: s.devices.map((d) => (d.id === id ? { ...d, ...updates } : d)),
-      pairedDevice:
-        s.pairedDevice && s.pairedDevice.id === id
-          ? { ...s.pairedDevice, ...updates }
-          : s.pairedDevice,
-    })),
+    set((s) => {
+      const locked = updates.name !== undefined ? { nameLocked: true } : {};
+      return {
+        devices: s.devices.map((d) =>
+          d.id === id ? { ...d, ...updates, ...locked } : d
+        ),
+        pairedDevice:
+          s.pairedDevice && s.pairedDevice.id === id
+            ? { ...s.pairedDevice, ...updates, ...locked }
+            : s.pairedDevice,
+      };
+    }),
   updatePairedDevice: (updates) =>
     set((s) => {
       const paired = s.pairedDevice;
@@ -79,6 +86,9 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
       const provided = Object.fromEntries(
         Object.entries(updates).filter(([, value]) => value !== undefined)
       ) as Partial<DeviceWithMetrics>;
+      // Names the user chose are sticky: system polling reports the raw
+      // hostname (`adtp-kali`) and must not undo a rename.
+      if (paired.nameLocked) delete provided.name;
       const next = { ...paired, ...provided };
       return {
         pairedDevice: next,
