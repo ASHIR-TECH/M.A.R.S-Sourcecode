@@ -1,5 +1,3 @@
-.env
-.env.*
 !.env.example
 
 # Self-hosted OTA server secrets/assets
@@ -11,3 +9,5 @@ infra/updates-server/updates/
 
 # Supabase CLI local state (checks for newer releases)
 supabase/.temp/
+config.bat
+node_modules
