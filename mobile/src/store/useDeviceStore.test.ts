@@ -112,6 +112,25 @@ describe('useDeviceStore', () => {
     expect(state.pairedDevice?.name).toBe('Studio Rig 2');
   });
 
+  it('never lets hostname telemetry clobber a user rename', () => {
+    useDeviceStore.getState().addPairedDevice(paired);
+    useDeviceStore.getState().renameDevice('DESK-1', { name: 'Kali' });
+    useDeviceStore.getState().updatePairedDevice({ name: 'adtp-kali', cpu: 12 });
+
+    let state = useDeviceStore.getState();
+    expect(state.pairedDevice?.name).toBe('Kali');
+    expect(state.devices[0].name).toBe('Kali');
+    expect(state.pairedDevice?.cpu).toBe(12);
+
+    useDeviceStore.getState().hydrateFromRelay([
+      { id: 'DESK-1', name: 'adtp-kali', os: 'Linux', status: 'online', lastSeen: 'Just Now' },
+    ]);
+
+    state = useDeviceStore.getState();
+    expect(state.pairedDevice?.name).toBe('Kali');
+    expect(state.devices[0].name).toBe('Kali');
+  });
+
   it('updates live telemetry on both the pinned copy and the grid card', () => {
     useDeviceStore.getState().addPairedDevice(paired);
     useDeviceStore.getState().updatePairedDevice({ cpu: 42, ram: 61, name: 'ZEUS' });

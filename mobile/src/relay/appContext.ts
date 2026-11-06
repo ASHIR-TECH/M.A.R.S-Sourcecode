@@ -2,6 +2,7 @@ import { usePairingStore } from '../store/usePairingStore';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { useDesktopSystemStore } from '../store/useDesktopSystemStore';
 import { DeviceWithMetrics } from '../types/device';
+import { displayDeviceName } from '../utils/deviceName';
 
 export interface AppContextDevice {
   id: string;
@@ -38,13 +39,20 @@ export interface AppChatContext {
  */
 export function buildAppChatContext(): AppChatContext {
   const paired = usePairingStore.getState().pairedDesktop;
+  const pairedDevice = useDeviceStore.getState().pairedDevice;
   const devices = useDeviceStore.getState().devices as Partial<DeviceWithMetrics>[];
   const system = useDesktopSystemStore.getState().info;
+
+  // User renames win; otherwise show the hostname the way the cards do
+  // (`adtp-kali` → `Kali`).
+  const desktopName = pairedDevice?.nameLocked
+    ? pairedDevice.name
+    : displayDeviceName(system?.hostname || paired?.desktopName);
 
   const desktop: AppContextDesktop | null = paired
     ? {
         id: paired.desktopId,
-        name: system?.hostname || paired.desktopName,
+        name: desktopName,
         ...(system?.os ? { os: system.os } : {}),
         ...(system?.cpuPercent !== undefined ? { cpuPercent: system.cpuPercent } : {}),
         ...(system?.ramPercent !== undefined ? { ramPercent: system.ramPercent } : {}),
@@ -55,7 +63,7 @@ export function buildAppChatContext(): AppChatContext {
     pairedDesktop: desktop,
     devices: devices.map((d) => ({
       id: d.id ?? '',
-      name: d.name ?? '',
+      name: displayDeviceName(d.name),
       os: d.os ?? '',
       status: d.status ?? 'offline',
       lastSeen: d.lastSeen ?? '',
