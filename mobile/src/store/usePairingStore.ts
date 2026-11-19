@@ -48,7 +48,15 @@ export const usePairingStore = create<PairingState>((set) => ({
     await fetchSystemInfo(agent);
     // Pairing is two-sided: register this phone in the desktop's device
     // registry so ADTP can list it, show its telemetry and send it files.
-    await registerDevice(agent);
+    // Registration is best-effort: reachability and the token are already
+    // proven above, and the heartbeat loop re-registers as soon as the
+    // desktop accepts this phone's telemetry. A gateway that rejects the
+    // registration must not make a working pairing look broken.
+    try {
+      await registerDevice(agent);
+    } catch (error) {
+      console.warn('MARS: desktop device registration failed; will retry.', error);
+    }
 
     await pairingStorage.save(payload);
     await useDesktopStore.getState().saveConnection(agent);

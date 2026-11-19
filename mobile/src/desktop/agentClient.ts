@@ -16,6 +16,33 @@ export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 }
 
+/**
+ * Pull a human-readable reason out of an error body. FastAPI answers a bad
+ * request with `{"detail": "field: message"}` (or a list of validation
+ * entries); without this the UI could only say "error 422".
+ */
+function errorDetail(body: unknown): string | undefined {
+  const detail = asRecord(body).detail;
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail.trim().slice(0, 240);
+  }
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((entry) => {
+        const item = asRecord(entry);
+        const loc = Array.isArray(item.loc)
+          ? item.loc.filter((part) => part !== 'body').join('.')
+          : '';
+        const message = str(item.msg);
+        if (!message) return null;
+        return loc ? `${loc}: ${message}` : message;
+      })
+      .filter((part): part is string => Boolean(part));
+    if (parts.length > 0) return parts.join('; ').slice(0, 240);
+  }
+  return undefined;
+}
+
 function asStatus(value: unknown): ToolCallStatus {
   return value === 'running' || value === 'completed' || value === 'failed' ? value : 'completed';
 }
@@ -67,7 +94,14 @@ export async function request<T>(
     throw new ApiError('auth', 'Your desktop rejected the API token.', res.status);
   }
   if (!res.ok) {
-    throw new ApiError('server', `Desktop agent error (${res.status}).`, res.status);
+    const detail = errorDetail(await res.json().catch(() => null));
+    throw new ApiError(
+      'server',
+      detail
+        ? `Desktop agent error (${res.status}): ${detail}`
+        : `Desktop agent error (${res.status}).`,
+      res.status
+    );
   }
   if (res.status === 204) return undefined as T;
   return (await res.json().catch(() => ({}))) as T;

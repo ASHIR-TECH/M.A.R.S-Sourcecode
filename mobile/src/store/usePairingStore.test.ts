@@ -4,6 +4,7 @@ import { usePairingStore } from './usePairingStore';
 import { useDeviceStore } from './useDeviceStore';
 import { PairingPayload } from '../pairing/types';
 import { fetchSystemInfo } from '../desktop/systemClient';
+import { registerDevice } from '../desktop/deviceClient';
 
 jest.mock('../pairing/pairingStorage', () => ({
   pairingStorage: { save: jest.fn(), load: jest.fn(), clear: jest.fn() },
@@ -90,6 +91,19 @@ describe('usePairingStore', () => {
     await expect(usePairingStore.getState().setPairedDesktop(basePayload)).rejects.toThrow('rejected');
     expect(pairingStorage.save).not.toHaveBeenCalled();
     expect(useDeviceStore.getState().devices).toEqual([]);
+  });
+
+  it('keeps a verified pairing when device registration is refused', async () => {
+    (pairingStorage.save as jest.Mock).mockResolvedValue(undefined);
+    (desktopStorage.save as jest.Mock).mockResolvedValue(undefined);
+    (registerDevice as jest.Mock).mockRejectedValueOnce(
+      new Error('Desktop agent error (422): device_id: bad value')
+    );
+
+    await usePairingStore.getState().setPairedDesktop(basePayload);
+
+    expect(pairingStorage.save).toHaveBeenCalled();
+    expect(useDeviceStore.getState().devices).toHaveLength(1);
   });
 
   it('restores the paired desktop into the device hub after a restart', async () => {
