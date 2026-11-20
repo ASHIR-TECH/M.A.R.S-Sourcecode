@@ -3,6 +3,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { createMediaRouter } = require('./media');
 
 // GitHub is slow to connect on some networks and its DNS can hand out a
 // NAT64 / IPv6 address that has no route. Talk to GitHub over IPv4 only and
@@ -100,6 +101,12 @@ const CORS_ALLOWED_ORIGINS = (envVars.CORS_ALLOWED_ORIGINS || '')
 // Optional shared secret that gates /donation-history. When unset the endpoint
 // is disabled entirely (it exposes donation PII and has no other auth).
 const RELAY_ADMIN_TOKEN = envVars.RELAY_ADMIN_TOKEN;
+
+// Upstash Blob media service (bucket "Mars"). The token stays here; devices
+// receive short-lived signed URLs. ADTP_MEDIA_TOKEN lets the desktop gateway
+// mint grants server-to-server for AI-originated media.
+const UPSTASH_BLOB_TOKEN = envVars.UPSTASH_BLOB_TOKEN;
+const ADTP_MEDIA_TOKEN = envVars.ADTP_MEDIA_TOKEN;
 
 const app = express();
 // The real client IP arrives in X-Forwarded-For (added by the tunnel in front
@@ -217,6 +224,18 @@ async function verifySupabaseSession(req) {
     return false;
   }
 }
+
+// Mounted after the auth/rate helpers above. Devices upload straight to the
+// private blob bucket; the relay only mints grants and stores MediaRef metadata.
+app.use(
+  '/api/media',
+  createMediaRouter({
+    envVars: { ...envVars, UPSTASH_BLOB_TOKEN, ADTP_MEDIA_TOKEN },
+    verifySupabaseSession,
+    timingSafeEqualStr,
+    rateLimit,
+  })
+);
 
 /**
  * Authentication is not handled here.
@@ -492,6 +511,7 @@ app.get('/health', (req, res) => {
     flutterwaveConfigured: !!FLUTTERWAVE_SECRET_KEY,
     fallbackChatConfigured: !!GROQ_API_KEY,
     supabaseAuthenticatedChat: !!(SUPABASE_URL && SUPABASE_ANON_KEY),
+    blobMediaConfigured: !!UPSTASH_BLOB_TOKEN,
     publicUrl: PUBLIC_URL,
   });
 });
@@ -507,6 +527,14 @@ app.get('/', (req, res) => {
     },
     chat: {
       fallback: 'POST /fallback-chat',
+    },
+    media: {
+      sign: 'POST /api/media/sign',
+      complete: 'POST /api/media/complete',
+      ingest: 'POST /api/media/ingest (base64, small files)',
+      file: 'GET /api/media/file/:id?kind=original|thumbnail&download=1',
+      get: 'GET /api/media/:id',
+      delete: 'DELETE /api/media/:id',
     },
     note: 'Sign-in is served by Supabase Auth, not by this relay.',
   });
