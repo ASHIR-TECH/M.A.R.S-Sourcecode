@@ -1,11 +1,17 @@
 import { AgentToolCall, TransferReference } from '../desktop/types';
+import type { MediaRef } from '../media/types';
 
 export interface ChatAttachment {
   name: string;
   mimeType?: string;
   size?: number;
+  /** local file URI before upload; cleared once media is stored in the blob */
   uri?: string;
-}export interface ChatMessage {
+  /** filled in after compression + upload; carries thumbnail/download URLs */
+  media?: MediaRef;
+}
+
+export interface ChatMessage {
   id: string;
   sessionId: string;
   sender: 'user' | 'ai';
@@ -24,4 +30,9 @@ export interface ChatAttachment {
   toolCalls?: AgentToolCall[];
   /** File transfers the reply references, rendered as file tiles (PHASE_14 §Chat). */
   transfers?: TransferReference[];
+  /**
+   * Media sent with an AI/ADTP message. Bytes live in Upstash Blob; this is
+   * only metadata, so it survives the 10-minute signed-URL expiry.
+   */
+  media?: MediaRef;
 }
