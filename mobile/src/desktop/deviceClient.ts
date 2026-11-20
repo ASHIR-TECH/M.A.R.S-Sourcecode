@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { getInstallId } from '../relay/deviceId';
 import { asRecord, request, str } from './agentClient';
 import { DesktopConnection } from './types';
+import { normalizeMediaRef } from '../media/urls';
 
 const TIMEOUT_MS = 8000;
 
@@ -52,6 +53,8 @@ export interface DeviceMessage {
   text: string;
   createdAt: string;
   deliveredAt?: string | null;
+  /** Optional blob media pushed by the ADTP desktop with this message. */
+  media?: import('../media/types').MediaRef;
 }
 
 function num(value: unknown): number | undefined {
@@ -190,6 +193,7 @@ export async function listMessages(conn: DesktopConnection): Promise<DeviceMessa
         text,
         createdAt: str(r.created_at) ?? new Date().toISOString(),
         deliveredAt: typeof r.delivered_at === 'string' ? r.delivered_at : null,
+        ...(normalizeMediaRef(r.media) ? { media: normalizeMediaRef(r.media)! } : {}),
       };
     })
     .filter((message): message is DeviceMessage => message !== null);
