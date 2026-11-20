@@ -1,0 +1,8 @@
+{
+  "name": "mars-sourcecode",
+  "private": true,
+  "description": "Shared server-side tooling for MARS (the Expo app lives in ./mobile).",
+  "dependencies": {
+    "@upstash/blob": "^0.0.14"
+  }
+}
