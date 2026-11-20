@@ -25,7 +25,9 @@ import { useDesktopSystemStore } from '../store/useDesktopSystemStore';
 import { useInboxStore } from '../store/useInboxStore';
 import { ChatAttachment } from '../types/chatMessage';
 import { OutboundMessage } from './types';
-import { transfersFromToolCalls } from './transfers';
+import { transfersFromToolCalls, mediaFromToolCalls } from './transfers';
+import { uploadMedia, normalizeMediaRef, mediaDownloadUrl } from '../media';
+import type { MediaRef } from '../media/types';
 
 const SYSTEM_POLL_MS = 20000;
 /** Single-threaded v1 chat; matches ChatComposer's SESSION_ID. */
@@ -61,9 +63,10 @@ export function useRelayConnection() {
     seenDeviceMessages.current.add(message.id);
 
     const timestamp = message.createdAt || new Date().toISOString();
-    useChatSessionStore
-      .getState()
-      .addIncomingMessage(CHAT_SESSION_ID, message.text, timestamp, { providerLabel: 'Desktop' });
+    useChatSessionStore.getState().addIncomingMessage(CHAT_SESSION_ID, message.text, timestamp, {
+      providerLabel: 'Desktop',
+      ...(message.media ? { media: message.media } : {}),
+    });
     useChatStore.getState().appendChatResponse(CHAT_SESSION_ID, message.text, timestamp);
 
     const desktop = useDesktopStore.getState();
@@ -97,6 +100,7 @@ export function useRelayConnection() {
           // display data (PHASE_12 NFR-1) — never branched on.
           appendChatResponse(message.sessionId, message.text, message.timestamp);
           const toolCalls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
+          const incomingMedia = normalizeMediaRef(message.media);
           useChatSessionStore.getState().addAiMessage(
             message.sessionId,
             message.text,
@@ -106,18 +110,23 @@ export function useRelayConnection() {
               ...(toolCalls.length > 0
                 ? { toolCalls, transfers: transfersFromToolCalls(toolCalls) }
                 : {}),
+              ...(incomingMedia ? { media: incomingMedia } : {}),
             }
           );
           break;
         }
-        case 'device_message':
+        case 'device_message': {
+          const pushedMedia = normalizeMediaRef(message.message.media);
           void deliverDeviceMessage({
             id: message.message.id,
             deviceId: message.message.device_id,
             text: message.message.text,
             createdAt: message.message.created_at,
             deliveredAt: message.message.delivered_at ?? null,
+            ...(pushedMedia ? { media: pushedMedia } : {}),
           });
+          break;
+        }
           break;
         default:
           break; // auth_ack / auth_rejected / ping / pong
@@ -249,28 +258,68 @@ export function useRelayConnection() {
    * transparently falls back to quick-response mode (PHASE_12 FR-3/NFR-2).
    * The routing decision lives here — never in the Chat screen.
    *
-   * When the user attached a file, its bytes are uploaded to the desktop first
-   * and the returned desktop path is appended to the text, so the desktop agent
-   * can open, move or re-send the file it just received.
+   * Media pipeline (both directions):
+   *   user picks file -> compress + thumbnail on device -> direct PUT to the
+   *   private Upstash Blob bucket -> relay records a MediaRef -> only that JSON
+   *   metadata is sent in the message. The recipient renders a thumbnail and a
+   *   download link; the blob token never leaves the relay.
    *
-   * Device context is prepended to agent messages so the desktop AI knows which
+   * The desktop REST upload is kept as a best-effort secondary path so the
+   * agent can still inspect the original file, but the blob link is what gets
+   * shared with the receiving device.
+   *
+   * Device context is appended to agent messages so the desktop AI knows which
    * devices are available (name, id, status, cpu, ram, battery) and can target
    * them with send_file_to_device — just like a human user would.
    */
   const sendChatMessage = useCallback(
-    async (sessionId: string, text: string, attachment?: ChatAttachment): Promise<void> => {
+    async (
+      sessionId: string,
+      text: string,
+      attachment?: ChatAttachment,
+      messageId?: string
+    ): Promise<void> => {
       const timestamp = () => new Date().toISOString();
       let outgoing = text;
       const attachmentPaths: string[] = [];
+      let mediaRef: MediaRef | undefined;
+      let reportedError = false;
 
-      if (attachment) {
+      if (attachment?.uri) {
+        // 1) Compress -> blob. This is the shareable artifact.
+        try {
+          mediaRef = await uploadMedia(
+            {
+              uri: attachment.uri,
+              name: attachment.name,
+              mimeType: mimeTypeForName(attachment.name, attachment.mimeType),
+              size: attachment.size,
+            },
+            { sender: 'mars-user', sessionId }
+          );
+          if (messageId) {
+            useChatSessionStore.getState().attachMediaToMessage(messageId, mediaRef);
+          }
+          outgoing = text
+            ? `${text}\n\n[Attached media: ${mediaRef.name} — ${mediaDownloadUrl(mediaRef)}]`
+            : `[Attached media: ${mediaRef.name} — ${mediaDownloadUrl(mediaRef)}]`;
+        } catch (error) {
+          const detail = error instanceof Error ? error.message : 'media upload failed';
+          reportedError = true;
+          useChatSessionStore
+            .getState()
+            .addAiMessage(sessionId, `Couldn't upload "${attachment.name}" to media storage: ${detail}`, timestamp(), {
+              viaFallback: true,
+            });
+        }
+
+        // 2) Best-effort original to the paired desktop for agent inspection.
         const { path, error } = await deliverAttachment(attachment);
         if (path) {
           attachmentPaths.push(path);
-          outgoing = text
-            ? `${text}\n\n[Attached file delivered to this desktop at: ${path}]`
-            : `[Attached file delivered to this desktop at: ${path}]`;
-        } else {
+          outgoing += `\n\n[Original file delivered to this desktop at: ${path}]`;
+        } else if (!mediaRef && !reportedError) {
+          // No blob and no desktop path: nothing can be shared, so stop here.
           useChatSessionStore
             .getState()
             .addAiMessage(
@@ -279,8 +328,9 @@ export function useRelayConnection() {
               timestamp(),
               { viaFallback: true }
             );
-          if (!text) return;
         }
+        // Nothing was stored anywhere and the user typed nothing: no message to send.
+        if (!mediaRef && !text) return;
       }
 
       // Build device context so the desktop AI knows about available devices
@@ -310,9 +360,11 @@ export function useRelayConnection() {
           const reply = await runAgentChat(desktop.connection, outgoing + deviceContext, sessionId, attachmentPaths);
           const at = timestamp();
           const replyText = reply.text || 'Done.';
+          const agentMedia = mediaFromToolCalls(reply.toolCalls) ?? mediaRef;
           useChatSessionStore.getState().addAiMessage(sessionId, replyText, at, {
             toolCalls: reply.toolCalls,
             transfers: transfersFromToolCalls(reply.toolCalls),
+            ...(agentMedia ? { media: agentMedia } : {}),
             ...(reply.providerLabel ? { providerLabel: reply.providerLabel } : {}),
           });
           useChatStore.getState().appendChatResponse(sessionId, replyText, at);
@@ -335,15 +387,17 @@ export function useRelayConnection() {
             sessionId,
             text: outgoing,
             ...(attachmentPaths.length > 0 ? { attachments: attachmentPaths } : {}),
+            ...(mediaRef ? { media: mediaRef } : {}),
           }) ?? false;
         if (sent) return; // response arrives async via the onMessage handler above
       }
 
       try {
         const reply = await sendFallbackMessage(outgoing, buildAppChatContext());
-        useChatSessionStore
-          .getState()
-          .addAiMessage(sessionId, reply, timestamp(), { viaFallback: true });
+        useChatSessionStore.getState().addAiMessage(sessionId, reply, timestamp(), {
+          viaFallback: true,
+          ...(mediaRef ? { media: mediaRef } : {}),
+        });
       } catch (error) {
         const message =
           error instanceof Error && error.message
