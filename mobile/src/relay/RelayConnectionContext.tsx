@@ -5,7 +5,12 @@ import { ChatAttachment } from '../types/chatMessage';
 
 interface RelayConnectionApi {
   send: (message: OutboundMessage) => boolean;
-  sendChatMessage: (sessionId: string, text: string, attachment?: ChatAttachment) => Promise<void>;
+  sendChatMessage: (
+    sessionId: string,
+    text: string,
+    attachment?: ChatAttachment,
+    messageId?: string
+  ) => Promise<void>;
 }
 
 const RelayConnectionContext = createContext<RelayConnectionApi | null>(null);
