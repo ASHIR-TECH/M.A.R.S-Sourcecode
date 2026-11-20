@@ -223,6 +223,8 @@ Owns the QUIC endpoint, transfer queue (`queue.rs`), file receiver (`receiver.rs
 - aiosqlite persistence. Config example: `config/`; guide: `docs/guides/mcp-integration.md`, `docs/guides/agent-setup.md`.
 - **Mobile frontend can call this REST API directly** — prefer this over unix-socket bridging on device.
 
+**Media attachments (MARS + ADTP):** media is never sent as bytes over ADTP or the MARS relay. Both sides compress it, upload directly to the private Upstash Blob bucket `Mars` via the MARS relay's `/api/media/*` API (see `docs/MEDIA_PIPELINE.md`), and put only a JSON `MediaRef` in `chat_message`, `chat_response`, tool-result JSON or `device_message`. The recipient renders a thumbnail and a download link. ADTP authenticates server-to-server with `ADTP_MEDIA_TOKEN`; add the `media` field to the agent response payload so AI-originated media reaches the phone.
+
 ---
 
 ## 10. MCP Server (`packages/adtp-mcp` + `crates/adtp-mcp`, Python)
