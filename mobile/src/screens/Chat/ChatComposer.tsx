@@ -1,7 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TextInput, Pressable, Platform, Image } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -23,7 +25,12 @@ const PLACEHOLDER = 'Ask Co-Pilot about node statuses';
 const FOCUS_MS = 180;
 
 interface ChatComposerProps {
-  sendChatMessage: (sessionId: string, text: string, attachment?: ChatAttachment) => Promise<void>;
+  sendChatMessage: (
+    sessionId: string,
+    text: string,
+    attachment?: ChatAttachment,
+    messageId?: string
+  ) => Promise<void>;
 }
 
 /**
@@ -74,14 +81,38 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
     markSent(message.id);
 
     // Routing (relay vs. quick-response fallback) is decided inside the hook,
-    // never here — PHASE_12 NFR-2. The attachment's bytes are handed to the
-    // desktop inside that hook (REST upload) so the AI can act on the file.
-    void sendChatMessage(SESSION_ID, message.text, attachment ?? undefined);
+    // never here — PHASE_12 NFR-2. The hook compresses, uploads to Upstash Blob
+    // and replaces the local URI on this optimistic message with the MediaRef.
+    void sendChatMessage(SESSION_ID, message.text, attachment ?? undefined, message.id);
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setDraft('');
     setAttachment(null);
   }, [draft, attachment, addUserMessage, markSent, sendChatMessage]);
+
+  // Image attach: gallery photos get real on-device compression + a thumbnail.
+  const handlePickImage = useCallback(async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 1,
+        allowsEditing: false,
+      });
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        if (asset) {
+          setAttachment({
+            name: asset.fileName || `photo-${Date.now()}.jpg`,
+            mimeType: asset.mimeType || 'image/jpeg',
+            size: asset.fileSize ?? undefined,
+            uri: asset.uri,
+          });
+        }
+      }
+    } catch {
+      // picker dismiss/cancel needs no handling
+    }
+  }, []);
 
   // File attach: pick a document from local storage and surface it as a chip.
   const handleAttach = useCallback(async () => {
@@ -141,13 +172,18 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
         </View>
         <View style={styles.actions}>
           {(focused || draft.trim().length > 0) && (
-            <Pressable onPress={handleAttach} style={styles.attachButton} accessibilityLabel="Attach file">
-              <Image
-                source={require('../../../assets/images/icon-link.png')}
-                style={styles.attachIcon}
-                resizeMode="contain"
-              />
-            </Pressable>
+            <>
+              <Pressable onPress={handlePickImage} style={styles.attachButton} accessibilityLabel="Attach photo">
+                <Ionicons name="image-outline" size={20} color="#E8A34D" />
+              </Pressable>
+              <Pressable onPress={handleAttach} style={styles.attachButton} accessibilityLabel="Attach file">
+                <Image
+                  source={require('../../../assets/images/icon-link.png')}
+                  style={styles.attachIcon}
+                  resizeMode="contain"
+                />
+              </Pressable>
+            </>
           )}
           <Pressable onPress={handleSend} style={styles.sendButton} accessibilityLabel="Send message">
             <Text style={styles.sendIcon}>{'➤'}</Text>
