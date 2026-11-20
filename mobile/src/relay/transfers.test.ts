@@ -1,4 +1,39 @@
-import { transfersFromToolCalls } from './transfers';
+import { transfersFromToolCalls, mediaFromToolCalls } from './transfers';
+
+describe('mediaFromToolCalls', () => {
+  it('extracts a blob MediaRef from a completed ADTP tool result', () => {
+    const media = mediaFromToolCalls([
+      {
+        id: 'call-media',
+        name: 'generate_image',
+        status: 'completed',
+        result: JSON.stringify({
+          media: {
+            id: 'uuid-1',
+            serviceUrl: 'https://relay.example',
+            name: 'render.png',
+            mimeType: 'image/png',
+            size: 1000,
+            compressedSize: 400,
+            compressed: true,
+            hasThumbnail: true,
+            createdAt: '2026-11-20T00:00:00.000Z',
+          },
+        }),
+      },
+    ]);
+
+    expect(media).toMatchObject({ id: 'uuid-1', name: 'render.png', hasThumbnail: true });
+  });
+
+  it('ignores failed calls and non-media results', () => {
+    expect(
+      mediaFromToolCalls([
+        { id: 'c', name: 'generate_image', status: 'failed', result: JSON.stringify({ id: 'x', name: 'y' }) },
+      ])
+    ).toBeUndefined();
+  });
+});
 
 describe('transfersFromToolCalls', () => {
   it('renders a completed send_file as an outgoing tile', () => {
