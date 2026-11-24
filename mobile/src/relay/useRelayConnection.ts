@@ -26,7 +26,13 @@ import { useInboxStore } from '../store/useInboxStore';
 import { ChatAttachment } from '../types/chatMessage';
 import { OutboundMessage, ChatSendResult } from './types';
 import { transfersFromToolCalls, mediaFromToolCalls } from './transfers';
-import { uploadMedia, uploadMediaViaGateway, normalizeMediaRef, mediaDownloadUrl } from '../media';
+import {
+  uploadMedia,
+  uploadMediaViaGateway,
+  normalizeMediaRef,
+  mediaDownloadUrl,
+  mediaThroughDesktop,
+} from '../media';
 import type { MediaRef } from '../media/types';
 import { notifyTransfer } from '../notifications/transferNotifications';
 
@@ -64,18 +70,24 @@ export function useRelayConnection() {
     seenDeviceMessages.current.add(message.id);
 
     const timestamp = message.createdAt || new Date().toISOString();
+    // ADTP reports media through its loopback gateway URL; serve it from the
+    // paired desktop route the phone actually has.
+    const media = mediaThroughDesktop(
+      message.media,
+      useDesktopStore.getState().connection?.baseUrl
+    );
     useChatSessionStore.getState().addIncomingMessage(CHAT_SESSION_ID, message.text, timestamp, {
       providerLabel: 'Desktop',
-      ...(message.media ? { media: message.media } : {}),
+      ...(media ? { media } : {}),
     });
     useChatStore.getState().appendChatResponse(CHAT_SESSION_ID, message.text, timestamp);
 
     // A media transfer is the one desktop push worth surfacing outside the app.
     // Skip backlog replayed on launch so opening the app doesn't fire a burst.
-    if (message.media) {
+    if (media) {
       const age = Date.now() - new Date(timestamp).getTime();
       if (Number.isFinite(age) && age < 120_000) {
-        void notifyTransfer(message.media, message.text);
+        void notifyTransfer(media, message.text);
       }
     }
 
@@ -110,7 +122,10 @@ export function useRelayConnection() {
           // display data (PHASE_12 NFR-1) — never branched on.
           appendChatResponse(message.sessionId, message.text, message.timestamp);
           const toolCalls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
-          const incomingMedia = normalizeMediaRef(message.media);
+          const incomingMedia = mediaThroughDesktop(
+            normalizeMediaRef(message.media),
+            useDesktopStore.getState().connection?.baseUrl
+          );
           // AI/ADTP-originated media is a transfer worth a system notification;
           // the phone's own upload is echoed back with sender "mars-user".
           if (incomingMedia && incomingMedia.sender !== 'mars-user') {
@@ -131,7 +146,10 @@ export function useRelayConnection() {
           break;
         }
         case 'device_message': {
-          const pushedMedia = normalizeMediaRef(message.message.media);
+          const pushedMedia = mediaThroughDesktop(
+            normalizeMediaRef(message.message.media),
+            useDesktopStore.getState().connection?.baseUrl
+          );
           void deliverDeviceMessage({
             id: message.message.id,
             deviceId: message.message.device_id,
@@ -399,7 +417,10 @@ export function useRelayConnection() {
           const reply = await runAgentChat(desktop.connection, outgoing + deviceContext, sessionId, attachmentPaths);
           const at = timestamp();
           const replyText = reply.text || 'Done.';
-          const agentMedia = reply.media ?? mediaFromToolCalls(reply.toolCalls) ?? mediaRef;
+          const agentMedia = mediaThroughDesktop(
+            reply.media ?? mediaFromToolCalls(reply.toolCalls) ?? mediaRef,
+            desktop.connection?.baseUrl
+          );
           useChatSessionStore.getState().addAiMessage(sessionId, replyText, at, {
             toolCalls: reply.toolCalls,
             transfers: transfersFromToolCalls(reply.toolCalls),
