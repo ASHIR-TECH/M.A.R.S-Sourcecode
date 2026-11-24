@@ -3,6 +3,7 @@ import {
   mediaOriginalUrl,
   mediaThumbnailUrl,
   normalizeMediaRef,
+  mediaThroughDesktop,
 } from './urls';
 import type { MediaRef } from './types';
 
@@ -51,5 +52,20 @@ describe('normalizeMediaRef', () => {
     const normalized = normalizeMediaRef({ id: 'x', name: 'f' });
     expect(normalized?.serviceUrl).toBe('https://fallback.example');
     process.env.EXPO_PUBLIC_BACKEND_URL = previous;
+  });
+});
+
+describe('mediaThroughDesktop', () => {
+  it('rewrites ADTP loopback services to the paired desktop route', () => {
+    const fromDesktop = { ...ref, serviceUrl: 'http://127.0.0.1:40003' };
+    expect(mediaThroughDesktop(fromDesktop, 'http://192.168.1.9:40003/')?.serviceUrl).toBe(
+      'http://192.168.1.9:40003'
+    );
+  });
+
+  it('leaves relay URLs untouched', () => {
+    expect(mediaThroughDesktop(ref, 'http://192.168.1.9:40003')?.serviceUrl).toBe(
+      'https://relay.example/'
+    );
   });
 });
