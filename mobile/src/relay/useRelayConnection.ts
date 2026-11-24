@@ -24,10 +24,11 @@ import { useDesktopStore } from '../store/useDesktopStore';
 import { useDesktopSystemStore } from '../store/useDesktopSystemStore';
 import { useInboxStore } from '../store/useInboxStore';
 import { ChatAttachment } from '../types/chatMessage';
-import { OutboundMessage } from './types';
+import { OutboundMessage, ChatSendResult } from './types';
 import { transfersFromToolCalls, mediaFromToolCalls } from './transfers';
-import { uploadMedia, normalizeMediaRef, mediaDownloadUrl } from '../media';
+import { uploadMedia, uploadMediaViaGateway, normalizeMediaRef, mediaDownloadUrl } from '../media';
 import type { MediaRef } from '../media/types';
+import { notifyTransfer } from '../notifications/transferNotifications';
 
 const SYSTEM_POLL_MS = 20000;
 /** Single-threaded v1 chat; matches ChatComposer's SESSION_ID. */
@@ -69,6 +70,15 @@ export function useRelayConnection() {
     });
     useChatStore.getState().appendChatResponse(CHAT_SESSION_ID, message.text, timestamp);
 
+    // A media transfer is the one desktop push worth surfacing outside the app.
+    // Skip backlog replayed on launch so opening the app doesn't fire a burst.
+    if (message.media) {
+      const age = Date.now() - new Date(timestamp).getTime();
+      if (Number.isFinite(age) && age < 120_000) {
+        void notifyTransfer(message.media, message.text);
+      }
+    }
+
     const desktop = useDesktopStore.getState();
     if (desktop.connection) {
       void markMessageDelivered(desktop.connection, message.id).catch(() => {});
@@ -101,6 +111,11 @@ export function useRelayConnection() {
           appendChatResponse(message.sessionId, message.text, message.timestamp);
           const toolCalls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
           const incomingMedia = normalizeMediaRef(message.media);
+          // AI/ADTP-originated media is a transfer worth a system notification;
+          // the phone's own upload is echoed back with sender "mars-user".
+          if (incomingMedia && incomingMedia.sender !== 'mars-user') {
+            void notifyTransfer(incomingMedia, message.text);
+          }
           useChatSessionStore.getState().addAiMessage(
             message.sessionId,
             message.text,
@@ -278,25 +293,41 @@ export function useRelayConnection() {
       text: string,
       attachment?: ChatAttachment,
       messageId?: string
-    ): Promise<void> => {
+    ): Promise<ChatSendResult> => {
       const timestamp = () => new Date().toISOString();
+      const desktop = useDesktopStore.getState();
       let outgoing = text;
       const attachmentPaths: string[] = [];
       let mediaRef: MediaRef | undefined;
+      let mediaUploaded = false;
+      let mediaError: string | undefined;
       let reportedError = false;
 
       if (attachment?.uri) {
         // 1) Compress -> blob. This is the shareable artifact.
+        const source = {
+          uri: attachment.uri,
+          name: attachment.name,
+          mimeType: mimeTypeForName(attachment.name, attachment.mimeType),
+          size: attachment.size,
+        };
+        const meta = { sender: 'mars-user', sessionId };
         try {
-          mediaRef = await uploadMedia(
-            {
-              uri: attachment.uri,
-              name: attachment.name,
-              mimeType: mimeTypeForName(attachment.name, attachment.mimeType),
-              size: attachment.size,
-            },
-            { sender: 'mars-user', sessionId }
-          );
+          // Primary: the paired desktop's gateway. The phone already has a
+          // working route to it, and the gateway proxies to the relay
+          // server-to-server, so no public relay URL is needed on the phone.
+          if (desktop.connection && desktop.isConfigured()) {
+            try {
+              mediaRef = await uploadMediaViaGateway(desktop.connection, source, meta);
+            } catch {
+              // Older desktop builds have no media endpoint; fall back to the
+              // relay directly (needs EXPO_PUBLIC_BACKEND_URL to be reachable).
+              mediaRef = await uploadMedia(source, meta);
+            }
+          } else {
+            mediaRef = await uploadMedia(source, meta);
+          }
+          mediaUploaded = true;
           if (messageId) {
             useChatSessionStore.getState().attachMediaToMessage(messageId, mediaRef);
           }
@@ -304,11 +335,11 @@ export function useRelayConnection() {
             ? `${text}\n\n[Attached media: ${mediaRef.name} — ${mediaDownloadUrl(mediaRef)}]`
             : `[Attached media: ${mediaRef.name} — ${mediaDownloadUrl(mediaRef)}]`;
         } catch (error) {
-          const detail = error instanceof Error ? error.message : 'media upload failed';
+          mediaError = error instanceof Error ? error.message : 'media upload failed';
           reportedError = true;
           useChatSessionStore
             .getState()
-            .addAiMessage(sessionId, `Couldn't upload "${attachment.name}" to media storage: ${detail}`, timestamp(), {
+            .addAiMessage(sessionId, `Couldn't upload "${attachment.name}" to media storage: ${mediaError}`, timestamp(), {
               viaFallback: true,
             });
         }
@@ -330,7 +361,7 @@ export function useRelayConnection() {
             );
         }
         // Nothing was stored anywhere and the user typed nothing: no message to send.
-        if (!mediaRef && !text) return;
+        if (!mediaRef && !text) return { mediaUploaded, error: mediaError };
       }
 
       // Build device context so the desktop AI knows about available devices
@@ -354,7 +385,6 @@ export function useRelayConnection() {
 
       // Preferred path: the desktop's embedded agent over REST (PHASE_14). It owns
       // the tool loop, so this is what can actually command other devices.
-      const desktop = useDesktopStore.getState();
       if (desktop.connection && desktop.isConfigured()) {
         try {
           const reply = await runAgentChat(desktop.connection, outgoing + deviceContext, sessionId, attachmentPaths);
@@ -368,7 +398,7 @@ export function useRelayConnection() {
             ...(reply.providerLabel ? { providerLabel: reply.providerLabel } : {}),
           });
           useChatStore.getState().appendChatResponse(sessionId, replyText, at);
-          return;
+          return { mediaUploaded, error: mediaError };
         } catch (error) {
           // A rejected token is terminal — drop it so the setup UI can re-prompt.
           if (error instanceof ApiError && error.kind === 'auth') {
@@ -389,7 +419,7 @@ export function useRelayConnection() {
             ...(attachmentPaths.length > 0 ? { attachments: attachmentPaths } : {}),
             ...(mediaRef ? { media: mediaRef } : {}),
           }) ?? false;
-        if (sent) return; // response arrives async via the onMessage handler above
+        if (sent) return { mediaUploaded, error: mediaError }; // response arrives async via the onMessage handler above
       }
 
       try {
@@ -407,6 +437,8 @@ export function useRelayConnection() {
           .getState()
           .addAiMessage(sessionId, message, timestamp(), { viaFallback: true });
       }
+
+      return { mediaUploaded, error: mediaError };
     },
     [deliverAttachment]
   );
