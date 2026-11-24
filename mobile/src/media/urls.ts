@@ -59,6 +59,31 @@ function fileUrl(media: MediaRef, kind: 'original' | 'thumbnail', download: bool
   return `${base}/api/media/file/${encodeURIComponent(media.id)}?${params.toString()}`;
 }
 
+/**
+ * ADTP's gateway uploads use its own loopback API URL by default, so a
+ * MediaRef created on the desktop can name `127.0.0.1:40003` as its service.
+ * The phone cannot reach that — rewrite it to the paired desktop base URL it
+ * already uses for chat and uploads. Non-loopback URLs are left alone.
+ */
+export function mediaThroughDesktop(
+  media: MediaRef | null | undefined,
+  desktopBaseUrl?: string | null
+): MediaRef | null {
+  if (!media || !desktopBaseUrl) return media ?? null;
+  try {
+    const url = new URL(media.serviceUrl);
+    const loopback =
+      url.hostname === '127.0.0.1' ||
+      url.hostname === 'localhost' ||
+      url.hostname === '[::1]' ||
+      url.hostname === '::1';
+    if (!loopback) return media;
+    return { ...media, serviceUrl: desktopBaseUrl.replace(/\/+$/, '') };
+  } catch {
+    return media;
+  }
+}
+
 /** Stable URL (refreshes the 10-minute signed link on every request). */
 export function mediaOriginalUrl(media: MediaRef): string {
   return fileUrl(media, 'original', false);
