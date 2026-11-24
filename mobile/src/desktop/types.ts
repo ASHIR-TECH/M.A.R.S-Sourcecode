@@ -1,3 +1,5 @@
+import type { MediaRef } from '../media/types';
+
 export interface DesktopConnection {
   /** Base URL of the desktop peer's Phase 4 REST API, e.g. https://10.0.2.2:40003 */
   baseUrl: string;
@@ -27,6 +29,8 @@ export interface AgentMessageState {
   text: string;
   toolCalls: AgentToolCall[];
   providerLabel?: string;
+  /** Blob media the desktop attached to this reply (AI-sent image/file). */
+  media?: MediaRef;
 }
 
 export interface AgentStatus {
