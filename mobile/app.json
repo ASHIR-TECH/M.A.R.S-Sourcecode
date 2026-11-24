@@ -69,6 +69,18 @@
       "expo-video",
       "expo-apple-authentication",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mars needs photo access so you can send pictures to your paired desktop."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#E8A34D"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
