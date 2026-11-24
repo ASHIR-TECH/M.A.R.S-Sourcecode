@@ -185,15 +185,18 @@ export async function listMessages(conn: DesktopConnection): Promise<DeviceMessa
     .map((entry): DeviceMessage | null => {
       const r = asRecord(entry);
       const id = str(r.id);
-      const text = str(r.text);
-      if (!id || !text) return null;
+      // A media-only push has no caption: don't drop it. The chat bubble
+      // renders MediaCard even when text is empty.
+      const media = normalizeMediaRef(r.media) ?? undefined;
+      const text = str(r.text) ?? '';
+      if (!id || (!text && !media)) return null;
       return {
         id,
         deviceId: str(r.device_id) ?? deviceId,
         text,
         createdAt: str(r.created_at) ?? new Date().toISOString(),
         deliveredAt: typeof r.delivered_at === 'string' ? r.delivered_at : null,
-        ...(normalizeMediaRef(r.media) ? { media: normalizeMediaRef(r.media)! } : {}),
+        ...(media ? { media } : {}),
       };
     })
     .filter((message): message is DeviceMessage => message !== null);
