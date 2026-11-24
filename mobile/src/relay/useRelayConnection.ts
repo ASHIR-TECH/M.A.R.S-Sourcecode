@@ -210,12 +210,17 @@ export function useRelayConnection() {
           status: 'online',
           lastSeen: 'Just Now',
           cpu: info.cpuPercent !== undefined ? Math.round(info.cpuPercent) : undefined,
+          cpuCount: info.cpuCount !== undefined ? Math.round(info.cpuCount) : undefined,
+          arch: info.arch,
           ram: info.ramPercent !== undefined ? Math.round(info.ramPercent) : undefined,
+          ramTotalBytes: info.ramTotalBytes,
+          ramUsedBytes: info.ramUsedBytes,
           batteryPercent:
             info.batteryPresent !== false && info.batteryPercent !== undefined
               ? Math.round(info.batteryPercent)
               : undefined,
           batteryCharging: info.batteryCharging,
+          batterySecondsRemaining: info.batterySecondsRemaining,
         });
       } catch {
         // Leave the last snapshot in place; the relay/status banner already
@@ -370,7 +375,11 @@ export function useRelayConnection() {
       const deviceList = devices
         .map((d) => {
           const metrics = d as Partial<import('../types/device').DeviceWithMetrics>;
-          const parts = [d.name, `id=${d.id}`, `status=${d.status}`];
+          const parts = [
+            `name="${d.name}"`,
+            `id=${d.id}`,
+            `status=${d.status}`,
+          ];
           if (metrics.cpu !== undefined) parts.push(`cpu=${metrics.cpu}%`);
           if (metrics.ram !== undefined) parts.push(`ram=${metrics.ram}%`);
           if (metrics.batteryPercent !== undefined)
@@ -380,7 +389,7 @@ export function useRelayConnection() {
         .join('\n  - ');
 
       const deviceContext = devices.length > 0
-        ? `\n\n[Connected devices:\n  - ${deviceList}\n]`
+        ? `\n\n[Connected devices:\n  - ${deviceList}\nUse either the name or the id as device_id when calling send_message_to_device, send_file_to_device, send_media_to_device or forward_media_to_device.]`
         : '';
 
       // Preferred path: the desktop's embedded agent over REST (PHASE_14). It owns
@@ -390,7 +399,7 @@ export function useRelayConnection() {
           const reply = await runAgentChat(desktop.connection, outgoing + deviceContext, sessionId, attachmentPaths);
           const at = timestamp();
           const replyText = reply.text || 'Done.';
-          const agentMedia = mediaFromToolCalls(reply.toolCalls) ?? mediaRef;
+          const agentMedia = reply.media ?? mediaFromToolCalls(reply.toolCalls) ?? mediaRef;
           useChatSessionStore.getState().addAiMessage(sessionId, replyText, at, {
             toolCalls: reply.toolCalls,
             transfers: transfersFromToolCalls(reply.toolCalls),
