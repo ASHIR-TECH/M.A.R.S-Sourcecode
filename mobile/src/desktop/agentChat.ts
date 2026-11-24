@@ -6,6 +6,8 @@ export interface AgentReply {
   text: string;
   toolCalls: AgentToolCall[];
   providerLabel?: string;
+  /** Media the desktop attached to the reply (AI-generated or forwarded). */
+  media?: import('../media/types').MediaRef;
 }
 
 const POLL_INTERVAL_MS = 1000;
@@ -40,7 +42,12 @@ export async function runAgentChat(
       if (!state.text && state.toolCalls.length === 0) {
         throw new ApiError('server', 'The desktop returned an empty response.');
       }
-      return { text: state.text, toolCalls: state.toolCalls, providerLabel: state.providerLabel };
+      return {
+        text: state.text,
+        toolCalls: state.toolCalls,
+        providerLabel: state.providerLabel,
+        media: state.media,
+      };
     }
 
     if (state.status === 'failed') {
