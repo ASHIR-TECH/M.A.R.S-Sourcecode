@@ -25,6 +25,14 @@ export type OutboundMessage =
   | { type: 'ping' }
   | { type: 'pong' };
 
+/** Outcome of a chat send, so the composer can finish/fail its upload card. */
+export interface ChatSendResult {
+  /** true when an attached file was compressed and stored in the blob. */
+  mediaUploaded?: boolean;
+  /** Human-readable reason when the attachment could not be stored. */
+  error?: string;
+}
+
 export interface InboundStateUpdate {
   type: 'state_update';
   devices: Device[];
