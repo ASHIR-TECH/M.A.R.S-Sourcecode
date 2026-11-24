@@ -20,6 +20,13 @@ export interface DeviceWithMetrics extends Device {
   /** Portable-device battery state, omitted for desktops without a battery. */
   batteryPercent?: number;
   batteryCharging?: boolean;
+  /** Seconds until empty while discharging, or until full while charging. */
+  batterySecondsRemaining?: number;
+  /** Processor details reported by the desktop's system endpoint. */
+  cpuCount?: number;
+  arch?: string;
+  ramTotalBytes?: number;
+  ramUsedBytes?: number;
   /**
    * True once the user renames this device. Telemetry/hostname refreshes must
    * never clobber a name the user chose.
