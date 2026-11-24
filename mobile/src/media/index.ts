@@ -9,6 +9,7 @@ export {
   mediaThumbnailUrl,
   mediaDownloadUrl,
   normalizeMediaRef,
+  mediaThroughDesktop,
 } from './urls';
 export { uploadMedia } from './blobClient';
 export { uploadMediaViaGateway } from './gatewayUpload';
