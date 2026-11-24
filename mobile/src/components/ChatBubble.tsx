@@ -8,6 +8,7 @@ import { ProviderBadge } from './ProviderBadge';
 import { CopyMessageButton } from './CopyMessageButton';
 import { ToolCallStep } from './ToolCallStep';
 import { TransferFileTile } from './TransferFileTile';
+import { MediaCard } from './MediaCard';
 import { MarkdownText } from './MarkdownText';
 import { MarsLogo } from './icons/MarsLogo';
 import { colors } from '../theme/colors';
@@ -38,6 +39,8 @@ function ChatBubbleBase({ message }: { message: ChatMessage }) {
         {message.attachment && (
           <AttachmentCard attachment={message.attachment} size="bubble" />
         )}
+        {/* Media produced by the AI on MARS or pushed by ADTP (no attachment). */}
+        {message.media && <MediaCard media={message.media} />}
         {message.text.length > 0 &&
           (!isUser && message.typing ? (
             <TypeWriterText text={message.text} style={[styles.text, styles.textAi]} />

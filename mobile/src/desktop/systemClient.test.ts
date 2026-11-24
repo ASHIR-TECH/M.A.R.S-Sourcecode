@@ -31,6 +31,24 @@ describe('normalizeSystemInfo', () => {
     expect(info).toMatchObject({ batteryPresent: true, batteryPercent: 87.5, batteryCharging: true });
   });
 
+  it('maps processor and memory details for the Device Hub', () => {
+    const info = normalizeSystemInfo({
+      arch: 'x86_64',
+      cpu_count: 8,
+      ram_total: 17179869184,
+      ram_used: 8589934592,
+      battery: { present: true, percent: 87.5, charging: false, seconds_remaining: 3600 },
+    });
+    expect(info).toMatchObject({
+      arch: 'x86_64',
+      cpuCount: 8,
+      ramTotalBytes: 17179869184,
+      ramUsedBytes: 8589934592,
+      batteryCharging: false,
+      batterySecondsRemaining: 3600,
+    });
+  });
+
   it('leaves absent metrics undefined rather than zero', () => {
     const info = normalizeSystemInfo({ hostname: 'X' });
     expect(info.hostname).toBe('X');

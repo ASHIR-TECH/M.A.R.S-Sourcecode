@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { ChatAttachment } from '../types/chatMessage';
+import { MediaCard } from './MediaCard';
 import { fonts } from '../theme/typography';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -35,6 +36,10 @@ export function AttachmentCard({ attachment, size, onRemove }: AttachmentCardPro
   const sizeLabel = formatSize(attachment.size);
 
   if (size === 'bubble') {
+    // Once uploaded, the blob reference replaces the local URI: recipients see
+    // a thumbnail + download link instead of a dead file:// path.
+    if (attachment.media) return <MediaCard media={attachment.media} />;
+
     return (
       <View style={styles.bubbleCard}>
         <Text style={styles.linkIcon}>{'🔗'}</Text>

@@ -26,7 +26,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(215, 128, 30, 0.7)',
     width: '100%',
-    minHeight: 120,
+    // Match DeviceCard exactly so a placeholder and a real device occupy the
+    // same square.
+    aspectRatio: 1,
     padding: spacing.md,
     justifyContent: 'center',
     overflow: 'hidden',

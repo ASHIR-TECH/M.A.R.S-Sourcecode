@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+node_modules/
 
 # Self-hosted OTA server secrets/assets
 infra/updates-server/certs/*.pem
@@ -11,3 +12,6 @@ infra/updates-server/updates/
 
 # Supabase CLI local state (checks for newer releases)
 supabase/.temp/
+
+# Relay media index (object ids + owners; regenerated from the bucket on demand)
+mobile/relay/.data/

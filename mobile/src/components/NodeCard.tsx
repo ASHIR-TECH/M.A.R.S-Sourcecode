@@ -25,6 +25,19 @@ function nameFontSize(name: string): number {
   return 12;
 }
 
+/** Human-readable RAM, e.g. "6.2 / 16 GB". */
+function formatMemory(total?: number, used?: number): string {
+  if (!total || total <= 0) return '';
+  const gb = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 0 : 1)} GB`;
+  return used !== undefined && used > 0 ? `${gb(used)} / ${gb(total)}` : gb(total);
+}
+
+/** Explicit battery state, so "not charging" isn't silently blank. */
+function batteryStateLabel(charging?: boolean): string | undefined {
+  if (charging === undefined) return undefined;
+  return charging ? 'Charging' : 'On battery';
+}
+
 /** Rectangular glass card showing name, os, status, cpu, ram, battery.
  * The per-device "+" opens a detail sheet with live metrics plus Edit and
  * Remove (delete that ONE device only, followed by a haptic). */
@@ -34,6 +47,44 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
   const nameFont = nameFontSize(name);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+
+  // Device Hub is the "everything" view: processor, memory and battery detail
+  // live here while the Home grid stays a name-only launcher.
+  const specLine = [
+    node.cpuCount !== undefined ? `${node.cpuCount} cores` : undefined,
+    node.arch || undefined,
+    batteryStateLabel(node.batteryCharging),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const details: { label: string; value: string }[] = [
+    { label: 'CPU LOAD', value: `${Math.round(node.cpu)}%` },
+    ...(node.cpuCount !== undefined
+      ? [{ label: 'CORES', value: String(node.cpuCount) }]
+      : []),
+    ...(node.arch ? [{ label: 'ARCH', value: node.arch }] : []),
+    { label: 'RAM', value: `${Math.round(node.ram)}%` },
+    ...(node.ramTotalBytes
+      ? [
+          {
+            label: 'MEMORY',
+            value: formatMemory(node.ramTotalBytes, node.ramUsedBytes),
+          },
+        ]
+      : []),
+    ...(node.batteryPercent !== undefined
+      ? [{ label: 'BATTERY', value: `${Math.round(node.batteryPercent)}%` }]
+      : []),
+    ...(batteryStateLabel(node.batteryCharging)
+      ? [
+          {
+            label: 'CHARGE',
+            value: batteryStateLabel(node.batteryCharging) as string,
+          },
+        ]
+      : []),
+  ];
 
   const openMenu = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -66,10 +117,10 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
         <Text style={styles.os}>{node.os}</Text>
         <View style={styles.metricsRow}>
           <View style={styles.metricChip}>
-            <Text style={styles.metric}>CPU: {Math.round(node.cpu)}%</Text>
+            <Text style={styles.metric}>CPU {Math.round(node.cpu)}%</Text>
           </View>
           <View style={styles.metricChip}>
-            <Text style={styles.metric}>Ram: {Math.round(node.ram)}%</Text>
+            <Text style={styles.metric}>RAM {Math.round(node.ram)}%</Text>
           </View>
           {node.batteryPercent !== undefined && (
             <View style={styles.metricChip}>
@@ -79,6 +130,11 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
             </View>
           )}
         </View>
+        {specLine.length > 0 && (
+          <Text style={styles.specLine} numberOfLines={1}>
+            {specLine}
+          </Text>
+        )}
         <View style={styles.bottomRow}>
           <Text style={styles.metaLabel}>Active</Text>
           <Text style={styles.metaValue}>{node.lastSeen}</Text>
@@ -115,22 +171,12 @@ function NodeCardBase({ node, onEdit, onRemove }: NodeCardProps) {
               </View>
 
               <View style={styles.sheetMetrics}>
-                <View style={styles.sheetMetric}>
-                  <Text style={styles.sheetMetricLabel}>CPU</Text>
-                  <Text style={styles.sheetMetricValue}>{Math.round(node.cpu)}%</Text>
-                </View>
-                <View style={styles.sheetMetric}>
-                  <Text style={styles.sheetMetricLabel}>RAM</Text>
-                  <Text style={styles.sheetMetricValue}>{Math.round(node.ram)}%</Text>
-                </View>
-                {node.batteryPercent !== undefined && (
-                  <View style={styles.sheetMetric}>
-                    <Text style={styles.sheetMetricLabel}>BATTERY</Text>
-                    <Text style={styles.sheetMetricValue}>
-                      {Math.round(node.batteryPercent)}%{node.batteryCharging ? ' ⚡' : ''}
-                    </Text>
+                {details.map((detail) => (
+                  <View key={detail.label} style={styles.sheetMetric}>
+                    <Text style={styles.sheetMetricLabel}>{detail.label}</Text>
+                    <Text style={styles.sheetMetricValue}>{detail.value}</Text>
                   </View>
-                )}
+                ))}
               </View>
 
               <Text style={styles.sheetSeen}>Last seen {node.lastSeen}</Text>
@@ -216,6 +262,12 @@ const styles = StyleSheet.create({
   },
   metric: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
   battery: { color: '#E9DCCB', fontSize: 10, fontFamily: fonts.quantico },
+  specLine: {
+    color: '#cd7b01',
+    fontSize: 9,
+    fontFamily: fonts.quantico,
+    marginTop: 4,
+  },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -272,12 +324,16 @@ const styles = StyleSheet.create({
   sheetSubtitle: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
   sheetMetrics: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
     marginTop: spacing.md,
   },
   sheetMetric: {
-    flex: 1,
+    flexBasis: '30%',
+    flexGrow: 1,
+    minWidth: 80,
     paddingVertical: spacing.sm,
+    paddingHorizontal: 4,
     borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: StyleSheet.hairlineWidth,

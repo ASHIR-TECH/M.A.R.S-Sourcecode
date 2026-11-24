@@ -1,4 +1,6 @@
 import { AgentToolCall, TransferReference } from '../desktop/types';
+import { normalizeMediaRef } from '../media/urls';
+import type { MediaRef } from '../media/types';
 
 function basename(path: string): string {
   const cleaned = path.replace(/\\/g, '/');
@@ -33,6 +35,26 @@ function parseJsonObject(value: unknown): Record<string, unknown> | undefined {
  * `send_file_to_device` is a desktop → phone inbox transfer, so it renders as
  * incoming and keeps the device-file id needed for the chat download button.
  */
+/**
+ * ADTP can attach a blob MediaRef to a tool result (or to the reply payload).
+ * Pull it out so AI-originated media renders the same thumbnail/download card
+ * whether it arrived over the desktop REST agent or the live WebSocket relay.
+ */
+export function mediaFromToolCalls(
+  toolCalls: AgentToolCall[] | undefined
+): MediaRef | undefined {
+  if (!toolCalls) return undefined;
+  for (const tc of toolCalls) {
+    if (tc.status !== 'completed') continue;
+    const parsed = parseJsonObject(tc.result);
+    if (parsed) {
+      const fromResult = normalizeMediaRef(parsed.media ?? parsed);
+      if (fromResult) return fromResult;
+    }
+  }
+  return undefined;
+}
+
 export function transfersFromToolCalls(
   toolCalls: AgentToolCall[] | undefined
 ): TransferReference[] {

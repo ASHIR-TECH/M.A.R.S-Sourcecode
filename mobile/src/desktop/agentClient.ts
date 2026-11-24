@@ -1,5 +1,6 @@
 import { ApiError } from './errors';
 import { AgentMessageState, AgentStatus, AgentToolCall, DesktopConnection, ToolCallStatus } from './types';
+import { normalizeMediaRef } from '../media/urls';
 
 const REQUEST_TIMEOUT_MS = 15000;
 const HEALTH_TIMEOUT_MS = 8000;
@@ -172,5 +173,6 @@ export async function getAgentMessage(conn: DesktopConnection, id: string): Prom
       .map(normalizeToolCall)
       .filter((call): call is AgentToolCall => call !== null),
     providerLabel: str(data.provider) ?? str(data.provider_label),
+    media: normalizeMediaRef(data.media) ?? undefined,
   };
 }

@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { getInstallId } from '../relay/deviceId';
 import { asRecord, request, str } from './agentClient';
 import { DesktopConnection } from './types';
+import { normalizeMediaRef } from '../media/urls';
 
 const TIMEOUT_MS = 8000;
 
@@ -52,6 +53,8 @@ export interface DeviceMessage {
   text: string;
   createdAt: string;
   deliveredAt?: string | null;
+  /** Optional blob media pushed by the ADTP desktop with this message. */
+  media?: import('../media/types').MediaRef;
 }
 
 function num(value: unknown): number | undefined {
@@ -182,14 +185,18 @@ export async function listMessages(conn: DesktopConnection): Promise<DeviceMessa
     .map((entry): DeviceMessage | null => {
       const r = asRecord(entry);
       const id = str(r.id);
-      const text = str(r.text);
-      if (!id || !text) return null;
+      // A media-only push has no caption: don't drop it. The chat bubble
+      // renders MediaCard even when text is empty.
+      const media = normalizeMediaRef(r.media) ?? undefined;
+      const text = str(r.text) ?? '';
+      if (!id || (!text && !media)) return null;
       return {
         id,
         deviceId: str(r.device_id) ?? deviceId,
         text,
         createdAt: str(r.created_at) ?? new Date().toISOString(),
         deliveredAt: typeof r.delivered_at === 'string' ? r.delivered_at : null,
+        ...(media ? { media } : {}),
       };
     })
     .filter((message): message is DeviceMessage => message !== null);

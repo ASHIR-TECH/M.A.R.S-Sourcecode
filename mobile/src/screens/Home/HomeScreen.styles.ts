@@ -125,9 +125,11 @@ export const styles = StyleSheet.create({
   deviceGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    // Two tiles per row, always. `space-between` gives the gutter without a
+    // column gap that could push the second tile onto its own line on narrow
+    // screens (which made a lone, stretched-looking card).
+    justifyContent: 'space-between',
     rowGap: 12,
-    columnGap: 12,
   },
   deviceGridItem: {
     flexBasis: '48%',

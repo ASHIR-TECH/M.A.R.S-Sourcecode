@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { ChatAttachment, ChatMessage } from '../types/chatMessage';
 import { AgentToolCall, TransferReference } from '../desktop/types';
+import type { MediaRef } from '../media/types';
 
 interface AiMessageMeta {
   providerLabel?: string;
   viaFallback?: boolean;
   toolCalls?: AgentToolCall[];
   transfers?: TransferReference[];
+  /** Media attached to an AI/ADTP message (blob metadata only, no bytes). */
+  media?: MediaRef;
 }
 
 // Monotonic suffix so two messages created in the same millisecond (e.g. a
@@ -22,6 +25,8 @@ interface ChatSessionState {
   isAwaitingResponse: boolean;
   addUserMessage: (text: string, sessionId: string, attachment?: ChatAttachment) => ChatMessage;
   markSent: (id: string) => void;
+  /** Replaces the local file URI on an optimistic message with its blob reference. */
+  attachMediaToMessage: (id: string, media: MediaRef) => void;
   addAiMessage: (sessionId: string, text: string, timestamp: string, meta?: AiMessageMeta) => ChatMessage;
   /**
    * Append a message that arrived from the desktop (not a reply to a prompt).
@@ -58,6 +63,22 @@ export const useChatSessionStore = create<ChatSessionState>((set, get) => ({
   markSent: (id) => {
     set({
       messages: get().messages.map((m) => (m.id === id ? { ...m, status: 'sent' } : m)),
+    });
+  },
+
+  attachMediaToMessage: (id, media) => {
+    set({
+      messages: get().messages.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              media,
+              attachment: m.attachment
+                ? { ...m.attachment, media, uri: undefined }
+                : undefined,
+            }
+          : m
+      ),
     });
   },
 

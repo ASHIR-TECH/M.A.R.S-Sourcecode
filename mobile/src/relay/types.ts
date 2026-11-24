@@ -1,5 +1,6 @@
 import { Device } from '../types/device';
 import { AgentToolCall } from '../desktop/types';
+import type { MediaRef } from '../media/types';
 
 export interface OutboundCommandMessage {
   type: 'command';
@@ -14,6 +15,8 @@ export interface OutboundChatMessage {
   text: string;
   /** Absolute desktop paths the phone uploaded with this message. */
   attachments?: string[];
+  /** Blob media metadata (compression done before upload; no bytes on the wire). */
+  media?: MediaRef;
 }
 
 export type OutboundMessage =
@@ -21,6 +24,14 @@ export type OutboundMessage =
   | OutboundChatMessage
   | { type: 'ping' }
   | { type: 'pong' };
+
+/** Outcome of a chat send, so the composer can finish/fail its upload card. */
+export interface ChatSendResult {
+  /** true when an attached file was compressed and stored in the blob. */
+  mediaUploaded?: boolean;
+  /** Human-readable reason when the attachment could not be stored. */
+  error?: string;
+}
 
 export interface InboundStateUpdate {
   type: 'state_update';
@@ -44,6 +55,8 @@ export interface InboundChatResponse {
    * tile instead of only text.
    */
   toolCalls?: AgentToolCall[];
+  /** Media produced by the AI on MARS or ADTP (blob metadata only). */
+  media?: MediaRef;
 }
 
 export interface InboundAuthAck {
@@ -64,6 +77,8 @@ export interface InboundDeviceMessage {
     text: string;
     created_at: string;
     delivered_at?: string | null;
+    /** Optional blob media pushed by the ADTP desktop. */
+    media?: MediaRef;
   };
 }
 
