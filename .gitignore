@@ -1,5 +1,3 @@
-.env
-.env.*
 !.env.example
 node_modules/
 
@@ -15,3 +13,4 @@ supabase/.temp/
 
 # Relay media index (object ids + owners; regenerated from the bucket on demand)
 mobile/relay/.data/
+config.bat
