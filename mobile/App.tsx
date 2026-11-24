@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Linking, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -9,6 +9,7 @@ import { usePairingStore } from './src/store/usePairingStore';
 import { useDesktopStore } from './src/store/useDesktopStore';
 import { disposeAiClient, initAiClient } from './src/relay/aiClient';
 import { initTransferNotifications } from './src/notifications/transferNotifications';
+import { completeOAuthFromUrl } from './src/auth/oauthSignIn';
 
 const styles = StyleSheet.create({
   root: {
@@ -30,6 +31,21 @@ export default function App() {
     // Permission prompt + Android channel for incoming media transfers.
     void initTransferNotifications();
     return () => disposeAiClient();
+  }, []);
+
+  // Cold-start OAuth: the browser callback can arrive before the Sign In screen
+  // is mounted, so no openAuthSessionAsync promise is waiting for it.
+  useEffect(() => {
+    let alive = true;
+    const handleUrl = (url: string) => {
+      if (alive) void completeOAuthFromUrl(url).catch(() => {});
+    };
+    void Linking.getInitialURL().then((url) => url && handleUrl(url)).catch(() => {});
+    const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => {
+      alive = false;
+      subscription.remove();
+    };
   }, []);
 
   const handleSplashFinished = () => {
