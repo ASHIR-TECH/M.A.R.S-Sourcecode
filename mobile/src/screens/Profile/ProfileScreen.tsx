@@ -58,7 +58,12 @@ export function ProfileScreen({ onNavigatePrivacy }: ProfileScreenProps) {
         <Text style={styles.name}>{session?.user.name ?? 'Operator'}</Text>
         <Text style={styles.email}>{session?.user.email ?? ''}</Text>
         <Text style={styles.provider}>
-          Signed in with {session?.user.provider === 'github' ? 'GitHub' : 'Google'}
+          Signed in with{' '}
+          {session?.user.provider === 'github'
+            ? 'GitHub'
+            : session?.user.provider === 'apple'
+              ? 'Apple'
+              : 'Google'}
         </Text>
       </View>
 

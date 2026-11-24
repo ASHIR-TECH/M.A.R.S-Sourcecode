@@ -26,9 +26,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(215, 128, 30, 0.7)',
     width: '100%',
-    // Match DeviceCard exactly so a placeholder and a real device occupy the
-    // same square.
-    aspectRatio: 1,
+    // Match DeviceCard's fixed height so the 2x2 grid stays a perfect rectangle.
+    height: 132,
     padding: spacing.md,
     justifyContent: 'center',
     overflow: 'hidden',
