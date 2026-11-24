@@ -13,9 +13,8 @@ interface DeviceHubScreenProps {
   onBack: () => void;
 }
 
-/** Device grid (2 per row) showing the same card info as Home — nothing more.
- * Cards aren't expandable; the edit button renames a device. The screen owns
- * its orb background so a neighboring tab never bleeds through the blur. */
+/** Device grid (2 per row) with the full telemetry: processor, memory and
+ * battery state. Home stays name-only; the detail sheet is opened from here. */
 export function DeviceHubScreen({ onAddDevice, onBack }: DeviceHubScreenProps) {
   const devices = useDeviceStore((s) => s.devices) as DeviceWithMetrics[];
   const renameDevice = useDeviceStore((s) => s.renameDevice);
