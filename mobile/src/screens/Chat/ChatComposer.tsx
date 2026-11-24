@@ -11,9 +11,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useChatSessionStore } from '../../store/useChatSessionStore';
+import { useUploadStore } from '../../store/useUploadStore';
 import { AttachmentCard } from '../../components/AttachmentCard';
+import { UploadProgressCard } from '../../components/UploadProgressCard';
 import { mimeTypeForName } from '../../desktop/mime';
 import { ChatAttachment } from '../../types/chatMessage';
+import type { ChatSendResult } from '../../relay/types';
 import { styles } from './ChatScreen.styles';
 
 const SESSION_ID = 'default-session'; // multi-session support deferred
@@ -30,7 +33,7 @@ interface ChatComposerProps {
     text: string,
     attachment?: ChatAttachment,
     messageId?: string
-  ) => Promise<void>;
+  ) => Promise<ChatSendResult>;
 }
 
 /**
@@ -44,6 +47,11 @@ interface ChatComposerProps {
 export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
   const addUserMessage = useChatSessionStore((s) => s.addUserMessage);
   const markSent = useChatSessionStore((s) => s.markSent);
+  const uploads = useUploadStore((s) => s.uploads);
+  const startUpload = useUploadStore((s) => s.start);
+  const markUploadSent = useUploadStore((s) => s.markSent);
+  const markUploadFailed = useUploadStore((s) => s.markFailed);
+  const dismissUpload = useUploadStore((s) => s.dismiss);
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
   const [focused, setFocused] = useState(false);
@@ -83,12 +91,43 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
     // Routing (relay vs. quick-response fallback) is decided inside the hook,
     // never here — PHASE_12 NFR-2. The hook compresses, uploads to Upstash Blob
     // and replaces the local URI on this optimistic message with the MediaRef.
-    void sendChatMessage(SESSION_ID, message.text, attachment ?? undefined, message.id);
+    const pending = attachment;
+    if (pending) {
+      const uploadId = startUpload({
+        name: pending.name,
+        uri: pending.uri,
+        size: pending.size,
+      });
+      void sendChatMessage(SESSION_ID, message.text, pending, message.id)
+        .then((result) => {
+          if (result.mediaUploaded) markUploadSent(uploadId);
+          else if (result.error) markUploadFailed(uploadId, result.error);
+          else dismissUpload(uploadId);
+        })
+        .catch((error: unknown) => {
+          markUploadFailed(
+            uploadId,
+            error instanceof Error ? error.message : 'upload failed'
+          );
+        });
+    } else {
+      void sendChatMessage(SESSION_ID, message.text, undefined, message.id);
+    }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setDraft('');
     setAttachment(null);
-  }, [draft, attachment, addUserMessage, markSent, sendChatMessage]);
+  }, [
+    draft,
+    attachment,
+    addUserMessage,
+    markSent,
+    sendChatMessage,
+    startUpload,
+    markUploadSent,
+    markUploadFailed,
+    dismissUpload,
+  ]);
 
   // Image attach: gallery photos get real on-device compression + a thumbnail.
   const handlePickImage = useCallback(async () => {
@@ -140,6 +179,9 @@ export function ChatComposer({ sendChatMessage }: ChatComposerProps) {
 
   return (
     <View style={styles.inputWrap}>
+      {uploads.map((item) => (
+        <UploadProgressCard key={item.id} item={item} />
+      ))}
       {attachment && (
         <AttachmentCard attachment={attachment} size="preview" onRemove={() => setAttachment(null)} />
       )}
