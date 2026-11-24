@@ -3,9 +3,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import { DeviceStatus } from '../types/device';
 /** Line 6 is where to change the button colors */
 const STATUS_CONFIG: Record<DeviceStatus, { label: string; color: string }> = {
-  online: { label: 'ONLINE', color: '#55ff00c9' },
-  idle: { label: 'IDLE', color: '#fedc00' },
-  offline: { label: 'OFFLINE', color: '#cc00ebd9' },
+  online: { label: 'ONLINE', color: '#E8A34D' },
+  idle: { label: 'IDLE', color: '#B7A08A' },
+  offline: { label: 'OFFLINE', color: '#C46A52' },
 };
 
 export function StatusPill({ status }: { status: DeviceStatus }) {
