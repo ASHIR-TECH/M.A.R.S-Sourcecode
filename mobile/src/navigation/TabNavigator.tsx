@@ -28,10 +28,16 @@ export function TabNavigator() {
   const goToDevices = useCallback(() => selectTab('Devices'), [selectTab]);
   const screenProps = useMemo(
     () => ({
-      Home: { onPairDevice: goToDevices },
+      Home: {
+        onPairDevice: goToDevices,
+        // The 2x2 tiles are name-only launchers: tap one to open Device Hub,
+        // tap a chat row to jump into the AI thread.
+        onDevicePress: () => goToDevices(),
+        onChatPress: () => selectTab('Chat'),
+      },
       Devices: { isActive: index === DEVICES_INDEX },
     }),
-    [goToDevices, index]
+    [goToDevices, selectTab, index]
   );
 
   return (
