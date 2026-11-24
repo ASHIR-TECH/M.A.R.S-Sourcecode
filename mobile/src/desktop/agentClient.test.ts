@@ -62,6 +62,30 @@ describe('agentClient', () => {
     ]);
   });
 
+  it('surfaces blob media attached to the reply', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: async () => ({
+        id: 'j',
+        status: 'completed',
+        message: 'Here is the render',
+        media: {
+          id: 'media-1',
+          serviceUrl: 'http://127.0.0.1:40003',
+          name: 'render.png',
+          mimeType: 'image/png',
+          compressed: true,
+          hasThumbnail: true,
+          createdAt: '2026-11-24T00:00:00.000Z',
+        },
+      }),
+    });
+
+    const state = await getAgentMessage(conn, 'j');
+    expect(state.media).toMatchObject({ id: 'media-1', name: 'render.png', hasThumbnail: true });
+  });
+
   it('accepts camelCase toolCalls and uses the response field', async () => {
     (fetch as jest.Mock).mockResolvedValue({
       status: 200,
