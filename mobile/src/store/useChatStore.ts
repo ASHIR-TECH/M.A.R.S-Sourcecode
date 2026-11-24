@@ -10,12 +10,30 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set, get) => ({
   chats: mockChats, // TODO(backend): replace with live chat history in a later phase
   appendChatResponse: (sessionId, text, timestamp) => {
-    // Minimal v1: update matching session's preview row (PHASE_6 §5.4).
-    // Full message-thread storage belongs to the AI Chat screen's own phase.
+    const chats = get().chats;
+    const existing = chats.find((c) => c.id === sessionId);
+    if (existing) {
+      set({
+        chats: chats.map((c) =>
+          c.id === sessionId ? { ...c, lastMessage: text, timestamp } : c
+        ),
+      });
+      return;
+    }
+    // Home's "Recent Chats" used to stay empty forever because only updates to
+    // a pre-existing row were handled. Create the row on the first reply.
     set({
-      chats: get().chats.map((c) =>
-        c.id === sessionId ? { ...c, lastMessage: text, timestamp } : c
-      ),
+      chats: [
+        {
+          id: sessionId,
+          name: 'ADTP AI',
+          initials: 'AI',
+          lastMessage: text,
+          timestamp,
+          unreadCount: 0,
+        },
+        ...chats,
+      ],
     });
   },
 }));
