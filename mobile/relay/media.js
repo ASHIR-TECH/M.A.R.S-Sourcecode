@@ -25,6 +25,7 @@ const {
   signUpload,
   deleteObjects,
 } = require('../../lib/blob.ts');
+const { buildMediaRef, retentionExpiry, isExpired } = require('./mediaContract');
 
 const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
 const DATA_DIR = path.resolve(__dirname, '.data');
@@ -37,6 +38,9 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
     : null;
   const adtpToken = envVars.ADTP_MEDIA_TOKEN || '';
   const serviceUrl = (envVars.RELAY_PUBLIC_URL || '').replace(/\/$/, '');
+  const retentionSeconds = Number(
+    envVars.MEDIA_RETENTION_SECONDS || process.env.MEDIA_RETENTION_SECONDS
+  ) || undefined;
 
   const records = new Map();
   try {
@@ -83,24 +87,9 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
     return null;
   }
 
+  /** Shared v2 MediaRef shape (same fields the ADTP gateway emits). */
   function mediaRef(record, req) {
-    return {
-      id: record.id,
-      serviceUrl: baseUrl(req),
-      name: record.name,
-      mimeType: record.mimeType,
-      size: record.size,
-      compressedSize: record.compressedSize,
-      width: record.width,
-      height: record.height,
-      durationMs: record.durationMs,
-      sha256: record.sha256,
-      sender: record.sender,
-      sessionId: record.sessionId,
-      compressed: Boolean(record.compressed),
-      hasThumbnail: Boolean(record.paths && record.paths.thumbnail),
-      createdAt: record.createdAt,
-    };
+    return buildMediaRef(record, baseUrl(req));
   }
 
   function validNumber(value, fallback) {
@@ -121,7 +110,8 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
     const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim().slice(0, 255) : '';
     const mimeType = typeof body.mimeType === 'string' && body.mimeType ? body.mimeType.slice(0, 150) : 'application/octet-stream';
     const originalSize = validNumber(body.size, 0);
-    const compressedSize = validNumber(body.compressedSize, originalSize);
+    const storedSize = validNumber(body.storedSize, validNumber(body.compressedSize, originalSize));
+    const compressedSize = storedSize;
     if (!name) return res.status(400).json({ error: 'Missing name' });
     if (compressedSize <= 0 || compressedSize > MAX_UPLOAD_BYTES) {
       return res.status(400).json({ error: 'File is empty or too large' });
@@ -155,6 +145,7 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
         );
       }
 
+      const createdAt = new Date().toISOString();
       const record = {
         id,
         owner,
@@ -163,15 +154,21 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
         mimeType,
         size: originalSize,
         compressedSize,
+        storedSize,
         width: validNumber(body.width, 0) || undefined,
         height: validNumber(body.height, 0) || undefined,
         durationMs: validNumber(body.durationMs, 0) || undefined,
         sha256: typeof body.sha256 === 'string' ? body.sha256.slice(0, 128) : undefined,
         sender: typeof body.sender === 'string' ? body.sender.slice(0, 64) : caller.kind,
+        recipient: typeof body.recipient === 'string' ? body.recipient.slice(0, 120) : undefined,
+        conversationId: typeof body.conversationId === 'string' ? body.conversationId.slice(0, 120) : undefined,
         sessionId: typeof body.sessionId === 'string' ? body.sessionId.slice(0, 120) : undefined,
         compressed: Boolean(body.compressed),
         status: 'pending',
-        createdAt: new Date().toISOString(),
+        createdAt,
+        // Server-calculated retention deadline. Repeated /complete calls and
+        // repeated downloads never extend it.
+        expiresAt: retentionExpiry(createdAt, retentionSeconds),
       };
       records.set(id, record);
       persist();
@@ -227,6 +224,7 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
         });
       }
 
+      const createdAt = new Date().toISOString();
       const record = {
         id,
         owner: caller.id.slice(0, 64),
@@ -235,14 +233,18 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
         mimeType,
         size: validNumber(body.size, data.length),
         compressedSize: data.length,
+        storedSize: data.length,
         width: validNumber(body.width, 0) || undefined,
         height: validNumber(body.height, 0) || undefined,
         sender: typeof body.sender === 'string' ? body.sender.slice(0, 64) : caller.kind,
+        recipient: typeof body.recipient === 'string' ? body.recipient.slice(0, 120) : undefined,
+        conversationId: typeof body.conversationId === 'string' ? body.conversationId.slice(0, 120) : undefined,
         sessionId: typeof body.sessionId === 'string' ? body.sessionId.slice(0, 120) : undefined,
         compressed: Boolean(body.compressed),
         status: 'complete',
-        createdAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
+        createdAt,
+        expiresAt: retentionExpiry(createdAt, retentionSeconds),
+        completedAt: createdAt,
       };
       records.set(id, record);
       persist();
@@ -264,6 +266,8 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
     if (record.owner !== caller.id) return res.status(403).json({ error: 'Forbidden' });
 
     record.compressedSize = validNumber(body.compressedSize, record.compressedSize);
+    // Keep both aliases in sync with ADTP's v2 contract.
+    record.storedSize = validNumber(body.storedSize, record.compressedSize);
     record.width = validNumber(body.width, record.width) || record.width;
     record.height = validNumber(body.height, record.height) || record.height;
     record.durationMs = validNumber(body.durationMs, record.durationMs) || record.durationMs;
@@ -287,6 +291,9 @@ function createMediaRouter({ envVars, verifySupabaseSession, timingSafeEqualStr,
     const record = records.get(String(req.params.id || ''));
     if (!record || record.status !== 'complete') {
       return res.status(404).json({ error: 'Media not found' });
+    }
+    if (isExpired(record)) {
+      return res.status(410).json({ error: 'MEDIA_EXPIRED' });
     }
     const kind = req.query.kind === 'thumbnail' ? 'thumbnail' : 'original';
     const objectPath = kind === 'thumbnail' ? record.paths.thumbnail : record.paths.original;
