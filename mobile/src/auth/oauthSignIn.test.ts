@@ -1,4 +1,9 @@
-import { signInWithOAuthProvider, oauthRedirectUri } from './oauthSignIn';
+import {
+  signInWithOAuthProvider,
+  completeOAuthFromUrl,
+  resetOAuthCallbackState,
+  oauthRedirectUri,
+} from './oauthSignIn';
 import * as WebBrowser from 'expo-web-browser';
 
 const mockSetSession = jest.fn();
@@ -28,6 +33,7 @@ const browser = WebBrowser as jest.Mocked<typeof WebBrowser>;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resetOAuthCallbackState();
   mockSetSession.mockResolvedValue({ error: null });
   mockExchange.mockResolvedValue({ error: null });
   mockSignInWithOAuth.mockResolvedValue({ data: { url: 'https://provider/authorize' }, error: null });
@@ -76,6 +82,16 @@ describe('signInWithOAuthProvider', () => {
 
     expect(mockExchange).toHaveBeenCalledWith('the-code');
     expect(mockSetSession).not.toHaveBeenCalled();
+  });
+
+  it('exchanges a PKCE code only once when both callback paths see it', async () => {
+    returning('mars://auth?code=one-time-code');
+
+    await signInWithOAuthProvider('google');
+    await completeOAuthFromUrl('mars://auth?code=one-time-code');
+
+    expect(mockExchange).toHaveBeenCalledTimes(1);
+    expect(mockExchange).toHaveBeenCalledWith('one-time-code');
   });
 
   it('url-decodes a token value that contains reserved characters', async () => {
