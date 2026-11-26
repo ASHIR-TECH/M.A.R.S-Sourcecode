@@ -5,7 +5,13 @@ import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import type { MediaRef } from '../media/types';
-import { mediaDownloadUrl, mediaOriginalUrl, mediaThumbnailUrl } from '../media/urls';
+import {
+  isMediaUnavailable,
+  mediaDownloadUrl,
+  mediaOriginalUrl,
+  mediaThumbnailUrl,
+} from '../media/urls';
+import { storedSizeOf } from '../media/types';
 
 function formatSize(bytes?: number): string {
   if (!bytes && bytes !== 0) return '';
@@ -35,13 +41,15 @@ function open(url: string) {
  * messages because both only carry a MediaRef.
  */
 export function MediaCard({ media }: { media: MediaRef }) {
-  const thumbnailUrl = mediaThumbnailUrl(media);
-  const sizeLabel = formatSize(media.compressedSize || media.size);
+  const unavailable = isMediaUnavailable(media);
+  const thumbnailUrl = unavailable ? null : mediaThumbnailUrl(media);
+  const sizeLabel = formatSize(storedSizeOf(media) || media.size);
 
   return (
     <View style={styles.card}>
       <Pressable
-        onPress={() => open(mediaOriginalUrl(media))}
+        onPress={() => !unavailable && open(mediaOriginalUrl(media))}
+        disabled={Boolean(unavailable)}
         style={styles.thumbBox}
         accessibilityLabel="Open media"
       >
@@ -56,18 +64,23 @@ export function MediaCard({ media }: { media: MediaRef }) {
         <Text style={styles.name} numberOfLines={1}>
           {media.name}
         </Text>
-        <Text style={styles.meta}>
-          {sizeLabel}
-          {media.compressed ? ' · compressed' : ''}
+        <Text style={[styles.meta, unavailable && styles.metaUnavailable]}>
+          {unavailable === 'expired'
+            ? 'Media expired'
+            : unavailable === 'deleted'
+              ? 'Media unavailable'
+              : `${sizeLabel}${media.compressed ? ' · compressed' : ''}`}
         </Text>
-        <Pressable
-          onPress={() => open(mediaDownloadUrl(media))}
-          style={styles.download}
-          accessibilityLabel={`Download ${media.name}`}
-        >
-          <Ionicons name="download-outline" size={13} color="#FFC46B" />
-          <Text style={styles.downloadText}>Download</Text>
-        </Pressable>
+        {!unavailable && (
+          <Pressable
+            onPress={() => open(mediaDownloadUrl(media))}
+            style={styles.download}
+            accessibilityLabel={`Download ${media.name}`}
+          >
+            <Ionicons name="download-outline" size={13} color="#FFC46B" />
+            <Text style={styles.downloadText}>Download</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -101,6 +114,7 @@ const styles = StyleSheet.create({
   details: { flexShrink: 1, gap: 2 },
   name: { color: colors.textPrimary, fontSize: 13, fontFamily: fonts.montserrat },
   meta: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: fonts.montserrat },
+  metaUnavailable: { color: '#FFC46B' },
   download: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   downloadText: { color: '#FFC46B', fontSize: 12, fontFamily: fonts.montserrat },
 });

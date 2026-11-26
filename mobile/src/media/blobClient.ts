@@ -47,7 +47,12 @@ async function putToGrant(
  */
 export async function uploadMedia(
   source: MediaSource,
-  meta: { sender?: string; sessionId?: string } = {}
+  meta: {
+    sender?: string;
+    sessionId?: string;
+    conversationId?: string;
+    recipient?: string;
+  } = {}
 ): Promise<MediaRef> {
   const base = backendUrl();
   if (!base) throw new Error('Media backend is not configured');
@@ -60,12 +65,16 @@ export async function uploadMedia(
       name: compressed.name,
       mimeType: compressed.mimeType,
       size: compressed.originalSize,
+      // v2 canonical field plus the v1 alias expected by older relays.
+      storedSize: compressed.size,
       compressedSize: compressed.size,
       width: compressed.width,
       height: compressed.height,
       compressed: compressed.compressed,
       thumbnail: Boolean(compressed.thumbnailUri),
       sender: meta.sender,
+      recipient: meta.recipient,
+      conversationId: meta.conversationId,
       sessionId: meta.sessionId,
     }),
   });
@@ -86,6 +95,7 @@ export async function uploadMedia(
     headers: await authHeaders(),
     body: JSON.stringify({
       id: grant.id,
+      storedSize: compressed.size,
       compressedSize: compressed.size,
       width: compressed.width,
       height: compressed.height,
