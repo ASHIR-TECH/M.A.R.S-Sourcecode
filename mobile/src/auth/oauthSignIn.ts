@@ -52,6 +52,25 @@ function callbackParams(url: string): Record<string, string> {
  * supabase-js from navigating itself, the system browser does the actual
  * sign-in, and the deep link hands control back to us here.
  */
+/**
+ * Supabase PKCE codes are single-use. The browser flow resolves the URL and the
+ * App-level deep-link listener can see the same URL; exchanging it twice makes
+ * the second call fail with "invalid flow state, no valid flow state found".
+ * Remember callbacks we have already handled and never exchange one twice.
+ */
+const handledCallbacks = new Set<string>();
+
+/** Test-only reset so tests can start each case with a clean callback slate. */
+export function resetOAuthCallbackState(): void {
+  handledCallbacks.clear();
+}
+
+function callbackKey(params: Record<string, string>): string | null {
+  if (params.code) return `code:${params.code}`;
+  if (params.access_token) return `tokens:${params.access_token}`;
+  return null;
+}
+
 async function sessionFromCallbackUrl(url: string): Promise<void> {
   const params = callbackParams(url);
 
@@ -60,25 +79,34 @@ async function sessionFromCallbackUrl(url: string): Promise<void> {
   const errorCode = params.error_description ?? params.error;
   if (errorCode) throw new Error(decodeURIComponent(errorCode.replace(/\+/g, ' ')));
 
+  const key = callbackKey(params);
+  if (!key) throw new Error('Sign-in failed: the provider did not return a usable session.');
+  if (handledCallbacks.has(key)) return; // already exchanged by the other path
+  handledCallbacks.add(key);
+
   const auth = requireSupabase().auth;
+  try {
+    if (params.code) {
+      // PKCE delivery: supabase-js already holds the matching code_verifier.
+      const { error } = await auth.exchangeCodeForSession(params.code);
+      if (error) throw error;
+      return;
+    }
 
-  if (params.code) {
-    // PKCE delivery: supabase-js already holds the matching code_verifier.
-    const { error } = await auth.exchangeCodeForSession(params.code);
-    if (error) throw error;
-    return;
-  }
-
-  if (params.access_token && params.refresh_token) {
     const { error } = await auth.setSession({
       access_token: params.access_token,
       refresh_token: params.refresh_token,
     });
     if (error) throw error;
-    return;
+  } catch (error) {
+    // A failed exchange did not consume the flow state; allow a clean retry.
+    handledCallbacks.delete(key);
+    const errorCode = (error as { error_code?: string } | null)?.error_code;
+    if (errorCode === 'flow_state_not_found' || errorCode === 'flow_state_expired') {
+      throw new Error('Sign-in expired. Please try again.');
+    }
+    throw error;
   }
-
-  throw new Error('Sign-in failed: the provider did not return a usable session.');
 }
 
 /**
