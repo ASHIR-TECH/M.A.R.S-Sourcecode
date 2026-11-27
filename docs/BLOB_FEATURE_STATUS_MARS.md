@@ -9,7 +9,7 @@ Spec: `docs/Blob feature.md`. Updated: 27 November 2026.
 
 - `EXPO_PUBLIC_BACKEND_URL` in all `mobile/eas.json` build profiles
 - `RELAY_PUBLIC_URL` in `mobile/relay/.env`
-- `ADTP_RELAY_URL` in the ADTP gateway config
+- ADTP's gateway can keep `ADTP_RELAY_URL=http://127.0.0.1:3001` when it runs on the same machine; remote ADTP installs should use the public URL.
 
 The domain is stable, but the ngrok agent must be running or the URL returns 404 (`ERR_NGROK_3200`). Start both pieces with:
 
