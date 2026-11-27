@@ -20,6 +20,19 @@ bash scripts/start-public-relay.sh
 
 Verify with `curl https://danceable-unrectified-missy.ngrok-free.app/health` — expect `{"ok":true,...,"blobMediaConfigured":true}`.
 
+For always-on operation, user systemd units are installed at:
+
+```text
+~/.config/systemd/user/mars-relay.service
+~/.config/systemd/user/mars-ngrok.service
+```
+
+They are enabled with `Restart=always`, and `loginctl show-user contractor -p Linger` is `yes`, so both survive logout/reboot:
+
+```bash
+systemctl --user status mars-relay.service mars-ngrok.service
+```
+
 ## Phase 0 — Baseline (complete)
 
 - [x] Media bytes are stored in the private Upstash Blob bucket `Mars`; the bucket token (`UPSTASH_BLOB_TOKEN`) is only in `mobile/relay/.env`, never in the app bundle.
