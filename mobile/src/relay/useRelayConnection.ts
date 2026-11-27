@@ -291,6 +291,22 @@ export function useRelayConnection() {
     []
   );
 
+/** Only use the direct-Blob fallback when the relay is actually reachable. */
+async function relayReachable(): Promise<boolean> {
+  const base = String(process.env.EXPO_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
+  if (!base) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const response = await fetch(`${base}/health`, { signal: controller.signal });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
   /**
    * Routes a chat message to the paired desktop when it's reachable, otherwise
    * transparently falls back to quick-response mode (PHASE_12 FR-3/NFR-2).
@@ -342,13 +358,21 @@ export function useRelayConnection() {
           if (desktop.connection && desktop.isConfigured()) {
             try {
               mediaRef = await uploadMediaViaGateway(desktop.connection, source, meta);
-            } catch {
-              // Older desktop builds have no media endpoint; fall back to the
-              // relay directly (needs EXPO_PUBLIC_BACKEND_URL to be reachable).
-              mediaRef = await uploadMedia(source, meta);
+            } catch (gatewayError) {
+              // Older desktop builds have no media endpoint; use the direct
+              // relay path only when it is actually reachable. A dead tunnel
+              // used to mask the real desktop error as a confusing 404.
+              if (await relayReachable()) {
+                mediaRef = await uploadMedia(source, meta);
+              } else {
+                const detail = gatewayError instanceof Error ? gatewayError.message : 'gateway upload failed';
+                throw new Error(`Desktop media service is unavailable. ${detail}`);
+              }
             }
-          } else {
+          } else if (await relayReachable()) {
             mediaRef = await uploadMedia(source, meta);
+          } else {
+            throw new Error('No paired desktop and the media relay is unreachable.');
           }
           mediaUploaded = true;
           if (messageId) {
