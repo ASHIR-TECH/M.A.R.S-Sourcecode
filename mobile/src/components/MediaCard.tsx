@@ -66,7 +66,7 @@ export function MediaCard({ media }: { media: MediaRef }) {
         : downloadState === 'downloading'
           ? 'Downloading…'
           : downloadState === 'saved'
-            ? 'Saved to Mars'
+            ? 'Saved to device'
             : downloadState === 'error'
               ? 'Download failed — tap to retry'
               : `${sizeLabel}${ref.compressed ? ' · compressed' : ''}`;
