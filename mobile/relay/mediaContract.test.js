@@ -27,7 +27,12 @@ describe('mediaContract (shared with ADTP)', () => {
   };
 
   it('emits the same v2 shape as the ADTP gateway', () => {
-    const ref = buildMediaRef(record, 'https://relay.example/');
+    // Pin "now" inside the retention window; the wall clock moves.
+    const ref = buildMediaRef(
+      record,
+      'https://relay.example/',
+      Date.parse('2026-11-26T12:00:00.000Z')
+    );
     expect(ref.schemaVersion).toBe(2);
     expect(ref.serviceUrl).toBe('https://relay.example');
     expect(ref.storedSize).toBe(3000);
