@@ -7,6 +7,12 @@ interface ChatState {
   appendChatResponse: (sessionId: string, text: string, timestamp: string) => void;
 }
 
+function previewTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export const useChatStore = create<ChatState>((set, get) => ({
   chats: mockChats, // TODO(backend): replace with live chat history in a later phase
   appendChatResponse: (sessionId, text, timestamp) => {
@@ -15,7 +21,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (existing) {
       set({
         chats: chats.map((c) =>
-          c.id === sessionId ? { ...c, lastMessage: text, timestamp } : c
+          c.id === sessionId ? { ...c, lastMessage: text, timestamp: previewTime(timestamp) } : c
         ),
       });
       return;
@@ -29,7 +35,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           name: 'ADTP AI',
           initials: 'AI',
           lastMessage: text,
-          timestamp,
+          timestamp: previewTime(timestamp),
           unreadCount: 0,
         },
         ...chats,
