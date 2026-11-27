@@ -16,4 +16,5 @@ export {
 export { storedSizeOf } from './types';
 export { uploadMedia } from './blobClient';
 export { uploadMediaViaGateway } from './gatewayUpload';
+export { downloadMedia } from './download';
 export { compressMedia, MAX_IMAGE_EDGE, THUMBNAIL_EDGE } from './compress';
