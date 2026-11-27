@@ -1,7 +1,24 @@
 # Blob feature — MARS implementation status
 
 Scope: **MARS only** (mobile app + MARS media relay). ADTP work is explicitly out of scope for this branch.
-Spec: `docs/Blob feature.md`. Updated: 26 November 2026.
+Spec: `docs/Blob feature.md`. Updated: 27 November 2026.
+
+## Official public relay endpoint
+
+`https://danceable-unrectified-missy.ngrok-free.app` is the reserved ngrok domain used by the mobile builds. It is set as:
+
+- `EXPO_PUBLIC_BACKEND_URL` in all `mobile/eas.json` build profiles
+- `RELAY_PUBLIC_URL` in `mobile/relay/.env`
+- `ADTP_RELAY_URL` in the ADTP gateway config
+
+The domain is stable, but the ngrok agent must be running or the URL returns 404 (`ERR_NGROK_3200`). Start both pieces with:
+
+```bash
+cd mobile
+bash scripts/start-public-relay.sh
+```
+
+Verify with `curl https://danceable-unrectified-missy.ngrok-free.app/health` — expect `{"ok":true,...,"blobMediaConfigured":true}`.
 
 ## Phase 0 — Baseline (complete)
 
