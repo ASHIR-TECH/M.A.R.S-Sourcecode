@@ -1,9 +1,12 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import { supabase } from '../auth/supabaseClient';
 import { mediaOriginalUrl } from './urls';
 import type { MediaRef } from './types';
+
+const DOWNLOAD_DIR_KEY = 'mars.downloadDirUri';
 
 /** Filenames are display-only: never let them escape the download directory. */
 export function safeFilename(value: string): string {
@@ -26,12 +29,35 @@ async function authHeaders(): Promise<Record<string, string>> {
 }
 
 /**
- * Download a MediaRef into the app (or a browser download on web).
+ * On Android, get a user-visible folder (Downloads by default) via the Storage
+ * Access Framework. The permission is remembered after the first pick.
+ */
+async function visibleAndroidDirectory(): Promise<string | null> {
+  if (Platform.OS !== 'android') return null;
+  try {
+    const saved = await SecureStore.getItemAsync(DOWNLOAD_DIR_KEY);
+    if (saved) return saved;
+  } catch {
+    // Fall through and ask once.
+  }
+  try {
+    const initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
+    const result = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri);
+    if (!result.granted) return null;
+    await SecureStore.setItemAsync(DOWNLOAD_DIR_KEY, result.directoryUri);
+    return result.directoryUri;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Download a MediaRef and make the file visible to the user.
  *
  * The stable `/api/media/file/:id` URL is a header-free redirect that mints a
- * short-lived signed Upstash Blob URL on every request — the browser the user
- * saw was that redirect, not the Blob bucket itself. Fetching it here keeps the
- * user inside the app and lets us verify the response before saving.
+ * short-lived signed Upstash Blob URL on every request — the browser page the
+ * user used to see was that redirect, not the Blob bucket itself. We fetch it
+ * in-app, then copy the bytes into the user's Downloads folder on Android.
  */
 export async function downloadMedia(
   media: MediaRef
@@ -59,11 +85,31 @@ export async function downloadMedia(
   if (!info.exists) {
     await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
   }
-  const uri = `${directory}${Date.now()}-${name}`;
-  const result = await FileSystem.downloadAsync(url, uri, { headers });
+  const localUri = `${directory}${Date.now()}-${name}`;
+  const result = await FileSystem.downloadAsync(url, localUri, { headers });
   if (result.status !== 200) {
-    await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+    await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
     throw new Error(`Download failed (${result.status})`);
   }
+
+  const visibleDirectory = await visibleAndroidDirectory();
+  if (visibleDirectory) {
+    const base64 = await FileSystem.readAsStringAsync(localUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const stem = name.replace(/\.[^.]+$/, '') || 'download';
+    const publicUri = await FileSystem.StorageAccessFramework.createFileAsync(
+      visibleDirectory,
+      stem,
+      media.mimeType || 'application/octet-stream'
+    );
+    await FileSystem.StorageAccessFramework.writeAsStringAsync(publicUri, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return { uri: publicUri, name };
+  }
+
+  // iOS has no shared Downloads folder without a share sheet; keep the file in
+  // the app's Documents directory where it remains available to the app.
   return { uri: result.uri, name };
 }
