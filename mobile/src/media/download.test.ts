@@ -15,6 +15,11 @@ jest.mock('../auth/supabaseClient', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
 }));
 
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: async () => null,
+  setItemAsync: async () => {},
+}));
+
 import { safeFilename, downloadMedia } from './download';
 import type { MediaRef } from './types';
 
