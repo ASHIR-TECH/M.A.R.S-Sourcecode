@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image, Pressable, Linking, Platform, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -7,11 +7,13 @@ import { spacing } from '../theme/spacing';
 import type { MediaRef } from '../media/types';
 import {
   isMediaUnavailable,
-  mediaDownloadUrl,
   mediaOriginalUrl,
   mediaThumbnailUrl,
+  mediaThroughDesktop,
 } from '../media/urls';
 import { storedSizeOf } from '../media/types';
+import { downloadMedia } from '../media/download';
+import { useDesktopStore } from '../store/useDesktopStore';
 
 function formatSize(bytes?: number): string {
   if (!bytes && bytes !== 0) return '';
@@ -27,58 +29,92 @@ function glyphFor(mimeType: string): string {
   return '📎';
 }
 
-function open(url: string) {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    return;
-  }
-  void Linking.openURL(url).catch(() => {});
-}
+type DownloadState = 'idle' | 'downloading' | 'saved' | 'error';
 
 /**
- * Recipient-side render of blob media: a thumbnail (when one was generated)
- * plus an explicit download link. Works for both user-sent and AI/ADTP-sent
- * messages because both only carry a MediaRef.
+ * Recipient-side render of blob media. Tapping either the preview or Download
+ * saves the file inside the app; no external browser/Linking.openURL is used.
  */
 export function MediaCard({ media }: { media: MediaRef }) {
-  const unavailable = isMediaUnavailable(media);
-  const thumbnailUrl = unavailable ? null : mediaThumbnailUrl(media);
-  const sizeLabel = formatSize(storedSizeOf(media) || media.size);
+  const [downloadState, setDownloadState] = useState<DownloadState>('idle');
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const desktopBaseUrl = useDesktopStore((s) => s.connection?.baseUrl);
+
+  // A loopback service URL from ADTP must be rewritten at render time too: the
+  // desktop connection may have been restored after the message was stored.
+  const ref = mediaThroughDesktop(media, desktopBaseUrl) ?? media;
+  const unavailable = isMediaUnavailable(ref);
+  const thumbnailUrl = !unavailable && !thumbnailFailed ? mediaThumbnailUrl(ref) : null;
+  const sizeLabel = formatSize(storedSizeOf(ref) || ref.size);
+
+  const download = async () => {
+    if (unavailable || downloadState === 'downloading') return;
+    setDownloadState('downloading');
+    try {
+      await downloadMedia(ref);
+      setDownloadState('saved');
+    } catch {
+      setDownloadState('error');
+    }
+  };
+
+  const statusLabel =
+    unavailable === 'expired'
+      ? 'Media expired'
+      : unavailable === 'deleted'
+        ? 'Media unavailable'
+        : downloadState === 'downloading'
+          ? 'Downloading…'
+          : downloadState === 'saved'
+            ? 'Saved to Mars'
+            : downloadState === 'error'
+              ? 'Download failed — tap to retry'
+              : `${sizeLabel}${ref.compressed ? ' · compressed' : ''}`;
 
   return (
     <View style={styles.card}>
       <Pressable
-        onPress={() => !unavailable && open(mediaOriginalUrl(media))}
+        onPress={() => void download()}
         disabled={Boolean(unavailable)}
         style={styles.thumbBox}
-        accessibilityLabel="Open media"
+        accessibilityLabel={`Download ${ref.name}`}
       >
         {thumbnailUrl ? (
-          <Image source={{ uri: thumbnailUrl }} style={styles.thumb} resizeMode="cover" />
+          <Image
+            source={{ uri: thumbnailUrl }}
+            style={styles.thumb}
+            resizeMode="cover"
+            onError={() => setThumbnailFailed(true)}
+          />
         ) : (
-          <Text style={styles.glyph}>{glyphFor(media.mimeType)}</Text>
+          <Text style={styles.glyph}>{glyphFor(ref.mimeType)}</Text>
         )}
       </Pressable>
 
       <View style={styles.details}>
         <Text style={styles.name} numberOfLines={1}>
-          {media.name}
+          {ref.name}
         </Text>
-        <Text style={[styles.meta, unavailable && styles.metaUnavailable]}>
-          {unavailable === 'expired'
-            ? 'Media expired'
-            : unavailable === 'deleted'
-              ? 'Media unavailable'
-              : `${sizeLabel}${media.compressed ? ' · compressed' : ''}`}
+        <Text
+          style={[
+            styles.meta,
+            (unavailable || downloadState === 'error') && styles.metaUnavailable,
+            downloadState === 'saved' && styles.metaSaved,
+          ]}
+        >
+          {statusLabel}
         </Text>
         {!unavailable && (
           <Pressable
-            onPress={() => open(mediaDownloadUrl(media))}
+            onPress={() => void download()}
+            disabled={downloadState === 'downloading'}
             style={styles.download}
-            accessibilityLabel={`Download ${media.name}`}
+            accessibilityLabel={`Download ${ref.name}`}
           >
             <Ionicons name="download-outline" size={13} color="#FFC46B" />
-            <Text style={styles.downloadText}>Download</Text>
+            <Text style={styles.downloadText}>
+              {downloadState === 'downloading' ? 'Downloading…' : 'Download'}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -115,6 +151,7 @@ const styles = StyleSheet.create({
   name: { color: colors.textPrimary, fontSize: 13, fontFamily: fonts.montserrat },
   meta: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: fonts.montserrat },
   metaUnavailable: { color: '#FFC46B' },
+  metaSaved: { color: '#55ff00c9' },
   download: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   downloadText: { color: '#FFC46B', fontSize: 12, fontFamily: fonts.montserrat },
 });
