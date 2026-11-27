@@ -33,6 +33,8 @@ They are enabled with `Restart=always`, and `loginctl show-user contractor -p Li
 systemctl --user status mars-relay.service mars-ngrok.service
 ```
 
+A 5-minute watchdog (`mars-endpoint-watchdog.timer`) checks both local and public health and restarts the services if either fails.
+
 ## Phase 0 — Baseline (complete)
 
 - [x] Media bytes are stored in the private Upstash Blob bucket `Mars`; the bucket token (`UPSTASH_BLOB_TOKEN`) is only in `mobile/relay/.env`, never in the app bundle.
